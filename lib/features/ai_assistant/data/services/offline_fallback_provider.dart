@@ -18,29 +18,34 @@ class OfflineFallbackProvider implements AiProvider {
       'No cloud AI processing performed.'
     ];
 
-    switch (request.featureType) {
-      case AiFeatureType.attendanceExplanation:
-        text = _generateAttendanceExplanation(request.context, sources, actions);
-        break;
-      case AiFeatureType.studyPlanning:
-        text = _generateStudyPlanning(request.context, sources, actions);
-        break;
-      case AiFeatureType.examPreparation:
-        text = _generateExamPreparation(request.context, sources, actions);
-        break;
-      case AiFeatureType.assignmentBreakdown:
-        text = _generateAssignmentBreakdown(request.context, sources, actions);
-        break;
-      case AiFeatureType.topicExplanation:
-        text = _generateTopicExplanation(request.context, request.userPrompt, sources, actions);
-        break;
-      case AiFeatureType.notesSummary:
-      case AiFeatureType.resourceSummary:
-        text = _generateSummary(request.context, sources, actions);
-        break;
-      default:
-        text = _generateGeneralSummary(request.context, sources, actions);
-        break;
+    final prompt = request.userPrompt.toLowerCase();
+    if (prompt.contains('class') || prompt.contains('timetable') || prompt.contains('schedule')) {
+      text = _generateTimetableBrief(request.context, sources, actions);
+    } else {
+      switch (request.featureType) {
+        case AiFeatureType.attendanceExplanation:
+          text = _generateAttendanceExplanation(request.context, sources, actions);
+          break;
+        case AiFeatureType.studyPlanning:
+          text = _generateStudyPlanning(request.context, sources, actions);
+          break;
+        case AiFeatureType.examPreparation:
+          text = _generateExamPreparation(request.context, sources, actions);
+          break;
+        case AiFeatureType.assignmentBreakdown:
+          text = _generateAssignmentBreakdown(request.context, sources, actions);
+          break;
+        case AiFeatureType.topicExplanation:
+          text = _generateTopicExplanation(request.context, request.userPrompt, sources, actions);
+          break;
+        case AiFeatureType.notesSummary:
+        case AiFeatureType.resourceSummary:
+          text = _generateSummary(request.context, sources, actions);
+          break;
+        default:
+          text = _generateGeneralSummary(request.context, sources, actions);
+          break;
+      }
     }
 
     return AiResponse(
@@ -54,6 +59,57 @@ class OfflineFallbackProvider implements AiProvider {
       modelId: 'offline-deterministic-fallback',
       createdAt: DateTime.now(),
     );
+  }
+
+  String _generateTimetableBrief(
+    Map<String, dynamic> context,
+    List<AiSourceReference> sources,
+    List<AiSuggestedAction> actions,
+  ) {
+    final timetable = context['timetable'] as List? ?? [];
+    final subjects = context['subjects'] as List? ?? [];
+    if (timetable.isEmpty) {
+      return 'No classes scheduled in your timetable. You can upload an image of your timetable to automatically populate it!';
+    }
+
+    final StringBuffer buffer = StringBuffer();
+    buffer.writeln('### Timetable Schedule & Classes Brief\n');
+    buffer.writeln('Here is your active schedule retrieved from your TrackX timetable:\n');
+
+    final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    for (int dayIdx = 1; dayIdx <= 7; dayIdx++) {
+      final dayEntries = timetable.where((e) => e['dayOfWeek'] == dayIdx).toList();
+      if (dayEntries.isEmpty) continue;
+
+      dayEntries.sort((a, b) => (a['startTime'] as int).compareTo(b['startTime'] as int));
+
+      buffer.writeln('#### ${days[dayIdx - 1]}');
+      for (final entry in dayEntries) {
+        final subId = entry['subjectId'];
+        final subMap = subjects.firstWhere(
+          (s) => s['id'] == subId,
+          orElse: () => null,
+        );
+        final subName = subMap != null ? subMap['name'] : 'Unknown Subject';
+
+        final startMin = entry['startTime'] as int;
+        final endMin = entry['endTime'] as int;
+
+        final startH = startMin ~/ 60;
+        final startM = startMin % 60;
+        final endH = endMin ~/ 60;
+        final endM = endMin % 60;
+
+        final startTimeStr = '${startH.toString().padLeft(2, '0')}:${startM.toString().padLeft(2, '0')}';
+        final endTimeStr = '${endH.toString().padLeft(2, '0')}:${endM.toString().padLeft(2, '0')}';
+
+        buffer.writeln('• Period ${entry['periodNumber']}: **$subName** ($startTimeStr - $endTimeStr) in Room: ${entry['room'] ?? "LH-1"}');
+      }
+      buffer.writeln();
+    }
+
+    return buffer.toString();
   }
 
   String _generateAttendanceExplanation(

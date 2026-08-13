@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trackx/features/adaptive_study/domain/models/learning_goal.dart';
-import 'package:trackx/features/adaptive_study/domain/models/topic_mastery.dart';
 import 'package:trackx/features/adaptive_study/domain/models/revision_item.dart';
 import 'package:trackx/features/adaptive_study/domain/models/practice_session.dart';
 import 'package:trackx/features/integrations/domain/models/partner_models.dart';

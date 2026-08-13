@@ -5,16 +5,9 @@ import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/routing/app_router.dart';
 import 'package:trackx/theme/app_theme.dart';
 
-import 'package:trackx/core/utils/sample_data_loader.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  
-  // Load mock data if database is unpopulated
-  try {
-    await SampleDataLoader.loadSampleData(prefs);
-  } catch (_) {}
 
   runApp(
     ProviderScope(
@@ -30,13 +23,14 @@ class TrackXApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final accentColor = ref.watch(accentColorProvider);
 
     return MaterialApp.router(
       title: 'TrackX',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark, // Default to Dark glass VisionOS look
+      theme: AppTheme.buildTheme(Brightness.light, accentColor),
+      darkTheme: AppTheme.buildTheme(Brightness.dark, accentColor),
+      themeMode: ThemeMode.dark, // Default to Luminous Intelligence Dark
       routerConfig: router,
     );
   }

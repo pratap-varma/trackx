@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
@@ -257,7 +257,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                     child: FilterChip(
                       selected: isSelected,
                       label: Text(cat, style: TextStyle(color: isSelected ? Colors.black : Colors.white70, fontSize: 11)),
-                      backgroundColor: Colors.white.withOpacity(0.05),
+                      backgroundColor: Colors.white.withValues(alpha: 0.05),
                       selectedColor: Colors.tealAccent,
                       checkmarkColor: Colors.black,
                       onSelected: (selected) {
@@ -308,7 +308,7 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                                       Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.08),
+                                          color: Colors.white.withValues(alpha: 0.08),
                                           shape: BoxShape.circle,
                                         ),
                                         child: Icon(

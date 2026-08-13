@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 
 class GlassTextField extends StatelessWidget {
@@ -41,12 +41,12 @@ class GlassTextField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: labelText,
           labelStyle: TextStyle(
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             fontSize: 13,
           ),
           hintText: hintText,
           hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3),
             fontSize: 13,
           ),
           border: InputBorder.none,

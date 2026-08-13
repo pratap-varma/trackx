@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,7 +78,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     style: const TextStyle(color: Colors.white, fontSize: 10),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.05),
+                      fillColor: Colors.white.withValues(alpha: 0.05),
                       hintText: '{"app": "TrackX", ...}',
                       hintStyle: const TextStyle(color: Colors.white38),
                       border: OutlineInputBorder(
@@ -167,16 +167,16 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     const SizedBox(height: 12),
                     Text('Schema Version: $version', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 8),
-                    Text('• Semesters: ${semestersList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                    Text('• Subjects: ${subjectsList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                    Text('• Attendance Records: ${attendanceList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                    Text('• Tasks: ${tasksList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                    Text('â€¢ Semesters: ${semestersList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                    Text('â€¢ Subjects: ${subjectsList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                    Text('â€¢ Attendance Records: ${attendanceList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                    Text('â€¢ Tasks: ${tasksList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
                     if (version >= 2) ...[
-                      Text('• Programmes: ${programmesList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                      Text('• Dependencies: ${dependenciesList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                      Text('• Scenarios: ${scenariosList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                      Text('• Topics: ${topicsList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                      Text('• Resources: ${resourcesList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                      Text('â€¢ Programmes: ${programmesList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                      Text('â€¢ Dependencies: ${dependenciesList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                      Text('â€¢ Scenarios: ${scenariosList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                      Text('â€¢ Topics: ${topicsList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                      Text('â€¢ Resources: ${resourcesList.length}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
                     ],
                     const SizedBox(height: 16),
                     const Text(

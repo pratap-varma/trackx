@@ -140,6 +140,7 @@ void main() {
         tasks: mockTasks,
         assignments: mockAssignments,
         exams: mockExams,
+        timetable: const [],
         consentFlags: {
           'attendance': true,
           'tasks': true,
@@ -162,6 +163,7 @@ void main() {
         tasks: mockTasks,
         assignments: mockAssignments,
         exams: mockExams,
+        timetable: const [],
         consentFlags: {
           'attendance': true,
           'tasks': true,
@@ -232,6 +234,7 @@ void main() {
         tasks: mockTasks,
         assignments: mockAssignments,
         exams: mockExams,
+        timetable: const [],
         consentFlags: {
           'attendance': true,
           'tasks': true,

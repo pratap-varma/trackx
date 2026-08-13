@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/subjects/data/course_repository.dart';
 import 'package:trackx/features/subjects/domain/personal_course_model.dart';
@@ -254,9 +254,9 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.15),
+                  color: Colors.blueAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.3), width: 0.5),
+                  border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 0.5),
                 ),
                 child: const Text(
                   'This is a personal course catalogue. Confirm official availability and requirements with your college.',
@@ -326,7 +326,7 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                                   Text(course.description!, style: const TextStyle(color: Colors.white70, fontSize: 11)),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Credits: ${course.credits ?? "TBD"} • Type: ${course.subjectType} • Difficulty: ${course.expectedDifficulty}',
+                                  'Credits: ${course.credits ?? "TBD"} â€¢ Type: ${course.subjectType} â€¢ Difficulty: ${course.expectedDifficulty}',
                                   style: const TextStyle(color: Colors.white38, fontSize: 10),
                                 ),
                                 const SizedBox(height: 12),

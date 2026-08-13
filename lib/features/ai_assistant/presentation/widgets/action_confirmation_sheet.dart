@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
@@ -120,9 +120,9 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.2),
+                      color: Colors.redAccent.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       children: [

@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
-import 'package:trackx/shared/widgets/auth_header.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -32,15 +30,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    await ref.read(authRepositoryProvider.notifier).register(email, password);
-
+    await ref.read(authRepositoryProvider.notifier).register(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
     if (!mounted) return;
     final state = ref.read(authRepositoryProvider);
-
     if (state.status == AuthStatus.authenticated) {
       context.go('/onboarding');
     } else if (state.status == AuthStatus.error) {
@@ -68,15 +63,51 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         body: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 28.0),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const AuthHeader(
-                    title: 'Create Account',
-                    subtitle: 'Sign up to get started',
+                  // Logo mark
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.35),
+                          blurRadius: 24,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.track_changes_rounded, color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Create Account',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Join TrackX and take control of your academics',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 36),
 
@@ -100,6 +131,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     controller: _passwordController,
                     labelText: 'Password',
                     obscureText: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.white38,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                     validator: (val) {
                       if (val == null || val.length < 6) {
                         return 'Password must be at least 6 characters';
@@ -121,14 +160,76 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
-                  // Submit
-                  GlassPrimaryButton(
-                    text: 'Sign Up',
-                    isLoading: isLoading,
-                    onPressed: _submit,
+                  // Create Account button
+                  SizedBox(
+                    width: double.infinity,
+                    child: GestureDetector(
+                      onTap: isLoading ? null : _submit,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Create Account',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
                   ),
+                  const SizedBox(height: 28),
+
+                  // Login link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account? ',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 13),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        child: const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            color: Color(0xFFC0C1FF),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),

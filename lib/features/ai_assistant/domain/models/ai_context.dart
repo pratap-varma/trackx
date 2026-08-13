@@ -1,6 +1,7 @@
 import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
+import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 
 class AiSubjectContext {
   final String id;
@@ -39,6 +40,7 @@ class AiContext {
   final List<Assignment> upcomingAssignments;
   final List<Task> plannerItems;
   final List<AttendanceRecord> attendance;
+  final List<TimetableEntry> timetable;
   final Map<String, dynamic> preferences;
   final DateTime generatedAt;
 
@@ -50,6 +52,7 @@ class AiContext {
     required this.upcomingAssignments,
     required this.plannerItems,
     required this.attendance,
+    required this.timetable,
     required this.preferences,
     required this.generatedAt,
   });
@@ -63,6 +66,7 @@ class AiContext {
       'upcomingAssignments': upcomingAssignments.map((e) => e.toMap()).toList(),
       'plannerItems': plannerItems.map((e) => e.toMap()).toList(),
       'attendance': attendance.map((e) => e.toMap()).toList(),
+      'timetable': timetable.map((e) => e.toMap()).toList(),
       'preferences': preferences,
       'generatedAt': generatedAt.toIso8601String(),
     };

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/subjects/data/dependency_repository.dart';
@@ -69,9 +69,9 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.15),
+                color: Colors.amber.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withOpacity(0.3), width: 0.5),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3), width: 0.5),
               ),
               child: const Row(
                 children: [

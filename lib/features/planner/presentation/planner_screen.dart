@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 
 class PlannerScreen extends StatelessWidget {
@@ -29,7 +29,7 @@ class PlannerScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Add Lab Record/Assignment...',
-                    style: TextStyle(color: Colors.white.withOpacity(0.4)),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                   ),
                 ),
                 Container(
@@ -55,17 +55,17 @@ class PlannerScreen extends StatelessWidget {
               final tasks = [
                 {
                   'title': 'Socket Programming Report',
-                  'sub': 'Computer Networks • Due in 2 days',
+                  'sub': 'Computer Networks â€¢ Due in 2 days',
                   'completed': false,
                 },
                 {
                   'title': 'Red-Black Trees Lab Record',
-                  'sub': 'Data Structures Lab • Due tomorrow',
+                  'sub': 'Data Structures Lab â€¢ Due tomorrow',
                   'completed': true,
                 },
                 {
                   'title': 'Digital Counter Design Viva',
-                  'sub': 'Digital Electronics • Due in 5 days',
+                  'sub': 'Digital Electronics â€¢ Due in 5 days',
                   'completed': false,
                 },
               ];
@@ -100,7 +100,7 @@ class PlannerScreen extends StatelessWidget {
                             t['sub'] as String,
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.white.withOpacity(0.6),
+                              color: Colors.white.withValues(alpha: 0.6),
                             ),
                           ),
                         ],

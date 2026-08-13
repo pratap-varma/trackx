@@ -48,8 +48,8 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
     int? periodNumber,
     required String status,
   }) async {
-    // Check for duplicate attendance records for the same User, Subject, Date, Period
-    final isDuplicate = state.any(
+    // Check if attendance record already exists for this User, Subject, Date, Period
+    final existingIndex = state.indexWhere(
       (r) =>
           r.userId == userId &&
           r.subjectId == subjectId &&
@@ -60,8 +60,20 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
           r.date.day == date.day,
     );
 
-    if (isDuplicate) {
-      return 'Duplicate record detected for this period/day.';
+    if (existingIndex != -1) {
+      // Update existing record
+      final existing = state[existingIndex];
+      final updated = existing.copyWith(
+        status: status,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      state = [
+        ...state.sublist(0, existingIndex),
+        updated,
+        ...state.sublist(existingIndex + 1),
+      ];
+      await _save();
+      return null;
     }
 
     final record = AttendanceRecord(

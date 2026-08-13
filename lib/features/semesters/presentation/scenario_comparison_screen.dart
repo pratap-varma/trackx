@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/semesters/data/scenario_repository.dart';
 import 'package:trackx/features/semesters/domain/semester_scenario_model.dart';
@@ -160,7 +160,7 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
 
   TableRow _buildHeaderRow(String title, String valA, String valB) {
     return TableRow(
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.05)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05)),
       children: [
         Padding(
           padding: const EdgeInsets.all(12.0),

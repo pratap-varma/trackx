@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
@@ -317,8 +317,8 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppTheme.accentPurple.withOpacity(0.2)
-                            : Colors.white.withOpacity(0.05),
+                            ? AppTheme.accentPurple.withValues(alpha: 0.2)
+                            : Colors.white.withValues(alpha: 0.05),
                         border: Border.all(
                           color: isSelected
                               ? AppTheme.accentPurple
@@ -399,7 +399,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                               ),
                               if (entry != null)
                                 Text(
-                                  '${entry.startTimeDisplay} - ${entry.endTimeDisplay} ${entry.room != null ? "• Rm " + entry.room! : ""}',
+                                  '${entry.startTimeDisplay} - ${entry.endTimeDisplay} ${entry.room != null ? "â€¢ Rm " + entry.room! : ""}',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Colors.white54,

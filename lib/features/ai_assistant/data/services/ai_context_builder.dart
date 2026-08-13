@@ -3,6 +3,7 @@ import 'package:trackx/features/semesters/domain/semester_model.dart';
 import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
+import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_context.dart';
 
 class AiContextBuilder {
@@ -14,6 +15,7 @@ class AiContextBuilder {
     required List<Task> tasks,
     required List<Assignment> assignments,
     required List<Exam> exams,
+    required List<TimetableEntry> timetable,
     required Map<String, bool> consentFlags,
     String? subjectFilterId,
   }) {
@@ -66,6 +68,15 @@ class AiContextBuilder {
       }
     }
 
+    // 6. Selectively filter timetable entries
+    List<TimetableEntry> timetableContext = [];
+    if (consentFlags['attendance'] ?? true) {
+      timetableContext = timetable;
+      if (subjectFilterId != null) {
+        timetableContext = timetableContext.where((t) => t.subjectId == subjectFilterId).toList();
+      }
+    }
+
     return AiContext(
       activeProgrammeId: profile.programmeName,
       activeSemesterId: profile.currentSemesterId,
@@ -74,6 +85,7 @@ class AiContextBuilder {
       upcomingAssignments: assignmentsContext,
       plannerItems: tasksContext,
       attendance: attendanceRecords,
+      timetable: timetableContext,
       preferences: {
         'targetAttendance': profile.globalTarget,
         'preferredLanguage': profile.preferredLanguage,

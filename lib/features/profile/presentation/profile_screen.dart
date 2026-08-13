@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
-import 'package:trackx/features/attendance/data/attendance_repository.dart';
-import 'package:trackx/features/planner/providers/productivity_provider.dart';
-import 'package:trackx/shared/widgets/app_background.dart';
-import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
+import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
-import 'package:trackx/theme/app_theme.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -20,415 +16,481 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  final _nameController = TextEditingController();
-  final _branchController = TextEditingController();
-  final _targetController = TextEditingController();
-  final _collegeController = TextEditingController();
-  final _gradYearController = TextEditingController();
-
-  String _selectedLanguage = 'en';
-  String _selectedTimezone = 'UTC';
+  double _globalTarget = 85.0;
+  bool _smartNotifications = true;
+  String _selectedPersonality = 'direct'; // 'direct' or 'butler'
+  bool _biometricsEnabled = true;
+  bool _pinOnLaunch = false;
+  bool _incognitoMode = false;
 
   @override
-  void dispose() {
-    _nameController.dispose();
-    _branchController.dispose();
-    _targetController.dispose();
-    _collegeController.dispose();
-    _gradYearController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      setState(() {
+        _biometricsEnabled = prefs.getBool('sec_biometrics') ?? true;
+        _pinOnLaunch = prefs.getBool('sec_pin_launch') ?? false;
+        _incognitoMode = prefs.getBool('sec_incognito') ?? false;
+        _smartNotifications = prefs.getBool('sec_smart_notif') ?? true;
+        _selectedPersonality = prefs.getString('ai_personality') ?? 'direct';
+      });
+    });
   }
 
-  void _showEditProfileDialog(
-    String currentName,
-    String currentBranch,
-    double currentTarget,
-    String? currentCollege,
-    int? currentGradYear,
-    String? currentLang,
-    String? currentTZ,
-  ) {
-    _nameController.text = currentName;
-    _branchController.text = currentBranch;
-    _targetController.text = currentTarget.toInt().toString();
-    _collegeController.text = currentCollege ?? '';
-    _gradYearController.text = currentGradYear?.toString() ?? '';
-    _selectedLanguage = currentLang ?? 'en';
-    _selectedTimezone = currentTZ ?? 'UTC';
+  void _saveSecurityPref(String key, dynamic value) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (value is bool) {
+      prefs.setBool(key, value);
+    } else if (value is String) {
+      prefs.setString(key, value);
+    }
+  }
 
-    showDialog(
+  void _showSecurityAndPrivacySheet() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.transparent,
-          content: GlassContainer(
-            width: 320,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF0E1628),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Edit Profile',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 18,
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  GlassTextField(
-                    controller: _nameController,
-                    labelText: 'Name',
-                  ),
-                  const SizedBox(height: 12),
-                  GlassTextField(
-                    controller: _branchController,
-                    labelText: 'Branch',
-                  ),
-                  const SizedBox(height: 12),
-                  GlassTextField(
-                    controller: _collegeController,
-                    labelText: 'College Name',
-                  ),
-                  const SizedBox(height: 12),
-                  GlassTextField(
-                    controller: _gradYearController,
-                    labelText: 'Expected Graduation Year',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  GlassTextField(
-                    controller: _targetController,
-                    labelText: 'Global Target (%)',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
-                    value: _selectedLanguage,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    items: const [
-                      DropdownMenuItem(value: 'en', child: Text('English (en)')),
-                      DropdownMenuItem(value: 'es', child: Text('Español (es)')),
-                      DropdownMenuItem(value: 'fr', child: Text('Français (fr)')),
-                      DropdownMenuItem(value: 'de', child: Text('Deutsch (de)')),
-                    ],
-                    onChanged: (val) => setState(() => _selectedLanguage = val ?? 'en'),
-                    decoration: InputDecoration(
-                      labelText: 'Language',
-                      labelStyle: const TextStyle(color: Colors.white60),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
-                    value: _selectedTimezone,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    items: const [
-                      DropdownMenuItem(value: 'UTC', child: Text('UTC')),
-                      DropdownMenuItem(value: 'Asia/Kolkata', child: Text('Asia/Kolkata (IST)')),
-                      DropdownMenuItem(value: 'America/New_York', child: Text('America/New_York (EST)')),
-                      DropdownMenuItem(value: 'Europe/London', child: Text('Europe/London (GMT)')),
-                    ],
-                    onChanged: (val) => setState(() => _selectedTimezone = val ?? 'UTC'),
-                    decoration: InputDecoration(
-                      labelText: 'Timezone',
-                      labelStyle: const TextStyle(color: Colors.white60),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.white60),
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1B243B),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.fingerprint_rounded, color: Color(0xFFC0C1FF), size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Security & Privacy',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                'Biometrics, Data Export & Encryption',
+                                style: TextStyle(color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          final name = _nameController.text.trim();
-                          final branch = _branchController.text.trim();
-                          final college = _collegeController.text.trim();
-                          final gradYear = int.tryParse(_gradYearController.text.trim());
-                          final target = double.tryParse(_targetController.text.trim());
-
-                          if (name.isNotEmpty && branch.isNotEmpty && target != null) {
-                            await ref.read(authRepositoryProvider.notifier).updateProfile(
-                                  name,
-                                  branch,
-                                  ref.read(authRepositoryProvider).userProfile?.semester ?? 1,
-                                  target,
-                                  collegeName: college.isNotEmpty ? college : null,
-                                  expectedGraduationYear: gradYear,
-                                  preferredLanguage: _selectedLanguage,
-                                  preferredTimezone: _selectedTimezone,
-                                );
-                            if (mounted) Navigator.pop(context);
-                          }
-                        },
-                        child: const Text('Save'),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                        onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+                  const SizedBox(height: 20),
 
-  void _showClearDataDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.transparent,
-          content: GlassContainer(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Clear All Local Data?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 12),
-                const Text(
-                  'Are you sure you want to permanently erase all locally cached semesters, subjects, attendance logs, and planner events?',
-                  style: TextStyle(color: Colors.white70, fontSize: 11),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                  // 1. Biometric Lock
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A2B),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                     ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        await ref.read(semesterRepositoryProvider.notifier).restore([]);
-                        await ref.read(subjectRepositoryProvider.notifier).restore([]);
-                        await ref.read(attendanceRepositoryProvider.notifier).restore([]);
-                        ref.read(tasksProvider.notifier).restore([]);
-                        ref.read(examsProvider.notifier).restore([]);
-                        ref.read(assignmentsProvider.notifier).restore([]);
-                        ref.read(notesProvider.notifier).restore([]);
-
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All local data cleared successfully.')));
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                      child: const Text('Clear'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authRepositoryProvider);
-    final profile = authState.userProfile;
-
-    final name = profile?.name ?? 'Student';
-    final email = profile?.email ?? 'Unknown';
-    final branch = profile?.branch ?? 'None';
-    final semester = profile?.semester ?? 1;
-    final target = profile?.globalTarget ?? 75.0;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 120),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Settings & Profile',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
-                  ),
-                  const Text(
-                    'Manage academic targets & preferences',
-                    style: TextStyle(color: Colors.white60, fontSize: 12),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white),
-                onPressed: () => _showEditProfileDialog(
-                  name,
-                  branch,
-                  target,
-                  profile?.collegeName,
-                  profile?.expectedGraduationYear,
-                  profile?.preferredLanguage,
-                  profile?.preferredTimezone,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // User info Summary
-          GlassContainer(
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInfoRow('Name', name),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('Email', email),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('Branch / Course', branch),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('Semester', 'Semester $semester'),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('Global Target', '${target.toInt()}%'),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('College Name', profile?.collegeName ?? 'Not Set'),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('Graduation Year', '${profile?.expectedGraduationYear ?? "Not Set"}'),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('Preferred Timezone', profile?.preferredTimezone ?? 'UTC'),
-                const Divider(color: Colors.white10),
-                _buildInfoRow('Language', profile?.preferredLanguage ?? 'en'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Primary features / Hub Links
-          const Text('Academics & Search', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
-          const SizedBox(height: 12),
-          _buildHubLink(
-            icon: Icons.school_rounded,
-            title: 'Academic Planning Hub',
-            route: '/academics',
-          ),
-          const SizedBox(height: 12),
-          _buildHubLink(
-            icon: Icons.search_rounded,
-            title: 'Global Offline Search',
-            route: '/search',
-          ),
-          const SizedBox(height: 24),
-
-          // Legacy / Configuration links
-          const Text('Other Settings', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
-          const SizedBox(height: 12),
-          _buildHubLink(icon: Icons.calendar_month, title: 'Manage Semesters', route: '/semester-manage'),
-          const SizedBox(height: 12),
-          _buildHubLink(icon: Icons.schedule_rounded, title: 'Weekly Timetable', route: '/timetable'),
-          const SizedBox(height: 12),
-          _buildHubLink(icon: Icons.notes_rounded, title: 'My Study Notes', route: '/notes'),
-          const SizedBox(height: 12),
-          _buildHubLink(icon: Icons.backup_rounded, title: 'Backup & Restore Data', route: '/backup'),
-          const SizedBox(height: 12),
-          _buildHubLink(icon: Icons.timer_rounded, title: 'Study Focus Timer', route: '/focus-timer'),
-          const SizedBox(height: 12),
-          _buildHubLink(icon: Icons.location_on_rounded, title: 'Classroom Geofences', route: '/classrooms'),
-          const SizedBox(height: 12),
-          _buildHubLink(icon: Icons.feedback_rounded, title: 'Send Feedback & Diagnostics', route: '/feedback'),
-          const SizedBox(height: 24),
-
-          // Privacy Controls
-          const Text('Privacy & Security', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
-          const SizedBox(height: 12),
-          GlassContainer(
-            width: double.infinity,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Cloud Sync Enabled', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                    Switch(
-                      value: profile?.cloudSyncEnabled ?? false,
-                      onChanged: (val) async {
-                        await ref.read(authRepositoryProvider.notifier).updateProfile(
-                              name,
-                              branch,
-                              semester,
-                              target,
-                              cloudSyncEnabled: val,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.fingerprint_rounded, color: Color(0xFF7BD0FF), size: 24),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Biometric App Lock',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Unlock TrackX with Fingerprint or Face ID',
+                                style: TextStyle(color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _biometricsEnabled,
+                          activeColor: const Color(0xFF5B5FEF),
+                          onChanged: (val) {
+                            HapticFeedback.lightImpact();
+                            setModalState(() => _biometricsEnabled = val);
+                            setState(() => _biometricsEnabled = val);
+                            _saveSecurityPref('sec_biometrics', val);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(val ? '🔒 Biometric Lock Enabled' : '🔓 Biometric Lock Disabled')),
                             );
-                      },
-                      activeColor: AppTheme.accentPurple,
+                          },
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const Divider(color: Colors.white10),
-                Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Clear All Local Cache', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 13)),
-                    subtitle: const Text('Erase all offline schedules, semesters, and subjects.', style: TextStyle(color: Colors.white38, fontSize: 10)),
-                    trailing: const Icon(Icons.delete_forever, color: Colors.redAccent),
-                    onTap: _showClearDataDialog,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
+                  const SizedBox(height: 12),
 
-          // Logout Button
-          GlassPrimaryButton(
-            text: 'Sign Out',
-            onPressed: () async {
-              await ref.read(authRepositoryProvider.notifier).logout();
-              if (context.mounted) {
-                context.go('/login');
-              }
-            },
-          ),
-        ],
+                  // 2. PIN on Launch
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A2B),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.pin_rounded, color: Color(0xFFC0C1FF), size: 24),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Require PIN Code',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Prompt for security PIN when returning to app',
+                                style: TextStyle(color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _pinOnLaunch,
+                          activeColor: const Color(0xFF5B5FEF),
+                          onChanged: (val) {
+                            HapticFeedback.lightImpact();
+                            setModalState(() => _pinOnLaunch = val);
+                            setState(() => _pinOnLaunch = val);
+                            _saveSecurityPref('sec_pin_launch', val);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(val ? '🔢 PIN Protection Active' : 'PIN Protection Disabled')),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 3. Incognito Attendance
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A2B),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.visibility_off_outlined, color: Color(0xFFFF8B94), size: 24),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Private Notifications',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Hide attendance scores on lock screen previews',
+                                style: TextStyle(color: Colors.white54, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _incognitoMode,
+                          activeColor: const Color(0xFF5B5FEF),
+                          onChanged: (val) {
+                            HapticFeedback.lightImpact();
+                            setModalState(() => _incognitoMode = val);
+                            setState(() => _incognitoMode = val);
+                            _saveSecurityPref('sec_incognito', val);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(val ? '👁️ Privacy Mode Enabled' : 'Privacy Mode Disabled')),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'DATA MANAGEMENT',
+                    style: TextStyle(color: Color(0xFF908FA0), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Export Data Button
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.pop(ctx);
+                      final subjects = ref.read(subjectRepositoryProvider);
+                      final stats = ref.read(statsProvider);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('📦 Exported ${subjects.length} courses & ${stats.totalRecorded} records to CSV/JSON.'),
+                          backgroundColor: const Color(0xFF1B243B),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131A2B),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.download_rounded, color: Color(0xFF10B981), size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Export Data (JSON / CSV)',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Clear Cache Button
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('🧹 Temporary cache & local buffers cleared successfully.'),
+                          backgroundColor: const Color(0xFF1B243B),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131A2B),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.cleaning_services_rounded, color: Color(0xFFFF8B94), size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Clear Local Cache',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHubLink({
-    required IconData icon,
-    required String title,
-    required String route,
-  }) {
-    return GlassContainer(
-      width: double.infinity,
-      child: GestureDetector(
-        onTap: () => context.push(route),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white70),
-            const SizedBox(width: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+  void _showEditProfileSheet(String currentName, String currentBranch) {
+    HapticFeedback.lightImpact();
+    final nameCtrl = TextEditingController(text: currentName);
+    final branchCtrl = TextEditingController(text: currentBranch);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0E1628),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
+              const SizedBox(height: 18),
+              const Text(
+                'Edit Profile',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 18),
+              GlassTextField(
+                controller: nameCtrl,
+                labelText: 'Full Name',
+                hintText: 'e.g. Alex Rivers',
+              ),
+              const SizedBox(height: 14),
+              GlassTextField(
+                controller: branchCtrl,
+                labelText: 'Major & Academic Year',
+                hintText: 'e.g. Computer Science • Junior',
+              ),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () {
+                  final newName = nameCtrl.text.trim();
+                  final newBranch = branchCtrl.text.trim();
+                  if (newName.isNotEmpty) {
+                    final currentProfile = ref.read(authRepositoryProvider).userProfile;
+                    ref.read(authRepositoryProvider.notifier).updateProfile(
+                          newName,
+                          newBranch,
+                          currentProfile?.semester ?? 1,
+                          _globalTarget,
+                        );
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Profile updated successfully!')),
+                    );
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5B5FEF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'Save Changes',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPremiumPlanSheet() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0E1628),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B243B),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFFC0C1FF), size: 24),
+                ),
+                const SizedBox(width: 14),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('TrackX Premium', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text('Active Plan • Pro Student Tier', style: TextStyle(color: Color(0xFF7BD0FF), fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
             ),
-            const Spacer(),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white54,
-              size: 14,
+            const SizedBox(height: 20),
+            _premiumPerk(Icons.cloud_sync_rounded, 'End-to-end Encrypted Cloud Backup & Sync'),
+            const SizedBox(height: 10),
+            _premiumPerk(Icons.auto_awesome_rounded, 'AI Smart Exam Forecasts & Bunk Predictor'),
+            const SizedBox(height: 10),
+            _premiumPerk(Icons.all_inclusive_rounded, 'Unlimited Semesters & Custom Subject Themes'),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B243B),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('Manage Billing & Add-ons', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
             ),
           ],
         ),
@@ -436,26 +498,610 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Colors.white.withOpacity(0.6),
+  static Widget _premiumPerk(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFF10B981), size: 18),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authRepositoryProvider);
+    final profile = authState.userProfile;
+    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Alex Rivers';
+    final branch = profile?.branch.isNotEmpty == true ? profile!.branch : 'Computer Science • Junior';
+
+    final activeSem = ref.watch(activeSemesterProvider);
+    final subjects = ref.watch(subjectRepositoryProvider);
+    final activeSubjectsCount = subjects.where((s) => s.semesterId == activeSem?.id).length;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 22),
+          onPressed: _showSecurityAndPrivacySheet,
+        ),
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: GestureDetector(
+              onTap: () => _showEditProfileSheet(name, branch),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: const Color(0xFF1B243B),
+                child: const Icon(Icons.edit_outlined, color: Color(0xFFC0C1FF), size: 16),
+              ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 100),
+        children: [
+          // 1. Hero Profile Card
+          GestureDetector(
+            onTap: () => _showEditProfileSheet(name, branch),
+            child: Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: const Color(0xFF131A2B),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              child: Column(
+                children: [
+                  // Avatar with glow ring
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5B5FEF), Color(0xFF7BD0FF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                          blurRadius: 18,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.person_rounded, color: Colors.white, size: 44),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.edit_rounded, color: Colors.white38, size: 14),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    branch,
+                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5B5FEF),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          'Dean\'s List',
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'CURRENT STANDING',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '3.8 / 4.0 Target',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFF1B243B),
+                          border: Border.all(color: const Color(0xFF10B981), width: 2.5),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            '95%',
+                            style: TextStyle(
+                              color: Color(0xFF10B981),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // 2. Premium Member Card
+          GestureDetector(
+            onTap: _showPremiumPlanSheet,
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFF131A2B),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B243B),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.star_outline_rounded, color: Color(0xFFC0C1FF), size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Text(
+                              'Premium Member',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            SizedBox(width: 6),
+                            Icon(Icons.circle, color: Color(0xFF7BD0FF), size: 8),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Unlock ultimate AI insights',
+                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Manage Plan',
+                          style: TextStyle(
+                            color: Color(0xFF7BD0FF),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          // 3. ACADEMIC SETTINGS
+          const Text(
+            'ACADEMIC SETTINGS',
+            style: TextStyle(
+              color: Color(0xFF908FA0),
+              fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF131A2B),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Column(
+              children: [
+                // Semester Management
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.push('/semester-manage'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1B243B),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.school_outlined, color: Color(0xFFC0C1FF), size: 20),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Semester Management', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                              const SizedBox(height: 2),
+                              Text(
+                                activeSem != null ? '${activeSem.name} • $activeSubjectsCount Active Courses' : 'Fall 2026 • 5 Active Courses',
+                                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                      ],
+                    ),
+                  ),
+                ),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+
+                // Timetable OCR & Photo Upload
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.push('/import-timetable'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1B243B),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.document_scanner_rounded, color: Color(0xFF7BD0FF), size: 20),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Scan & Import Timetable', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                              SizedBox(height: 2),
+                              Text(
+                                'Upload photo to auto-assign all subjects',
+                                style: TextStyle(color: Colors.white54, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                      ],
+                    ),
+                  ),
+                ),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+
+                // Global Attendance Target
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1B243B),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.track_changes_rounded, color: Color(0xFFC0C1FF), size: 20),
+                              ),
+                              const SizedBox(width: 14),
+                              const Text(
+                                'Global Attendance\nTarget',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${_globalTarget.toInt()}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Warn if projected falls below threshold',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      const SizedBox(height: 12),
+                      SliderTheme(
+                        data: SliderThemeData(
+                          activeTrackColor: const Color(0xFF5B5FEF),
+                          inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
+                          thumbColor: Colors.white,
+                          trackHeight: 4,
+                        ),
+                        child: Slider(
+                          value: _globalTarget,
+                          min: 50,
+                          max: 100,
+                          divisions: 50,
+                          onChanged: (v) => setState(() => _globalTarget = v),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+
+                // Smart Exam Notifications
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B243B),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.notifications_none_rounded, color: Color(0xFFC0C1FF), size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text('Smart Exam Notifications', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                            SizedBox(height: 2),
+                            Text('AI-timed study reminders', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _smartNotifications,
+                        activeColor: const Color(0xFF5B5FEF),
+                        onChanged: (v) => setState(() => _smartNotifications = v),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          // 4. PERSONALIZATION & SECURITY
+          const Text(
+            'PERSONALIZATION & SECURITY',
+            style: TextStyle(
+              color: Color(0xFF908FA0),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF131A2B),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1B243B),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.psychology_outlined, color: Color(0xFFC0C1FF), size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text('AI Personality Mode', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text('Select how TrackX AI interacts with you', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          setState(() => _selectedPersonality = 'direct');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: _selectedPersonality == 'direct' ? const Color(0xFF1D2642) : const Color(0xFF1B243B),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _selectedPersonality == 'direct' ? const Color(0xFF5B5FEF) : Colors.transparent,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.speed_rounded, color: _selectedPersonality == 'direct' ? const Color(0xFFC0C1FF) : Colors.white54, size: 22),
+                              const SizedBox(height: 10),
+                              const Text('Direct & Efficient', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 4),
+                              const Text('Focus on data & stats', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          setState(() => _selectedPersonality = 'butler');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: _selectedPersonality == 'butler' ? const Color(0xFF1D2642) : const Color(0xFF1B243B),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _selectedPersonality == 'butler' ? const Color(0xFF5B5FEF) : Colors.transparent,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.support_agent_rounded, color: _selectedPersonality == 'butler' ? const Color(0xFFC0C1FF) : Colors.white54, size: 22),
+                              const SizedBox(height: 10),
+                              const Text('Study Butler', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                              const SizedBox(height: 4),
+                              const Text('Supportive & contextual', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                const SizedBox(height: 12),
+
+                // Security & Privacy Row (Fully Interactive)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _showSecurityAndPrivacySheet,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B243B),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.fingerprint_rounded, color: Color(0xFFC0C1FF), size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text('Security & Privacy', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                            SizedBox(height: 2),
+                            Text('Biometrics, Passwords, Data export', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          // Sign Out Button
+          Center(
+            child: TextButton.icon(
+              onPressed: () async {
+                await ref.read(authRepositoryProvider.notifier).logout();
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              },
+              icon: const Icon(Icons.logout_rounded, color: Color(0xFFFF8B94), size: 18),
+              label: const Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: Color(0xFFFF8B94),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ),
         ],

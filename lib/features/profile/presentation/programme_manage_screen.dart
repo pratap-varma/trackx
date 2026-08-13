@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/programmes/data/programme_repository.dart';
 import 'package:trackx/features/programmes/domain/programme_model.dart';
@@ -218,7 +218,7 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentPurple.withOpacity(0.2),
+                                    color: AppTheme.accentPurple.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(color: AppTheme.accentPurple, width: 0.5),
                                   ),
@@ -232,7 +232,7 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                           const SizedBox(height: 8),
                           if (prog.branch != null)
                             Text('Branch: ${prog.branch}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                          Text('Joining Year: ${prog.joiningYear} • Total Semesters: ${prog.totalSemesters}',
+                          Text('Joining Year: ${prog.joiningYear} â€¢ Total Semesters: ${prog.totalSemesters}',
                               style: const TextStyle(color: Colors.white60, fontSize: 11)),
                           if (prog.totalCredits != null)
                             Text('Total Credits Required: ${prog.totalCredits}',

@@ -104,7 +104,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/ai',
-        builder: (context, state) => const AiChatScreen(),
+        builder: (context, state) => const AIChatScreen(),
       ),
       GoRoute(
         path: '/classrooms',

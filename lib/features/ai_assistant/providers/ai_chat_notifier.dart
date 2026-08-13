@@ -12,6 +12,7 @@ import 'package:trackx/features/ai_assistant/data/services/offline_fallback_prov
 import 'package:trackx/features/ai_assistant/domain/models/ai_request.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_response.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
+import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 
 class AiChatNotifier extends StateNotifier<List<AiMessage>> {
   final Ref _ref;
@@ -105,6 +106,7 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
       tasks: _ref.read(tasksProvider),
       assignments: _ref.read(assignmentsProvider),
       exams: _ref.read(examsProvider),
+      timetable: _ref.read(timetableRepositoryProvider),
       consentFlags: settings.consentFlags,
       subjectFilterId: subjectFilterId,
     );

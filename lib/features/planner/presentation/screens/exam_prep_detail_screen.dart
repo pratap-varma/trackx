@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
@@ -161,7 +161,7 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: daysRemaining >= 0 ? Colors.blue.withOpacity(0.15) : Colors.white10,
+                                  color: daysRemaining >= 0 ? Colors.blue.withValues(alpha: 0.15) : Colors.white10,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
