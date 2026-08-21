@@ -526,68 +526,120 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      if (activeSem != null && subjects.isNotEmpty) {
-                        final subId =
-                            currentClass?.subjectId ?? subjects.first.id;
-                        ref
-                            .read(attendanceRepositoryProvider.notifier)
-                            .markAttendance(
-                              userId: profile?.id ?? 'u1',
-                              semesterId: activeSem.id,
-                              subjectId: subId,
-                              date: DateTime.now(),
-                              status: 'present',
-                            );
-                        ScaffoldMessenger.of(context).clearSnackBars();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
-                              'Attendance Marked as Present for Current Class!',
-                            ),
-                            duration: const Duration(milliseconds: 1500),
-                            behavior: SnackBarBehavior.floating,
-                            margin: const EdgeInsets.only(
-                              bottom: 90,
-                              left: 16,
-                              right: 16,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                Builder(
+                  builder: (context) {
+                    final subId = currentClass?.subjectId ?? (subjects.isNotEmpty ? subjects.first.id : null);
+                    final allRecords = ref.watch(attendanceRepositoryProvider);
+                    final now = DateTime.now();
+                    final matchingRecords = subId == null
+                        ? <dynamic>[]
+                        : allRecords
+                            .where(
+                              (r) =>
+                                  r.subjectId == subId &&
+                                  r.date.year == now.year &&
+                                  r.date.month == now.month &&
+                                  r.date.day == now.day,
+                            )
+                            .toList();
+                    final todayRecord = matchingRecords.isNotEmpty ? matchingRecords.first : null;
+                    final isMarkedToday = todayRecord != null;
+
+                    return SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          if (activeSem != null && subjects.isNotEmpty && subId != null) {
+                            if (isMarkedToday) {
+                              // Delete/Unmark accidental mark
+                              ref
+                                  .read(attendanceRepositoryProvider.notifier)
+                                  .deleteAttendance(todayRecord.id);
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Attendance record cleared for today!',
+                                  ),
+                                  duration: const Duration(milliseconds: 1500),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.only(
+                                    bottom: 90,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ref
+                                  .read(attendanceRepositoryProvider.notifier)
+                                  .markAttendance(
+                                    userId: profile?.id ?? 'u1',
+                                    semesterId: activeSem.id,
+                                    subjectId: subId,
+                                    date: DateTime.now(),
+                                    status: 'present',
+                                  );
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Attendance Marked as Present for Current Class!',
+                                  ),
+                                  duration: const Duration(milliseconds: 1500),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.only(
+                                    bottom: 90,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            ref.read(navIndexProvider.notifier).state = 1;
+                          }
+                        },
+                        icon: Icon(
+                          subjects.isEmpty
+                              ? Icons.add_rounded
+                              : isMarkedToday
+                              ? Icons.check_circle_rounded
+                              : Icons.pin_drop_rounded,
+                          size: 18,
+                        ),
+                        label: Text(
+                          subjects.isEmpty
+                              ? '+ Add Subject'
+                              : isMarkedToday
+                              ? 'Marked Present (Tap to Undo)'
+                              : 'Mark Present',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
-                        );
-                      } else {
-                        ref.read(navIndexProvider.notifier).state = 1;
-                      }
-                    },
-                    icon: Icon(
-                      subjects.isNotEmpty
-                          ? Icons.pin_drop_rounded
-                          : Icons.add_rounded,
-                      size: 18,
-                    ),
-                    label: Text(
-                      subjects.isNotEmpty ? 'Mark Present' : '+ Add Subject',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isMarkedToday
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF5B5FEF),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
                       ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF5B5FEF),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ],
             ),
