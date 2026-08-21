@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trackx/theme/app_theme.dart';
@@ -83,7 +83,8 @@ class _GlassContainerState extends State<GlassContainer>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color bgColor = isDark ? AppTheme.darkGlassBg : AppTheme.lightGlassBg;
-    final Color finalBorderColor = widget.borderColor ??
+    final Color finalBorderColor =
+        widget.borderColor ??
         (isDark ? AppTheme.darkGlassBorder : AppTheme.lightGlassBorder);
 
     Widget container = Container(
@@ -125,7 +126,9 @@ class _GlassContainerState extends State<GlassContainer>
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(widget.borderRadius),
+                        borderRadius: BorderRadius.circular(
+                          widget.borderRadius,
+                        ),
                       ),
                     ),
                   ),
@@ -142,15 +145,10 @@ class _GlassContainerState extends State<GlassContainer>
         onTapUp: _handleTapUp,
         onTapCancel: _handleTapCancel,
         onTap: widget.onTap,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: container,
-        ),
+        child: ScaleTransition(scale: _scaleAnimation, child: container),
       );
     }
 
     return container;
   }
 }
-
-

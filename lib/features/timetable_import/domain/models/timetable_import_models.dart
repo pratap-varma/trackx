@@ -64,3 +64,58 @@ class TimetableImportSession {
     required this.detectedEntries,
   });
 }
+
+class DetectedExamEntry {
+  final String title;
+  final String subjectName;
+  final String examType; // Midterm, Final, Quiz, Practical, Internal
+  final DateTime examDate;
+  final String startTime;
+  final String endTime;
+  final String room;
+  final String syllabus;
+
+  DetectedExamEntry({
+    required this.title,
+    required this.subjectName,
+    this.examType = 'Midterm',
+    required this.examDate,
+    required this.startTime,
+    this.endTime = '',
+    this.room = '',
+    this.syllabus = 'Chapters 1-5 / Syllabus Units',
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'subjectName': subjectName,
+      'examType': examType,
+      'examDate': examDate.toIso8601String(),
+      'startTime': startTime,
+      'endTime': endTime,
+      'room': room,
+      'syllabus': syllabus,
+    };
+  }
+
+  factory DetectedExamEntry.fromMap(Map<String, dynamic> map) {
+    DateTime parsedDate;
+    try {
+      parsedDate = DateTime.parse(map['examDate'] ?? '');
+    } catch (_) {
+      parsedDate = DateTime.now().add(const Duration(days: 7));
+    }
+
+    return DetectedExamEntry(
+      title: map['title'] ?? 'Exam',
+      subjectName: map['subjectName'] ?? 'Subject',
+      examType: map['examType'] ?? 'Midterm',
+      examDate: parsedDate,
+      startTime: map['startTime'] ?? '10:00 AM',
+      endTime: map['endTime'] ?? '01:00 PM',
+      room: map['room'] ?? '',
+      syllabus: map['syllabus'] ?? 'Complete Syllabus',
+    );
+  }
+}

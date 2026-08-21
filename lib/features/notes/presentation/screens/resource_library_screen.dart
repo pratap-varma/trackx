@@ -1,10 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/notes/data/resource_repository.dart';
-import 'package:trackx/features/notes/domain/models/academic_resource_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/theme/app_theme.dart';
 
@@ -12,7 +10,8 @@ class ResourceLibraryScreen extends ConsumerStatefulWidget {
   const ResourceLibraryScreen({super.key});
 
   @override
-  ConsumerState<ResourceLibraryScreen> createState() => _ResourceLibraryScreenState();
+  ConsumerState<ResourceLibraryScreen> createState() =>
+      _ResourceLibraryScreenState();
 }
 
 class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
@@ -47,13 +46,22 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Bookmark Resource', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text(
+                    'Bookmark Resource',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 16),
-                  GlassTextField(controller: _titleController, labelText: 'Title'),
+                  GlassTextField(
+                    controller: _titleController,
+                    labelText: 'Title',
+                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedType,
+                    initialValue: _selectedType,
                     style: const TextStyle(color: Colors.white),
                     items: const [
                       DropdownMenuItem(value: 'Links', child: Text('Links')),
@@ -63,20 +71,31 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                     onChanged: (val) => _selectedType = val ?? 'Links',
                     decoration: InputDecoration(
                       labelText: 'Category',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  GlassTextField(controller: _urlController, labelText: 'URL / Path'),
+                  GlassTextField(
+                    controller: _urlController,
+                    labelText: 'URL / Path',
+                  ),
                   const SizedBox(height: 12),
-                  GlassTextField(controller: _descController, labelText: 'Notes'),
+                  GlassTextField(
+                    controller: _descController,
+                    labelText: 'Notes',
+                  ),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white60),
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () {
@@ -85,9 +104,15 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                           final desc = _descController.text.trim();
 
                           if (title.isNotEmpty) {
-                            ref.read(resourceRepositoryProvider.notifier).createResource(
+                            ref
+                                .read(resourceRepositoryProvider.notifier)
+                                .createResource(
                                   title: title,
-                                  type: _selectedType == 'Links' ? 'Link' : (_selectedType == 'Notes' ? 'Note' : 'PDF'),
+                                  type: _selectedType == 'Links'
+                                      ? 'Link'
+                                      : (_selectedType == 'Notes'
+                                            ? 'Note'
+                                            : 'PDF'),
                                   url: url.isNotEmpty ? url : null,
                                   description: desc.isNotEmpty ? desc : null,
                                   tags: [],
@@ -135,11 +160,18 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.bookmark, color: Colors.white60, size: 48),
+                      const Icon(
+                        Icons.bookmark,
+                        color: Colors.white60,
+                        size: 48,
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         'Resource Library Empty',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -169,18 +201,29 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                               Expanded(
                                 child: Text(
                                   res.title,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   res.type,
-                                  style: const TextStyle(color: AppTheme.accentPurple, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    color: AppTheme.accentPurple,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -189,19 +232,34 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                           if (res.url != null)
                             SelectableText(
                               res.url!,
-                              style: const TextStyle(color: Colors.blueAccent, fontSize: 11),
+                              style: const TextStyle(
+                                color: Colors.blueAccent,
+                                fontSize: 11,
+                              ),
                             ),
                           if (res.description != null) ...[
                             const SizedBox(height: 6),
-                            Text(res.description!, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                            Text(
+                              res.description!,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                              ),
+                            ),
                           ],
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                onPressed: () => ref.read(resourceRepositoryProvider.notifier).deleteResource(res.id),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.redAccent,
+                                  size: 18,
+                                ),
+                                onPressed: () => ref
+                                    .read(resourceRepositoryProvider.notifier)
+                                    .deleteResource(res.id),
                               ),
                             ],
                           ),

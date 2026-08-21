@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
@@ -218,7 +218,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isActive
-                                      ? AppTheme.accentPurple.withValues(alpha: 0.2)
+                                      ? AppTheme.accentPurple.withValues(
+                                          alpha: 0.2,
+                                        )
                                       : Colors.white.withValues(alpha: 0.05),
                                   border: Border.all(
                                     color: isActive

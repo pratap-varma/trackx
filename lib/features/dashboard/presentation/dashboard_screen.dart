@@ -8,8 +8,8 @@ import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
-import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
-import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
+import 'package:trackx/features/subjects/domain/subject_model.dart';
+import 'package:trackx/features/timetable/providers/timetable_provider.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -20,7 +20,13 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  void _showAiScoreSheet(int score, String rating) {
+  void _showAiScoreSheet(
+    int score,
+    String rating,
+    double attendanceConsistency,
+    double targetBuffer,
+    double classParticipation,
+  ) {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
@@ -46,42 +52,84 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         color: Color(0xFF5B5FEF),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('AI Readiness Score', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                        Text('$rating • Top 5% of Class', style: const TextStyle(color: Color(0xFF7BD0FF), fontSize: 12)),
+                        const Text(
+                          'AI Readiness Score',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          rating,
+                          style: const TextStyle(
+                            color: Color(0xFF7BD0FF),
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ],
                 ),
-                Text('$score', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                Text(
+                  score > 0 ? '$score' : '--',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
-            _scoreBar('Attendance Consistency', 0.92, const Color(0xFF10B981)),
+            _scoreBar(
+              'Attendance Consistency',
+              attendanceConsistency,
+              const Color(0xFF10B981),
+            ),
             const SizedBox(height: 12),
-            _scoreBar('Study Rhythm & Focus', 0.88, const Color(0xFF5B5FEF)),
+            _scoreBar(
+              'Target Adherence',
+              targetBuffer,
+              const Color(0xFF5B5FEF),
+            ),
             const SizedBox(height: 12),
-            _scoreBar('Exam Readiness Index', 0.85, const Color(0xFF7BD0FF)),
+            _scoreBar(
+              'Class Participation',
+              classParticipation,
+              const Color(0xFF7BD0FF),
+            ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  ref.read(navIndexProvider.notifier).state = 3; // Jump to AI Assistant
+                  ref.read(navIndexProvider.notifier).state =
+                      3; // Jump to AI Assistant
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF5B5FEF),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                child: const Text('Get AI Recommendations', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Get AI Recommendations',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -90,7 +138,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  void _showBunkCalculatorSheet(int safeBunks, String subjectName, double target) {
+  void _showBunkCalculatorSheet(
+    int safeBunks,
+    String subjectName,
+    double target,
+  ) {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
@@ -105,38 +157,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B243B),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.verified_user_outlined, color: Color(0xFF7BD0FF), size: 24),
+                Icon(
+                  Icons.verified_user_outlined,
+                  color: Color(0xFF7BD0FF),
+                  size: 22,
                 ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Safe-to-Bunk Calculator', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text('Target Threshold: ${target.toInt()}%', style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                  ],
+                SizedBox(width: 10),
+                Text(
+                  'Bunk Risk Calculator',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF131A2B),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF7BD0FF).withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                'You can safely skip $safeBunks class(es) in $subjectName without falling below your ${target.toInt()}% attendance target.',
-                style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
-              ),
+            const SizedBox(height: 16),
+            Text(
+              'You can safely skip $safeBunks more classes in $subjectName while remaining above your target threshold of ${target.toInt()}%.',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -144,15 +186,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  ref.read(navIndexProvider.notifier).state = 1; // Jump to Attendance
+                  ref.read(navIndexProvider.notifier).state =
+                      1; // Jump to Attendance
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF5B5FEF),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                child: const Text('View All Subject Buffers', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'View Subject Attendance Details',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -168,8 +216,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-            Text('${(val * 100).toInt()}%', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+            Text(
+              '${(val * 100).toInt()}%',
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -190,36 +248,78 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authRepositoryProvider);
     final profile = authState.userProfile;
-    final name = profile?.name.isNotEmpty == true ? profile!.name.split(' ').first : 'Alex';
+    final name = profile?.name.isNotEmpty == true
+        ? profile!.name.split(' ').first
+        : 'Student';
 
     final activeSem = ref.watch(activeSemesterProvider);
     final stats = ref.watch(statsProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
-    final timetableEntries = ref.watch(timetableRepositoryProvider);
+    final currentClass = ref.watch(currentClassProvider);
+    final nextClass = ref.watch(nextClassProvider);
+    final todayTimetable = ref.watch(todayTimetableProvider);
 
     final now = DateTime.now();
     final hour = now.hour;
     final greeting = hour < 12
         ? 'Good morning'
         : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+        ? 'Good afternoon'
+        : 'Good evening';
 
     final pct = stats.overallPercentage;
     final target = stats.globalTarget;
-    final safeBunks = max(0, ((stats.totalPresent - (target / 100.0 * stats.totalRecorded)) / 1.0).floor());
+    final safeBunks = max(
+      0,
+      ((stats.totalPresent - (target / 100.0 * stats.totalRecorded)) / 1.0)
+          .floor(),
+    );
 
-    const aiScore = 92;
-    const aiScoreRating = 'Excellent';
+    final int aiScore;
+    final String aiScoreRating;
+    final double attendanceConsistency;
+    final double targetBuffer;
+    final double classParticipation;
 
-    TimetableEntry? currentClass;
-    if (timetableEntries.isNotEmpty) {
-      currentClass = timetableEntries.first;
+    if (stats.totalRecorded == 0) {
+      aiScore = 0;
+      aiScoreRating = 'New Account';
+      attendanceConsistency = 0.0;
+      targetBuffer = 0.0;
+      classParticipation = 0.0;
+    } else {
+      aiScore = pct.round().clamp(0, 100);
+      aiScoreRating = aiScore >= 90
+          ? 'Excellent'
+          : aiScore >= 75
+          ? 'Good'
+          : aiScore >= 60
+          ? 'Fair'
+          : 'Needs Attention';
+      attendanceConsistency = (pct / 100.0).clamp(0.0, 1.0);
+      targetBuffer = (pct / max(1.0, target)).clamp(0.0, 1.0);
+      classParticipation = min(
+        1.0,
+        stats.totalRecorded / max(1.0, subjects.length * 10.0),
+      );
     }
 
-    final activeSubjectName = currentClass != null
-        ? subjects.where((s) => s.id == currentClass!.subjectId).firstOrNull?.name ?? 'Advanced Neural Networks'
-        : subjects.firstOrNull?.name ?? 'Advanced Neural Networks';
+    final activeClass = currentClass ?? nextClass;
+    final activeSubject = activeClass != null
+        ? subjects.cast<Subject?>().firstWhere(
+            (s) => s?.id == activeClass.subjectId,
+            orElse: () => null,
+          )
+        : null;
+    final activeSubjectName =
+        activeSubject?.name ??
+        (currentClass != null
+            ? 'Scheduled Class'
+            : (nextClass != null
+                  ? 'Upcoming Class'
+                  : (todayTimetable.isNotEmpty
+                        ? 'No Ongoing Class'
+                        : 'No Classes Scheduled')));
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -244,7 +344,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.auto_awesome_rounded, color: Color(0xFFC0C1FF), size: 22),
+            icon: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Color(0xFFC0C1FF),
+              size: 22,
+            ),
             onPressed: () {
               ref.read(navIndexProvider.notifier).state = 3; // AI Assistant
             },
@@ -277,7 +381,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // 1. AI SCORE CARD (Interactive)
           GestureDetector(
-            onTap: () => _showAiScoreSheet(aiScore, aiScoreRating),
+            onTap: () => _showAiScoreSheet(
+              aiScore,
+              aiScoreRating,
+              attendanceConsistency,
+              targetBuffer,
+              classParticipation,
+            ),
             child: GlassContainer(
               borderRadius: 18,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -289,7 +399,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.auto_awesome_rounded, color: Color(0xFFC0C1FF), size: 14),
+                          Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Color(0xFFC0C1FF),
+                            size: 14,
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'AI SCORE',
@@ -316,7 +430,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Row(
                     children: [
                       Text(
-                        '$aiScore',
+                        aiScore > 0 ? '$aiScore' : '--',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 42,
@@ -325,7 +439,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white38,
+                      ),
                     ],
                   ),
                 ],
@@ -353,16 +470,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(0xFFFF8B94),
+                        color: currentClass != null
+                            ? const Color(0xFFFF8B94)
+                            : const Color(0xFF7BD0FF),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'HAPPENING NOW',
+                    Text(
+                      currentClass != null ? 'HAPPENING NOW' : 'SCHEDULE',
                       style: TextStyle(
-                        color: Color(0xFFFF8B94),
+                        color: currentClass != null
+                            ? const Color(0xFFFF8B94)
+                            : const Color(0xFF7BD0FF),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -382,14 +503,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, color: Colors.white54, size: 14),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: Colors.white54,
+                      size: 14,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         currentClass != null
-                            ? '${currentClass.room ?? "Science Building, Room 304"} • ${currentClass.startTimeDisplay} - ${currentClass.endTimeDisplay}'
-                            : 'Science Building, Room 304 • 10:00 AM - 11:30 AM',
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                            ? '${currentClass.room ?? "Classroom"} • ${currentClass.startTimeDisplay} - ${currentClass.endTimeDisplay}'
+                            : (subjects.isNotEmpty
+                                  ? 'Next class will appear when scheduled'
+                                  : 'Add subjects and timetable to track classes'),
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -402,25 +532,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       if (activeSem != null && subjects.isNotEmpty) {
-                        final subId = currentClass?.subjectId ?? subjects.first.id;
-                        ref.read(attendanceRepositoryProvider.notifier).markAttendance(
+                        final subId =
+                            currentClass?.subjectId ?? subjects.first.id;
+                        ref
+                            .read(attendanceRepositoryProvider.notifier)
+                            .markAttendance(
                               userId: profile?.id ?? 'u1',
                               semesterId: activeSem.id,
                               subjectId: subId,
                               date: DateTime.now(),
                               status: 'present',
                             );
+                        ScaffoldMessenger.of(context).clearSnackBars();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Attendance Marked as Present for Current Class!')),
+                          SnackBar(
+                            content: const Text(
+                              'Attendance Marked as Present for Current Class!',
+                            ),
+                            duration: const Duration(milliseconds: 1500),
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.only(
+                              bottom: 90,
+                              left: 16,
+                              right: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
                         );
                       } else {
                         ref.read(navIndexProvider.notifier).state = 1;
                       }
                     },
-                    icon: const Icon(Icons.pin_drop_rounded, size: 18),
-                    label: const Text(
-                      'Mark Present',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    icon: Icon(
+                      subjects.isNotEmpty
+                          ? Icons.pin_drop_rounded
+                          : Icons.add_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      subjects.isNotEmpty ? 'Mark Present' : '+ Add Subject',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF5B5FEF),
@@ -459,10 +615,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 20),
+                        icon: const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white38,
+                          size: 20,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
-                        onPressed: () => ref.read(navIndexProvider.notifier).state = 1,
+                        onPressed: () =>
+                            ref.read(navIndexProvider.notifier).state = 1,
                       ),
                     ],
                   ),
@@ -472,9 +633,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       width: 140,
                       height: 140,
                       child: CustomPaint(
-                        painter: _AttendanceGaugePainter(
-                          percentage: pct / 100,
-                        ),
+                        painter: _AttendanceGaugePainter(percentage: pct / 100),
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -490,7 +649,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               ),
                               const Text(
                                 'Avg',
-                                style: TextStyle(color: Colors.white38, fontSize: 11),
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -507,7 +669,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // 4. SAFE-TO-BUNK STATUS CARD (Interactive)
           GestureDetector(
-            onTap: () => _showBunkCalculatorSheet(safeBunks, activeSubjectName, target),
+            onTap: () =>
+                _showBunkCalculatorSheet(safeBunks, activeSubjectName, target),
             child: GlassContainer(
               borderRadius: 20,
               padding: const EdgeInsets.all(20),
@@ -519,7 +682,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     children: const [
                       Row(
                         children: [
-                          Icon(Icons.verified_user_outlined, color: Color(0xFF7BD0FF), size: 16),
+                          Icon(
+                            Icons.verified_user_outlined,
+                            color: Color(0xFF7BD0FF),
+                            size: 16,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'SAFE-TO-BUNK STATUS',
@@ -532,52 +699,74 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                         ],
                       ),
-                      Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 18),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white38,
+                        size: 18,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),
+                  if (stats.totalRecorded == 0)
+                    const Text(
+                      'No attendance recorded yet. Log attendance to calculate your safe bunk buffer.',
+                      style: TextStyle(color: Colors.white60, fontSize: 13),
+                    )
+                  else ...[
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        children: [
+                          const TextSpan(text: 'You can skip '),
+                          TextSpan(
+                            text: '$safeBunks more',
+                            style: const TextStyle(
+                              color: Color(0xFF7BD0FF),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const TextSpan(text: ' classes'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'in $activeSubjectName to stay above the ${target.toInt()}% threshold.',
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
                       children: [
-                        const TextSpan(text: 'You can skip '),
-                        TextSpan(
-                          text: '$safeBunks more',
-                          style: const TextStyle(
-                            color: Color(0xFF7BD0FF),
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: (safeBunks / 10.0).clamp(0.0, 1.0),
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.08,
+                              ),
+                              valueColor: const AlwaysStoppedAnimation(
+                                Color(0xFF7BD0FF),
+                              ),
+                              minHeight: 6,
+                            ),
                           ),
                         ),
-                        const TextSpan(text: ' classes'),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Buffer',
+                          style: TextStyle(color: Colors.white38, fontSize: 11),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'in $activeSubjectName to stay above the ${target.toInt()}% threshold.',
-                    style: const TextStyle(color: Colors.white60, fontSize: 13),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: 0.65,
-                            backgroundColor: Colors.white.withValues(alpha: 0.08),
-                            valueColor: const AlwaysStoppedAnimation(Color(0xFF7BD0FF)),
-                            minHeight: 6,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Buffer',
-                        style: TextStyle(color: Colors.white38, fontSize: 11),
-                      ),
-                    ],
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -586,7 +775,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // 5. AI SMART BRIEF CARD (Interactive)
           GestureDetector(
-            onTap: () => ref.read(navIndexProvider.notifier).state = 3, // Jump to AI
+            onTap: () =>
+                ref.read(navIndexProvider.notifier).state = 3, // Jump to AI
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF131A2B),
@@ -607,7 +797,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.insights_rounded, color: Color(0xFFC0C1FF), size: 20),
+                    child: const Icon(
+                      Icons.insights_rounded,
+                      color: Color(0xFFC0C1FF),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -626,15 +820,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(height: 6),
                         RichText(
                           text: TextSpan(
-                            style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
-                            children: [
-                              const TextSpan(text: 'Based on your recent quiz scores, dedicating 30 minutes to review '),
-                              TextSpan(
-                                text: activeSubjectName,
-                                style: const TextStyle(color: Color(0xFFD0BCFF), fontWeight: FontWeight.bold),
-                              ),
-                              const TextSpan(text: ' before tomorrow\'s class will optimize your performance trend.'),
-                            ],
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                            children: stats.totalRecorded == 0
+                                ? const [
+                                    TextSpan(
+                                      text:
+                                          'Start logging attendance and timetable to receive real-time personalized AI study briefs.',
+                                    ),
+                                  ]
+                                : [
+                                    const TextSpan(
+                                      text:
+                                          'Based on your attendance trend, prioritizing ',
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          stats.highestRiskSubjectName ??
+                                          activeSubjectName,
+                                      style: const TextStyle(
+                                        color: Color(0xFFD0BCFF),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          ' will help maintain your academic target margin.',
+                                    ),
+                                  ],
                           ),
                         ),
                       ],
@@ -670,106 +886,111 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Remaining Class 1
-          GestureDetector(
-            onTap: () => ref.read(navIndexProvider.notifier).state = 1,
-            child: GlassContainer(
-              borderRadius: 16,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFC0C1FF),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Quantum Mechanics & Optics',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Hall 4 • Dr. Aris Thorne',
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Text(
-                    '01:00 PM',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
+          () {
+            final nowMinutes = now.hour * 60 + now.minute;
+            final remainingClasses =
+                todayTimetable.where((e) => e.startTime > nowMinutes).toList()
+                  ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
-          // Remaining Class 2
-          GestureDetector(
-            onTap: () => ref.read(navIndexProvider.notifier).state = 1,
-            child: GlassContainer(
-              borderRadius: 16,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8151EB),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+            if (remainingClasses.isEmpty) {
+              return GlassContainer(
+                borderRadius: 16,
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    todayTimetable.isEmpty
+                        ? 'No classes scheduled today'
+                        : 'All classes for today completed 🎉',
+                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Data Structures & Algorithms',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                ),
+              );
+            }
+
+            final colors = [
+              const Color(0xFFC0C1FF),
+              const Color(0xFF8151EB),
+              const Color(0xFF7BD0FF),
+              const Color(0xFF10B981),
+            ];
+
+            return Column(
+              children: remainingClasses.asMap().entries.map((item) {
+                final idx = item.key;
+                final entry = item.value;
+                final sub = subjects.cast<Subject?>().firstWhere(
+                  (s) => s?.id == entry.subjectId,
+                  orElse: () => null,
+                );
+                final color = colors[idx % colors.length];
+                final facultyStr = sub?.facultyName.isNotEmpty == true
+                    ? ' • ${sub!.facultyName}'
+                    : '';
+                final roomStr = entry.room != null && entry.room!.isNotEmpty
+                    ? 'Room ${entry.room}'
+                    : 'Classroom';
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: GestureDetector(
+                    onTap: () => ref.read(navIndexProvider.notifier).state = 1,
+                    child: GlassContainer(
+                      borderRadius: 16,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Lab 2 • Prof. Higgins',
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                      ],
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  sub?.name ?? 'Scheduled Class',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$roomStr$facultyStr',
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            entry.startTimeDisplay,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const Text(
-                    '03:30 PM',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                );
+              }).toList(),
+            );
+          }(),
         ],
       ),
     );

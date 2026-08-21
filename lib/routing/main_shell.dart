@@ -41,10 +41,7 @@ class MainShell extends ConsumerWidget {
           children: [
             // Screen Contents
             Positioned.fill(
-              child: IndexedStack(
-                index: currentIndex,
-                children: screens,
-              ),
+              child: IndexedStack(index: currentIndex, children: screens),
             ),
 
             // Bottom Navigation Dock

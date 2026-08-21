@@ -1,16 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:trackx/features/ai_advisor/domain/models/ai_models.dart' hide AiRequest;
+import 'package:trackx/features/ai_advisor/domain/models/ai_models.dart'
+    hide AiRequest;
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
-import 'package:trackx/features/ai_assistant/data/repositories/ai_conversation_repository.dart';
 import 'package:trackx/features/ai_assistant/data/services/ai_context_builder.dart';
 import 'package:trackx/features/ai_assistant/data/services/gemini_provider.dart';
 import 'package:trackx/features/ai_assistant/data/services/offline_fallback_provider.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_request.dart';
-import 'package:trackx/features/ai_assistant/domain/models/ai_response.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 
@@ -31,10 +30,11 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
           id: 'init-${DateTime.now().millisecondsSinceEpoch}',
           conversationId: _conversationId,
           sender: 'ai',
-          content: 'Hello! I am your TrackX AI Academic Assistant. How can I help you optimize your studies and attendance today?',
+          content:
+              'Hello! I am your TrackX AI Academic Assistant. How can I help you optimize your studies and attendance today?',
           timestamp: DateTime.now().millisecondsSinceEpoch,
           actions: const [],
-        )
+        ),
       ];
     } else {
       state = messages;
@@ -64,19 +64,26 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
 
     // Verify if AI is disabled
     if (!settings.enableAi) {
-      _addErrorMessage('AI Assistant features are currently disabled. Please enable them in Privacy settings.');
+      _addErrorMessage(
+        'AI Assistant features are currently disabled. Please enable them in Privacy settings.',
+      );
       return;
     }
 
     // Verify rate limit
     if (usageSummary.requestsToday >= usageSummary.maxDailyRequests) {
-      _addErrorMessage('You have reached your daily limit of ${usageSummary.maxDailyRequests} requests. Please retry tomorrow.');
+      _addErrorMessage(
+        'You have reached your daily limit of ${usageSummary.maxDailyRequests} requests. Please retry tomorrow.',
+      );
       return;
     }
 
     // Setup fallback or Gemini provider
-    final bool useOffline = settings.provider == 'Offline only' || settings.provider == 'Offline';
-    final provider = useOffline ? OfflineFallbackProvider() : GeminiAiProvider();
+    final bool useOffline =
+        settings.provider == 'Offline only' || settings.provider == 'Offline';
+    final provider = useOffline
+        ? OfflineFallbackProvider()
+        : GeminiAiProvider(overrideApiKey: settings.customApiKey);
 
     // Context preparation
     final authState = _ref.read(authRepositoryProvider);
@@ -90,8 +97,9 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
     String? subjectFilterId;
     final subjects = _ref.read(subjectRepositoryProvider);
     for (final s in subjects) {
-      if (userMessage.toLowerCase().contains(s.name.toLowerCase()) || 
-          (s.code != null && userMessage.toLowerCase().contains(s.code!.toLowerCase()))) {
+      if (userMessage.toLowerCase().contains(s.name.toLowerCase()) ||
+          (s.code != null &&
+              userMessage.toLowerCase().contains(s.code!.toLowerCase()))) {
         subjectFilterId = s.id;
         break;
       }
@@ -113,13 +121,17 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
 
     // Map feature type from keywords
     AiFeatureType featureType = AiFeatureType.generalChat;
-    if (userMessage.toLowerCase().contains('miss') || userMessage.toLowerCase().contains('attendance')) {
+    if (userMessage.toLowerCase().contains('miss') ||
+        userMessage.toLowerCase().contains('attendance')) {
       featureType = AiFeatureType.attendanceExplanation;
-    } else if (userMessage.toLowerCase().contains('study plan') || userMessage.toLowerCase().contains('schedule')) {
+    } else if (userMessage.toLowerCase().contains('study plan') ||
+        userMessage.toLowerCase().contains('schedule')) {
       featureType = AiFeatureType.studyPlanning;
-    } else if (userMessage.toLowerCase().contains('exam') || userMessage.toLowerCase().contains('countdown')) {
+    } else if (userMessage.toLowerCase().contains('exam') ||
+        userMessage.toLowerCase().contains('countdown')) {
       featureType = AiFeatureType.examPreparation;
-    } else if (userMessage.toLowerCase().contains('assignment') || userMessage.toLowerCase().contains('breakdown')) {
+    } else if (userMessage.toLowerCase().contains('assignment') ||
+        userMessage.toLowerCase().contains('breakdown')) {
       featureType = AiFeatureType.assignmentBreakdown;
     }
 
@@ -178,6 +190,10 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
   }
 }
 
-final aiChatMessagesProvider = StateNotifierProvider.family<AiChatNotifier, List<AiMessage>, String>((ref, conversationId) {
-  return AiChatNotifier(ref, conversationId);
-});
+final aiChatMessagesProvider =
+    StateNotifierProvider.family<AiChatNotifier, List<AiMessage>, String>((
+      ref,
+      conversationId,
+    ) {
+      return AiChatNotifier(ref, conversationId);
+    });

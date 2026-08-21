@@ -4,14 +4,15 @@ enum AiActionStatus {
   edited,
   cancelled,
   failed,
-  completed
+  completed,
 }
 
 class AiActionRecord {
   final String id;
   final String userId;
   final String conversationId;
-  final String type; // CreatePlannerTask, CreateStudySession, CreateReminder, SaveNote
+  final String
+  type; // CreatePlannerTask, CreateStudySession, CreateReminder, SaveNote
   final String summary;
   final AiActionStatus status;
   final DateTime createdAt;
@@ -75,9 +76,16 @@ class AiActionRecord {
       conversationId: map['conversationId'] ?? '',
       type: map['type'] ?? '',
       summary: map['summary'] ?? '',
-      status: AiActionStatus.values.firstWhere((e) => e.name == map['status'], orElse: () => AiActionStatus.suggested),
-      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-      confirmedAt: map['confirmedAt'] != null ? DateTime.parse(map['confirmedAt']) : null,
+      status: AiActionStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => AiActionStatus.suggested,
+      ),
+      createdAt: DateTime.parse(
+        map['createdAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      confirmedAt: map['confirmedAt'] != null
+          ? DateTime.parse(map['confirmedAt'])
+          : null,
       parameters: Map<String, dynamic>.from(map['parameters'] ?? {}),
     );
   }

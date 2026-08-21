@@ -8,28 +8,51 @@ class ProgrammeRepository extends StateNotifier<List<Programme>> {
   static const String _keyProgrammes = 'px_programmes_list';
   static const String _keyActiveProgId = 'px_active_programme_id';
   final SharedPreferences _prefs;
+  final Ref? _ref;
 
-  ProgrammeRepository(this._prefs) : super([]) {
+  ProgrammeRepository(this._prefs, [this._ref]) : super([]) {
     _load();
   }
 
+  String get _currentUserId =>
+      _ref?.read(authRepositoryProvider).userProfile?.id ?? '';
+
+  String _getKey([String? uid]) {
+    final effectiveUid = uid ?? _currentUserId;
+    if (effectiveUid.isEmpty) return _keyProgrammes;
+    return '${effectiveUid}_$_keyProgrammes';
+  }
+
   void _load() {
-    final jsonStr = _prefs.getString(_keyProgrammes);
+    final uid = _currentUserId;
+    if (uid.isEmpty) {
+      state = [];
+      return;
+    }
+    final key = _getKey(uid);
+    final jsonStr = _prefs.getString(key);
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
             .map((item) => Programme.fromMap(item as Map<String, dynamic>))
+            .where((p) => p.userId == uid || p.userId.isEmpty)
+            .map((p) => p.userId != uid ? p.copyWith(userId: uid) : p)
             .toList();
       } catch (_) {
         state = [];
       }
+    } else {
+      state = [];
     }
   }
 
   Future<void> _save() async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
+    final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((p) => p.toMap()).toList());
-    await _prefs.setString(_keyProgrammes, jsonStr);
+    await _prefs.setString(key, jsonStr);
   }
 
   String? getActiveProgrammeId() {
@@ -41,15 +64,9 @@ class ProgrammeRepository extends StateNotifier<List<Programme>> {
     // Automatically set status to 'Active' for the chosen one and ensure others are updated if needed
     state = state.map((p) {
       if (p.id == id) {
-        return p.copyWith(
-          status: 'Active',
-          updatedAt: DateTime.now(),
-        );
+        return p.copyWith(status: 'Active', updatedAt: DateTime.now());
       } else if (p.status == 'Active') {
-        return p.copyWith(
-          status: 'Paused',
-          updatedAt: DateTime.now(),
-        );
+        return p.copyWith(status: 'Paused', updatedAt: DateTime.now());
       }
       return p;
     }).toList();
@@ -66,10 +83,11 @@ class ProgrammeRepository extends StateNotifier<List<Programme>> {
     double? totalCredits,
     required String gradingSystemId,
   }) async {
+    final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
     final newId = 'prog-${DateTime.now().millisecondsSinceEpoch}';
     final prog = Programme(
       id: newId,
-      userId: 'user_1', // will be mapped dynamically to real user in sync
+      userId: uid,
       name: name,
       degreeType: degreeType,
       branch: branch,
@@ -92,17 +110,20 @@ class ProgrammeRepository extends StateNotifier<List<Programme>> {
   }
 
   Future<void> updateProgramme(Programme updated) async {
-    state = state.map((p) => p.id == updated.id ? updated.copyWith(updatedAt: DateTime.now()) : p).toList();
+    state = state
+        .map(
+          (p) => p.id == updated.id
+              ? updated.copyWith(updatedAt: DateTime.now())
+              : p,
+        )
+        .toList();
     await _save();
   }
 
   Future<void> archiveProgramme(String id) async {
     state = state.map((p) {
       if (p.id == id) {
-        return p.copyWith(
-          status: 'Archived',
-          updatedAt: DateTime.now(),
-        );
+        return p.copyWith(status: 'Archived', updatedAt: DateTime.now());
       }
       return p;
     }).toList();
@@ -111,7 +132,10 @@ class ProgrammeRepository extends StateNotifier<List<Programme>> {
     // If we archived the active programme, set another one active
     final activeId = getActiveProgrammeId();
     if (activeId == id) {
-      final fallback = state.firstWhere((p) => p.status != 'Archived', orElse: () => state.first);
+      final fallback = state.firstWhere(
+        (p) => p.status != 'Archived',
+        orElse: () => state.first,
+      );
       await setActiveProgramme(fallback.id);
     }
   }
@@ -119,10 +143,7 @@ class ProgrammeRepository extends StateNotifier<List<Programme>> {
   Future<void> restoreProgramme(String id) async {
     state = state.map((p) {
       if (p.id == id) {
-        return p.copyWith(
-          status: 'Paused',
-          updatedAt: DateTime.now(),
-        );
+        return p.copyWith(status: 'Paused', updatedAt: DateTime.now());
       }
       return p;
     }).toList();
@@ -148,9 +169,9 @@ class ProgrammeRepository extends StateNotifier<List<Programme>> {
 // Providers
 final programmeRepositoryProvider =
     StateNotifierProvider<ProgrammeRepository, List<Programme>>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return ProgrammeRepository(prefs);
-});
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return ProgrammeRepository(prefs, ref);
+    });
 
 final activeProgrammeProvider = Provider<Programme?>((ref) {
   final list = ref.watch(programmeRepositoryProvider);

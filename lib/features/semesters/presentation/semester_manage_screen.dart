@@ -10,7 +10,8 @@ class SemesterManageScreen extends ConsumerStatefulWidget {
   const SemesterManageScreen({super.key});
 
   @override
-  ConsumerState<SemesterManageScreen> createState() => _SemesterManageScreenState();
+  ConsumerState<SemesterManageScreen> createState() =>
+      _SemesterManageScreenState();
 }
 
 class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
@@ -53,12 +54,19 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
               const SizedBox(height: 20),
               const Text(
                 'New Semester',
-                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Enter a name for your new semester.',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 24),
               GlassTextField(
@@ -89,7 +97,9 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.35),
+                          color: const Color(
+                            0xFF5B5FEF,
+                          ).withValues(alpha: 0.35),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -98,7 +108,11 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                     child: const Center(
                       child: Text(
                         'Create Semester',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -140,10 +154,21 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                 color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 26),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFEF4444),
+                size: 26,
+              ),
             ),
             const SizedBox(height: 16),
-            const Text('Delete Semester', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            const Text(
+              'Delete Semester',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               'Are you sure you want to delete "$semName"? This cannot be undone.',
@@ -158,9 +183,13 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                     onPressed: () => Navigator.pop(ctx),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white60,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -169,17 +198,24 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      await ref.read(semesterRepositoryProvider.notifier).deleteSemester(semId);
+                      await ref
+                          .read(semesterRepositoryProvider.notifier)
+                          .deleteSemester(semId);
                       if (ctx.mounted) Navigator.pop(ctx);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFEF4444),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: 0,
                     ),
-                    child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -201,12 +237,20 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 18,
+            ),
             onPressed: () => context.pop(),
           ),
           title: const Text(
             'Semesters',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
           centerTitle: true,
           actions: [
@@ -217,7 +261,11 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                 child: GlassContainer(
                   borderRadius: 12,
                   padding: const EdgeInsets.all(8),
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
@@ -228,22 +276,59 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.calendar_month_outlined, size: 56, color: Colors.white.withValues(alpha: 0.15)),
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      size: 56,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
                     const SizedBox(height: 16),
-                    const Text('No Semesters Yet', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text(
+                      'No Semesters Yet',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text('Tap + to create your first semester.', style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13)),
+                    Text(
+                      'Tap + to create your first semester.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 28),
                     GestureDetector(
                       onTap: _showAddSemesterSheet,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)]),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: const Color(0xFF5B5FEF).withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 4))],
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
                         ),
-                        child: const Text('Add Semester', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF5B5FEF,
+                              ).withValues(alpha: 0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'Add Semester',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -252,7 +337,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 itemCount: list.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final sem = list[index];
                   return GlassContainer(
@@ -266,18 +351,26 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                           height: 44,
                           decoration: BoxDecoration(
                             color: sem.isActive
-                                ? const Color(0xFF5B5FEF).withValues(alpha: 0.15)
+                                ? const Color(
+                                    0xFF5B5FEF,
+                                  ).withValues(alpha: 0.15)
                                 : Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: sem.isActive
-                                  ? const Color(0xFF5B5FEF).withValues(alpha: 0.4)
+                                  ? const Color(
+                                      0xFF5B5FEF,
+                                    ).withValues(alpha: 0.4)
                                   : Colors.white.withValues(alpha: 0.06),
                             ),
                           ),
                           child: Icon(
-                            sem.isActive ? Icons.radio_button_checked_rounded : Icons.calendar_today_outlined,
-                            color: sem.isActive ? const Color(0xFF5B5FEF) : Colors.white38,
+                            sem.isActive
+                                ? Icons.radio_button_checked_rounded
+                                : Icons.calendar_today_outlined,
+                            color: sem.isActive
+                                ? const Color(0xFF5B5FEF)
+                                : Colors.white38,
                             size: 20,
                           ),
                         ),
@@ -288,21 +381,32 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                             children: [
                               Text(
                                 sem.name,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: sem.isActive
-                                      ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                      ? const Color(
+                                          0xFF10B981,
+                                        ).withValues(alpha: 0.12)
                                       : Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: Text(
                                   sem.isActive ? 'ACTIVE' : 'ARCHIVED',
                                   style: TextStyle(
-                                    color: sem.isActive ? const Color(0xFF10B981) : Colors.white30,
+                                    color: sem.isActive
+                                        ? const Color(0xFF10B981)
+                                        : Colors.white30,
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 0.5,
@@ -322,22 +426,35 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                    color: const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Icon(Icons.check_rounded, color: Color(0xFF10B981), size: 18),
+                                  child: const Icon(
+                                    Icons.check_rounded,
+                                    color: Color(0xFF10B981),
+                                    size: 18,
+                                  ),
                                 ),
                               ),
                             const SizedBox(width: 8),
                             GestureDetector(
-                              onTap: () => _confirmDelete(context, sem.id, sem.name),
+                              onTap: () =>
+                                  _confirmDelete(context, sem.id, sem.name),
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                                  color: const Color(
+                                    0xFFEF4444,
+                                  ).withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
+                                child: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Color(0xFFEF4444),
+                                  size: 18,
+                                ),
                               ),
                             ),
                           ],

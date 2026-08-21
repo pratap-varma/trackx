@@ -53,7 +53,9 @@ class LearningGoal {
       targetValue: (map['targetValue'] ?? 0.0).toDouble(),
       currentValue: (map['currentValue'] ?? 0.0).toDouble(),
       status: map['status'] ?? 'Active',
-      targetDate: DateTime.parse(map['targetDate'] ?? DateTime.now().toIso8601String()),
+      targetDate: DateTime.parse(
+        map['targetDate'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 }

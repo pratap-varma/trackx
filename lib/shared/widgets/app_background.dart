@@ -24,7 +24,7 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
       vsync: this,
       duration: const Duration(seconds: 24),
     );
-    
+
     final isTest = Platform.environment.containsKey('FLUTTER_TEST');
     if (!isTest) {
       _controller.repeat();
@@ -100,7 +100,9 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF8151EB).withValues(alpha: isDark ? 0.28 : 0.16),
+                            const Color(
+                              0xFF8151EB,
+                            ).withValues(alpha: isDark ? 0.28 : 0.16),
                             const Color(0xFF8151EB).withValues(alpha: 0.0),
                           ],
                         ),
@@ -119,7 +121,9 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF7BD0FF).withValues(alpha: isDark ? 0.18 : 0.10),
+                            const Color(
+                              0xFF7BD0FF,
+                            ).withValues(alpha: isDark ? 0.18 : 0.10),
                             const Color(0xFF7BD0FF).withValues(alpha: 0.0),
                           ],
                         ),

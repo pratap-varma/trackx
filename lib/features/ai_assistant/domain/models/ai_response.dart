@@ -1,14 +1,11 @@
-enum AiConfidence {
-  high,
-  moderate,
-  limitedInformation
-}
+enum AiConfidence { high, moderate, limitedInformation }
 
 class AiSourceReference {
   final String title;
   final String category; // 'Attendance', 'Exam', 'Assignment', 'Planner', etc.
   final String detail;
-  final String? targetRecordId; // e.g. DBMS subjectId or assignmentId for tapping
+  final String?
+  targetRecordId; // e.g. DBMS subjectId or assignmentId for tapping
 
   AiSourceReference({
     required this.title,
@@ -76,7 +73,8 @@ class AiResponse {
 
 // We will define AiSuggestedAction below, but let's separate it or declare it here.
 class AiSuggestedAction {
-  final String type; // CreatePlannerTask, CreateStudySession, CreateReminder, SaveNote, etc.
+  final String
+  type; // CreatePlannerTask, CreateStudySession, CreateReminder, SaveNote, etc.
   final String title;
   final Map<String, dynamic> parameters;
 
@@ -87,11 +85,7 @@ class AiSuggestedAction {
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      'type': type,
-      'title': title,
-      'parameters': parameters,
-    };
+    return {'type': type, 'title': title, 'parameters': parameters};
   }
 
   factory AiSuggestedAction.fromMap(Map<String, dynamic> map) {

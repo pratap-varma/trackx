@@ -15,12 +15,20 @@ class AcademicsHubScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 18,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: const Text(
             'Academic Hub',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 18,
+            ),
           ),
           centerTitle: true,
         ),
@@ -173,9 +181,14 @@ class AcademicsHubScreen extends StatelessWidget {
                         if (badge != null) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                              color: const Color(
+                                0xFF5B5FEF,
+                              ).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(5),
                             ),
                             child: Text(
@@ -194,12 +207,19 @@ class AcademicsHubScreen extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.2), size: 20),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white.withValues(alpha: 0.2),
+                size: 20,
+              ),
             ],
           ),
         ),

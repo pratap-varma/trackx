@@ -5,7 +5,6 @@ import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
-import 'package:trackx/theme/app_theme.dart';
 
 final classroomLocationsProvider =
     StateNotifierProvider<ClassroomLocationsNotifier, List<ClassroomLocation>>((
@@ -16,26 +15,7 @@ final classroomLocationsProvider =
 
 class ClassroomLocationsNotifier
     extends StateNotifier<List<ClassroomLocation>> {
-  ClassroomLocationsNotifier() : super([]) {
-    // Add default mock classroom for testing
-    state = [
-      ClassroomLocation(
-        id: 'c1',
-        userId: 'u1',
-        semesterId: 's1',
-        subjectId: 'dbms',
-        name: 'DBMS Lab Geofence',
-        latitude: 12.9716,
-        longitude: 77.5946,
-        radiusMeters: 50.0,
-        building: 'Science Block',
-        room: 'Lab 4B',
-        isEnabled: true,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      ),
-    ];
-  }
+  ClassroomLocationsNotifier() : super([]);
 
   void addLocation(ClassroomLocation location) {
     state = [...state, location];
@@ -166,40 +146,55 @@ class _ClassroomMappingScreenState
               ),
             ),
             const SizedBox(height: 12),
-            ...locations.map((loc) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
+            if (locations.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
                 child: GlassContainer(
-                  child: ListTile(
-                    title: Text(
-                      loc.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Lat: ${loc.latitude}, Lon: ${loc.longitude} | Radius: ${loc.radiusMeters}m',
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                      ),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.redAccent,
-                      ),
-                      onPressed: () {
-                        ref
-                            .read(classroomLocationsProvider.notifier)
-                            .deleteLocation(loc.id);
-                      },
+                  padding: const EdgeInsets.all(20),
+                  child: const Center(
+                    child: Text(
+                      'No classroom locations mapped yet.\nAdd a geofence above to verify attendance locations.',
+                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+              )
+            else
+              ...locations.map((loc) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: GlassContainer(
+                    child: ListTile(
+                      title: Text(
+                        loc.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Lat: ${loc.latitude}, Lon: ${loc.longitude} | Radius: ${loc.radiusMeters}m',
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 11,
+                        ),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.redAccent,
+                        ),
+                        onPressed: () {
+                          ref
+                              .read(classroomLocationsProvider.notifier)
+                              .deleteLocation(loc.id);
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              }),
           ],
         ),
       ),

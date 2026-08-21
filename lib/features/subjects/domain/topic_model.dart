@@ -4,9 +4,12 @@ class Topic {
   final String subjectId;
   final String title;
   final String? description;
-  final String status; // 'Not Started', 'Learning', 'Revision Needed', 'Completed', 'Archived'
-  final String difficulty; // 'Easy', 'Moderate', 'Challenging', 'Very Challenging', 'Not Set'
-  final String confidence; // 'Not Rated', 'Low', 'Developing', 'Confident', 'Strong'
+  final String
+  status; // 'Not Started', 'Learning', 'Revision Needed', 'Completed', 'Archived'
+  final String
+  difficulty; // 'Easy', 'Moderate', 'Challenging', 'Very Challenging', 'Not Set'
+  final String
+  confidence; // 'Not Rated', 'Low', 'Developing', 'Confident', 'Strong'
   final int estimatedMinutes;
   final int completedMinutes;
   final DateTime? lastReviewedAt;
@@ -101,11 +104,19 @@ class Topic {
       confidence: map['confidence'] ?? 'Not Rated',
       estimatedMinutes: map['estimatedMinutes'] ?? 0,
       completedMinutes: map['completedMinutes'] ?? 0,
-      lastReviewedAt: map['lastReviewedAt'] != null ? DateTime.parse(map['lastReviewedAt']) : null,
-      nextReviewAt: map['nextReviewAt'] != null ? DateTime.parse(map['nextReviewAt']) : null,
+      lastReviewedAt: map['lastReviewedAt'] != null
+          ? DateTime.parse(map['lastReviewedAt'])
+          : null,
+      nextReviewAt: map['nextReviewAt'] != null
+          ? DateTime.parse(map['nextReviewAt'])
+          : null,
       sortOrder: map['sortOrder'] ?? 0,
-      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now(),
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now(),
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'])
+          : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'])
+          : DateTime.now(),
     );
   }
 }

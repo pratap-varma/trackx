@@ -42,25 +42,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authRepositoryProvider.notifier).login(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
-    if (!mounted) return;
-    final state = ref.read(authRepositoryProvider);
-    if (state.status == AuthStatus.authenticated) {
-      state.userProfile?.onboardingCompleted == true
-          ? context.go('/')
-          : context.go('/onboarding');
-    } else if (state.status == AuthStatus.error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.errorMessage ?? 'Authentication failed')),
-      );
-    }
+    FocusScope.of(context).unfocus();
+    await ref
+        .read(authRepositoryProvider.notifier)
+        .login(_emailController.text.trim(), _passwordController.text.trim());
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    FocusScope.of(context).unfocus();
+    await ref.read(authRepositoryProvider.notifier).signInWithGoogle();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authRepositoryProvider, (previous, next) {
+      if (next.status == AuthStatus.error && next.errorMessage != null) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: const Color(0xFFE53935),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      } else if (next.status == AuthStatus.authenticated) {
+        if (next.userProfile?.onboardingCompleted == true) {
+          context.go('/');
+        } else {
+          context.go('/onboarding');
+        }
+      }
+    });
+
     final authState = ref.watch(authRepositoryProvider);
     final isLoading = authState.status == AuthStatus.loading;
 
@@ -139,13 +155,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                              color: const Color(
+                                0xFF5B5FEF,
+                              ).withValues(alpha: 0.4),
                               blurRadius: 28,
                               offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.track_changes_rounded, color: Colors.white, size: 36),
+                        child: const Icon(
+                          Icons.track_changes_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       const Text(
@@ -189,11 +211,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         obscureText: _obscurePassword,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: Colors.white38,
                             size: 20,
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                         ),
                         validator: (val) {
                           if (val == null || val.length < 6) {
@@ -211,7 +237,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           child: Text(
                             'Forgot Password?',
                             style: TextStyle(
-                              color: const Color(0xFFC0C1FF).withValues(alpha: 0.8),
+                              color: const Color(
+                                0xFFC0C1FF,
+                              ).withValues(alpha: 0.8),
                               fontSize: 12,
                             ),
                           ),
@@ -235,7 +263,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                                  color: const Color(
+                                    0xFF5B5FEF,
+                                  ).withValues(alpha: 0.4),
                                   blurRadius: 20,
                                   offset: const Offset(0, 6),
                                 ),
@@ -269,33 +299,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       // Divider
                       Row(
                         children: [
-                          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.08))),
+                          Expanded(
+                            child: Divider(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text('or', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12)),
+                            child: Text(
+                              'or',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
-                          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.08))),
+                          Expanded(
+                            child: Divider(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
 
                       // Google Sign In
                       GestureDetector(
-                        onTap: () => ref
-                            .read(authRepositoryProvider.notifier)
-                            .login('test@example.com', 'password123'),
+                        onTap: isLoading ? null : _handleGoogleSignIn,
                         child: GlassContainer(
                           borderRadius: 16.0,
                           padding: const EdgeInsets.symmetric(vertical: 14.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.g_mobiledata, color: Colors.white, size: 26),
+                              const Icon(
+                                Icons.g_mobiledata,
+                                color: Colors.white,
+                                size: 26,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'Continue with Google',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                  color: isLoading
+                                      ? Colors.white38
+                                      : Colors.white.withValues(alpha: 0.85),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -312,7 +360,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         children: [
                           Text(
                             "Don't have an account? ",
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              fontSize: 13,
+                            ),
                           ),
                           GestureDetector(
                             onTap: () => context.push('/register'),

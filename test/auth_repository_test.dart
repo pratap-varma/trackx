@@ -15,14 +15,47 @@ void main() {
       persistenceService = PersistenceService(prefs);
     });
 
-    test('UserProfile mapping converts to and from map correctly', () {
-      final profile = UserProfile(
-        id: '123',
-        name: 'Test Student',
-        email: 'test@example.com',
+    test(
+      'UserProfile mapping converts to and from map correctly with department support',
+      () {
+        final profile = UserProfile(
+          id: 'uid-123',
+          name: 'Test Student',
+          email: 'test@example.com',
+          branch: 'Computer Science',
+          semester: 4,
+          globalTarget: 80.0,
+          themeMode: 'dark',
+          themeColorPack: 'purple',
+          onboardingCompleted: true,
+          createdTimestamp: 1000,
+          updatedTimestamp: 2000,
+        );
+
+        final map = profile.toMap();
+        expect(map['department'], 'Computer Science');
+        expect(map['branch'], 'Computer Science');
+
+        final fromMap = UserProfile.fromMap(map);
+        expect(fromMap.id, 'uid-123');
+        expect(fromMap.name, 'Test Student');
+        expect(fromMap.department, 'Computer Science');
+        expect(fromMap.branch, 'Computer Science');
+        expect(fromMap.email, 'test@example.com');
+        expect(fromMap.semester, 4);
+        expect(fromMap.globalTarget, 80.0);
+        expect(fromMap.onboardingCompleted, true);
+      },
+    );
+
+    test('PersistenceService isolates user-specific profile caching', () async {
+      final profileUserA = UserProfile(
+        id: 'user_a',
+        name: 'Alice',
+        email: 'alice@example.com',
         branch: 'CSE',
-        semester: 4,
-        globalTarget: 80.0,
+        semester: 2,
+        globalTarget: 85.0,
         themeMode: 'dark',
         themeColorPack: 'purple',
         onboardingCompleted: true,
@@ -30,43 +63,43 @@ void main() {
         updatedTimestamp: 2000,
       );
 
-      final map = profile.toMap();
-      final fromMap = UserProfile.fromMap(map);
+      final profileUserB = UserProfile(
+        id: 'user_b',
+        name: 'Bob',
+        email: 'bob@example.com',
+        branch: 'ECE',
+        semester: 6,
+        globalTarget: 75.0,
+        themeMode: 'dark',
+        themeColorPack: 'blue',
+        onboardingCompleted: false,
+        createdTimestamp: 1000,
+        updatedTimestamp: 2000,
+      );
 
-      expect(fromMap.id, '123');
-      expect(fromMap.name, 'Test Student');
-      expect(fromMap.email, 'test@example.com');
-      expect(fromMap.semester, 4);
-      expect(fromMap.globalTarget, 80.0);
-      expect(fromMap.onboardingCompleted, true);
+      await persistenceService.saveUserProfile(profileUserA);
+      expect(persistenceService.getUserProfile('user_a')?.name, 'Alice');
+
+      await persistenceService.saveUserProfile(profileUserB);
+      expect(persistenceService.getUserProfile('user_b')?.name, 'Bob');
+      expect(persistenceService.getUserProfile('user_a')?.name, 'Alice');
+
+      // Clearing session does not wipe user cache
+      await persistenceService.clearSession();
+      expect(persistenceService.getUserProfile('user_a')?.name, 'Alice');
+      expect(persistenceService.getUserProfile('user_b')?.name, 'Bob');
     });
 
     test(
-      'Login with mock credentials registers authentication state',
-      () async {
+      'AuthRepository initializes unauthenticated when storage is empty',
+      () {
         final authRepo = AuthRepository(persistenceService);
-
-        // Verify initial state is unauthenticated since shared_prefs is empty
         expect(authRepo.state.status, AuthStatus.unauthenticated);
-
-        // Perform login
-        await authRepo.login('test@example.com', 'password123');
-
-        // Verify authenticated state
-        expect(authRepo.state.status, AuthStatus.authenticated);
-        expect(authRepo.state.userProfile?.name, 'Rohan Sharma');
-        expect(authRepo.state.userProfile?.email, 'test@example.com');
       },
     );
 
-    test('Logout clears session states', () async {
+    test('Logout transitions state to unauthenticated', () async {
       final authRepo = AuthRepository(persistenceService);
-
-      // Log in first
-      await authRepo.login('test@example.com', 'password123');
-      expect(authRepo.state.status, AuthStatus.authenticated);
-
-      // Log out
       await authRepo.logout();
       expect(authRepo.state.status, AuthStatus.unauthenticated);
       expect(authRepo.state.userProfile, null);

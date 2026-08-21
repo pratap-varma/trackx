@@ -29,7 +29,9 @@ class SubscriptionEntitlement {
       ownerId: map['ownerId'] ?? '',
       planId: map['planId'] ?? 'Free',
       status: map['status'] ?? 'Active',
-      expiresAt: DateTime.parse(map['expiresAt'] ?? DateTime.now().toIso8601String()),
+      expiresAt: DateTime.parse(
+        map['expiresAt'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 }

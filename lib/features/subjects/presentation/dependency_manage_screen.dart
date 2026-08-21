@@ -1,24 +1,25 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/subjects/data/dependency_repository.dart';
 import 'package:trackx/features/subjects/domain/subject_model.dart';
-import 'package:trackx/features/subjects/domain/subject_dependency_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/theme/app_theme.dart';
 
 class DependencyManageScreen extends ConsumerStatefulWidget {
   const DependencyManageScreen({super.key});
 
   @override
-  ConsumerState<DependencyManageScreen> createState() => _DependencyManageScreenState();
+  ConsumerState<DependencyManageScreen> createState() =>
+      _DependencyManageScreenState();
 }
 
-class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen> {
+class _DependencyManageScreenState
+    extends ConsumerState<DependencyManageScreen> {
   String? _selectedSubjectId;
   String? _selectedReqSubjectId;
-  String _selectedType = 'Prerequisite'; // 'Prerequisite', 'Corequisite', 'Recommended Background'
+  String _selectedType =
+      'Prerequisite'; // 'Prerequisite', 'Corequisite', 'Recommended Background'
 
   void _addDependency() async {
     if (_selectedSubjectId == null || _selectedReqSubjectId == null) {
@@ -49,7 +50,10 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
 
   @override
   Widget build(BuildContext context) {
-    final subjects = ref.watch(subjectRepositoryProvider).where((s) => s.status != 'Archived').toList();
+    final subjects = ref
+        .watch(subjectRepositoryProvider)
+        .where((s) => s.status != 'Archived')
+        .toList();
     final dependencies = ref.watch(dependencyRepositoryProvider);
 
     return AppBackground(
@@ -71,7 +75,10 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
               decoration: BoxDecoration(
                 color: Colors.amber.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.3), width: 0.5),
+                border: Border.all(
+                  color: Colors.amber.withValues(alpha: 0.3),
+                  width: 0.5,
+                ),
               ),
               child: const Row(
                 children: [
@@ -80,7 +87,11 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
                   Expanded(
                     child: Text(
                       'Subject dependencies are personal planning information.\nConfirm official requirements with your college.',
-                      style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -91,19 +102,29 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
             // Form to Add Dependency
             const Text(
               'Add Subject Dependency Link',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 12),
             GlassContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Subject Name', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const Text(
+                    'Subject Name',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedSubjectId,
-                    hint: const Text('Select target subject', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                    initialValue: _selectedSubjectId,
+                    hint: const Text(
+                      'Select target subject',
+                      style: TextStyle(color: Colors.white38, fontSize: 13),
+                    ),
                     style: const TextStyle(color: Colors.white),
                     items: subjects.map((sub) {
                       return DropdownMenuItem(
@@ -121,45 +142,76 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
                       });
                     },
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Requires/Depends On', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const Text(
+                    'Requires/Depends On',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedReqSubjectId,
-                    hint: const Text('Select prerequisite subject', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                    initialValue: _selectedReqSubjectId,
+                    hint: const Text(
+                      'Select prerequisite subject',
+                      style: TextStyle(color: Colors.white38, fontSize: 13),
+                    ),
                     style: const TextStyle(color: Colors.white),
-                    items: subjects.where((sub) => sub.id != _selectedSubjectId).map((sub) {
-                      return DropdownMenuItem(
-                        value: sub.id,
-                        child: Text(sub.name),
-                      );
-                    }).toList(),
+                    items: subjects
+                        .where((sub) => sub.id != _selectedSubjectId)
+                        .map((sub) {
+                          return DropdownMenuItem(
+                            value: sub.id,
+                            child: Text(sub.name),
+                          );
+                        })
+                        .toList(),
                     onChanged: (val) {
                       setState(() {
                         _selectedReqSubjectId = val;
                       });
                     },
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Dependency Type', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const Text(
+                    'Dependency Type',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedType,
+                    initialValue: _selectedType,
                     style: const TextStyle(color: Colors.white),
                     items: const [
-                      DropdownMenuItem(value: 'Prerequisite', child: Text('Prerequisite')),
-                      DropdownMenuItem(value: 'Corequisite', child: Text('Corequisite')),
-                      DropdownMenuItem(value: 'Recommended Background', child: Text('Recommended Background')),
+                      DropdownMenuItem(
+                        value: 'Prerequisite',
+                        child: Text('Prerequisite'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Corequisite',
+                        child: Text('Corequisite'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Recommended Background',
+                        child: Text('Recommended Background'),
+                      ),
                     ],
                     onChanged: (val) {
                       setState(() {
@@ -167,14 +219,21 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
                       });
                     },
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _addDependency,
-                    style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(40),
+                    ),
                     child: const Text('Add Dependency'),
                   ),
                 ],
@@ -185,7 +244,11 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
             // Active Dependencies List
             const Text(
               'Active Mapped Dependencies',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 12),
             dependencies.isEmpty
@@ -201,8 +264,44 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
                     itemCount: dependencies.length,
                     itemBuilder: (context, index) {
                       final dep = dependencies[index];
-                      final sourceSub = subjects.firstWhere((s) => s.id == dep.subjectId, orElse: () => Subject(id: '', userId: '', semesterId: '', name: 'Deleted Subject', facultyName: '', colorValue: 0, type: 'Theory', targetAttendance: 75, presentClasses: 0, absentClasses: 0, status: 'Active', expectedDifficulty: 'Not Set', createdAt: 0, updatedAt: 0));
-                      final reqSub = subjects.firstWhere((s) => s.id == dep.requiredSubjectId, orElse: () => Subject(id: '', userId: '', semesterId: '', name: 'Deleted Subject', facultyName: '', colorValue: 0, type: 'Theory', targetAttendance: 75, presentClasses: 0, absentClasses: 0, status: 'Active', expectedDifficulty: 'Not Set', createdAt: 0, updatedAt: 0));
+                      final sourceSub = subjects.firstWhere(
+                        (s) => s.id == dep.subjectId,
+                        orElse: () => Subject(
+                          id: '',
+                          userId: '',
+                          semesterId: '',
+                          name: 'Deleted Subject',
+                          facultyName: '',
+                          colorValue: 0,
+                          type: 'Theory',
+                          targetAttendance: 75,
+                          presentClasses: 0,
+                          absentClasses: 0,
+                          status: 'Active',
+                          expectedDifficulty: 'Not Set',
+                          createdAt: 0,
+                          updatedAt: 0,
+                        ),
+                      );
+                      final reqSub = subjects.firstWhere(
+                        (s) => s.id == dep.requiredSubjectId,
+                        orElse: () => Subject(
+                          id: '',
+                          userId: '',
+                          semesterId: '',
+                          name: 'Deleted Subject',
+                          facultyName: '',
+                          colorValue: 0,
+                          type: 'Theory',
+                          targetAttendance: 75,
+                          presentClasses: 0,
+                          absentClasses: 0,
+                          status: 'Active',
+                          expectedDifficulty: 'Not Set',
+                          createdAt: 0,
+                          updatedAt: 0,
+                        ),
+                      );
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
@@ -217,20 +316,34 @@ class _DependencyManageScreenState extends ConsumerState<DependencyManageScreen>
                                   children: [
                                     Text(
                                       '${sourceSub.name} (${sourceSub.code ?? "No Code"})',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Requires: ${reqSub.name} [${dep.type}]',
-                                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                      style: const TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.redAccent,
+                                ),
                                 onPressed: () {
-                                  ref.read(dependencyRepositoryProvider.notifier).removeDependency(dep.id);
+                                  ref
+                                      .read(
+                                        dependencyRepositoryProvider.notifier,
+                                      )
+                                      .removeDependency(dep.id);
                                 },
                               ),
                             ],

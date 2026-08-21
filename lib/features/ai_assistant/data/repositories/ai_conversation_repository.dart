@@ -5,7 +5,7 @@ import 'package:trackx/features/ai_advisor/domain/models/ai_models.dart';
 class AiConversationRepository {
   static const String _keyConversations = 'px_ai_conversations_list';
   static const String _keyMessagesPrefix = 'px_ai_messages_list_';
-  
+
   final SharedPreferences _prefs;
 
   AiConversationRepository(this._prefs);
@@ -15,7 +15,9 @@ class AiConversationRepository {
     if (jsonStr == null) return [];
     try {
       final List<dynamic> decoded = jsonDecode(jsonStr);
-      return decoded.map((e) => AiConversation.fromMap(Map<String, dynamic>.from(e))).toList();
+      return decoded
+          .map((e) => AiConversation.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (_) {
       return [];
     }
@@ -31,13 +33,18 @@ class AiConversationRepository {
     if (jsonStr == null) return [];
     try {
       final List<dynamic> decoded = jsonDecode(jsonStr);
-      return decoded.map((e) => AiMessage.fromMap(Map<String, dynamic>.from(e))).toList();
+      return decoded
+          .map((e) => AiMessage.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> saveMessages(String conversationId, List<AiMessage> messages) async {
+  Future<void> saveMessages(
+    String conversationId,
+    List<AiMessage> messages,
+  ) async {
     final jsonStr = jsonEncode(messages.map((e) => e.toMap()).toList());
     await _prefs.setString('$_keyMessagesPrefix$conversationId', jsonStr);
   }

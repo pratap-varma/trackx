@@ -15,17 +15,21 @@ class AiActionValidator {
     List<Assignment> assignments = const [],
   }) {
     final now = DateTime.now();
-    if (task.dueDate != null && task.dueDate!.isBefore(DateTime(now.year, now.month, now.day))) {
-      return AiActionValidation(isValid: false, reason: 'Task scheduled date is in the past.');
+    if (task.dueDate.isBefore(DateTime(now.year, now.month, now.day))) {
+      return AiActionValidation(
+        isValid: false,
+        reason: 'Task scheduled date is in the past.',
+      );
     }
 
     // Check if task date is past related deadlines
     for (final exam in exams) {
       if (task.title.toLowerCase().contains(exam.title.toLowerCase())) {
-        if (task.dueDate != null && task.dueDate!.isAfter(exam.examDate)) {
+        if (task.dueDate.isAfter(exam.examDate)) {
           return AiActionValidation(
             isValid: false,
-            reason: 'Task is scheduled after the related exam date (${exam.examDate.year}-${exam.examDate.month}-${exam.examDate.day}).',
+            reason:
+                'Task is scheduled after the related exam date (${exam.examDate.year}-${exam.examDate.month}-${exam.examDate.day}).',
           );
         }
       }
@@ -43,30 +47,40 @@ class AiActionValidator {
   }) {
     final now = DateTime.now();
     if (date.isBefore(now)) {
-      return AiActionValidation(isValid: false, reason: 'Study session start time is in the past.');
+      return AiActionValidation(
+        isValid: false,
+        reason: 'Study session start time is in the past.',
+      );
     }
 
     if (durationMinutes <= 0 || durationMinutes > 360) {
       return AiActionValidation(
         isValid: false,
-        reason: 'Study session duration must be positive and less than 6 hours.',
+        reason:
+            'Study session duration must be positive and less than 6 hours.',
       );
     }
 
     // Check that target subject exists
     final hasSubject = subjects.any((s) => s.id == subjectId);
     if (!hasSubject && subjects.isNotEmpty) {
-      return AiActionValidation(isValid: false, reason: 'Subject ID "$subjectId" not found in active semester.');
+      return AiActionValidation(
+        isValid: false,
+        reason: 'Subject ID "$subjectId" not found in active semester.',
+      );
     }
 
     // Check if session conflicts with an exam
     final sessionEnd = date.add(Duration(minutes: durationMinutes));
     for (final exam in exams) {
-      final examEnd = exam.examDate.add(const Duration(hours: 3)); // assume 3 hour exam
+      final examEnd = exam.examDate.add(
+        const Duration(hours: 3),
+      ); // assume 3 hour exam
       if (date.isBefore(examEnd) && sessionEnd.isAfter(exam.examDate)) {
         return AiActionValidation(
           isValid: false,
-          reason: 'Study session overlaps with the scheduled exam "${exam.title}".',
+          reason:
+              'Study session overlaps with the scheduled exam "${exam.title}".',
         );
       }
     }

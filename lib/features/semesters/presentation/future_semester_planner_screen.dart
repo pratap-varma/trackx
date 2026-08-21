@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
-import 'package:trackx/features/semesters/domain/semester_model.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
-import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/programmes/data/programme_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/theme/app_theme.dart';
 
@@ -15,10 +12,12 @@ class FutureSemesterPlannerScreen extends ConsumerStatefulWidget {
   const FutureSemesterPlannerScreen({super.key});
 
   @override
-  ConsumerState<FutureSemesterPlannerScreen> createState() => _FutureSemesterPlannerScreenState();
+  ConsumerState<FutureSemesterPlannerScreen> createState() =>
+      _FutureSemesterPlannerScreenState();
 }
 
-class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlannerScreen> {
+class _FutureSemesterPlannerScreenState
+    extends ConsumerState<FutureSemesterPlannerScreen> {
   final _semNameController = TextEditingController();
   final _subjNameController = TextEditingController();
   final _subjCodeController = TextEditingController();
@@ -50,7 +49,13 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Create Upcoming Semester', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                const Text(
+                  'Create Upcoming Semester',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 GlassTextField(
                   controller: _semNameController,
@@ -62,22 +67,29 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.white60),
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: () async {
                         final name = _semNameController.text.trim();
                         final activeProg = ref.read(activeProgrammeProvider);
                         if (name.isNotEmpty && activeProg != null) {
-                          await ref.read(semesterRepositoryProvider.notifier).createSemester(
+                          await ref
+                              .read(semesterRepositoryProvider.notifier)
+                              .createSemester(
                                 name,
                                 6, // number
-                                DateTime.now().add(const Duration(days: 120)), // Future start date
+                                DateTime.now().add(
+                                  const Duration(days: 120),
+                                ), // Future start date
                                 null,
                                 programmeId: activeProg.id,
                                 status: 'Upcoming',
                               );
-                          if (mounted) Navigator.pop(context);
+                          if (context.mounted) Navigator.of(context).pop();
                         }
                       },
                       child: const Text('Create'),
@@ -94,7 +106,11 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
 
   void _showAddSubjectDialog() {
     if (_selectedSemesterId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select or create an upcoming semester first.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select or create an upcoming semester first.'),
+        ),
+      );
       return;
     }
     _subjNameController.clear();
@@ -115,7 +131,13 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Plan New Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text(
+                    'Plan New Subject',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   GlassTextField(
                     controller: _subjNameController,
@@ -141,40 +163,71 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedType,
+                    initialValue: _selectedType,
                     style: const TextStyle(color: Colors.white),
                     items: const [
                       DropdownMenuItem(value: 'Theory', child: Text('Theory')),
-                      DropdownMenuItem(value: 'Laboratory', child: Text('Laboratory')),
-                      DropdownMenuItem(value: 'Project', child: Text('Project')),
-                      DropdownMenuItem(value: 'Elective', child: Text('Elective')),
-                      DropdownMenuItem(value: 'Internship', child: Text('Internship')),
-                      DropdownMenuItem(value: 'Seminar', child: Text('Seminar')),
-                      DropdownMenuItem(value: 'Workshop', child: Text('Workshop')),
+                      DropdownMenuItem(
+                        value: 'Laboratory',
+                        child: Text('Laboratory'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Project',
+                        child: Text('Project'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Elective',
+                        child: Text('Elective'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Internship',
+                        child: Text('Internship'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Seminar',
+                        child: Text('Seminar'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Workshop',
+                        child: Text('Workshop'),
+                      ),
                     ],
                     onChanged: (val) => _selectedType = val ?? 'Theory',
                     decoration: InputDecoration(
                       labelText: 'Subject Type',
                       labelStyle: const TextStyle(color: Colors.white60),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedDifficulty,
+                    initialValue: _selectedDifficulty,
                     style: const TextStyle(color: Colors.white),
                     items: const [
                       DropdownMenuItem(value: 'Easy', child: Text('Easy')),
-                      DropdownMenuItem(value: 'Moderate', child: Text('Moderate')),
-                      DropdownMenuItem(value: 'Challenging', child: Text('Challenging')),
-                      DropdownMenuItem(value: 'Very Challenging', child: Text('Very Challenging')),
+                      DropdownMenuItem(
+                        value: 'Moderate',
+                        child: Text('Moderate'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Challenging',
+                        child: Text('Challenging'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Very Challenging',
+                        child: Text('Very Challenging'),
+                      ),
                     ],
                     onChanged: (val) => _selectedDifficulty = val ?? 'Moderate',
                     decoration: InputDecoration(
                       labelText: 'Expected Difficulty',
                       labelStyle: const TextStyle(color: Colors.white60),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -183,17 +236,26 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white60),
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () async {
                           final name = _subjNameController.text.trim();
                           final code = _subjCodeController.text.trim();
-                          final credits = double.tryParse(_creditsController.text.trim());
-                          final periods = int.tryParse(_periodsController.text.trim());
+                          final credits = double.tryParse(
+                            _creditsController.text.trim(),
+                          );
+                          final periods = int.tryParse(
+                            _periodsController.text.trim(),
+                          );
 
                           if (name.isNotEmpty && _selectedSemesterId != null) {
-                            await ref.read(subjectRepositoryProvider.notifier).addSubject(
+                            await ref
+                                .read(subjectRepositoryProvider.notifier)
+                                .addSubject(
                                   _selectedSemesterId!,
                                   name,
                                   'TBD',
@@ -206,7 +268,7 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                                   expectedDifficulty: _selectedDifficulty,
                                   status: 'Planned',
                                 );
-                            if (mounted) Navigator.pop(context);
+                            if (context.mounted) Navigator.of(context).pop();
                           }
                         },
                         child: const Text('Add Plan'),
@@ -225,8 +287,12 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
   @override
   Widget build(BuildContext context) {
     final activeProg = ref.watch(activeProgrammeProvider);
-    final semesters = ref.watch(semesterRepositoryProvider)
-        .where((s) => s.programmeId == (activeProg?.id ?? '') && s.status == 'Upcoming')
+    final semesters = ref
+        .watch(semesterRepositoryProvider)
+        .where(
+          (s) =>
+              s.programmeId == (activeProg?.id ?? '') && s.status == 'Upcoming',
+        )
         .toList();
     final subjects = ref.watch(subjectRepositoryProvider);
 
@@ -235,7 +301,9 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
     }
 
     final plannedSubjects = subjects
-        .where((s) => s.semesterId == _selectedSemesterId && s.status == 'Planned')
+        .where(
+          (s) => s.semesterId == _selectedSemesterId && s.status == 'Planned',
+        )
         .toList();
 
     return AppBackground(
@@ -280,15 +348,20 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           dropdownColor: Colors.purple.shade900,
-                          value: _selectedSemesterId,
+                          initialValue: _selectedSemesterId,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
                             labelText: 'Select Target Semester',
                             labelStyle: const TextStyle(color: Colors.white60),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           items: semesters.map((s) {
-                            return DropdownMenuItem(value: s.id, child: Text(s.name));
+                            return DropdownMenuItem(
+                              value: s.id,
+                              child: Text(s.name),
+                            );
                           }).toList(),
                           onChanged: (val) {
                             setState(() {
@@ -299,7 +372,11 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        icon: const Icon(Icons.add_circle, color: AppTheme.accentPurple, size: 36),
+                        icon: const Icon(
+                          Icons.add_circle,
+                          color: AppTheme.accentPurple,
+                          size: 36,
+                        ),
                         onPressed: _showAddSubjectDialog,
                       ),
                     ],
@@ -307,13 +384,23 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                   const SizedBox(height: 24),
 
                   // Planned subjects list
-                  const Text('Planned Subjects Checkbox', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+                  const Text(
+                    'Planned Subjects Checkbox',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   plannedSubjects.isEmpty
                       ? const Center(
                           child: Text(
                             'No subjects planned for this semester yet.',
-                            style: TextStyle(color: Colors.white38, fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
                           ),
                         )
                       : ListView.builder(
@@ -328,20 +415,29 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                               child: GlassContainer(
                                 padding: const EdgeInsets.all(12.0),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             '${sub.name} (${sub.code ?? "No Code"})',
-                                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                            ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             'Credits: ${sub.credits ?? "Not Set"} • Type: ${sub.type} • Difficulty: ${sub.expectedDifficulty}',
-                                            style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                            style: const TextStyle(
+                                              color: Colors.white60,
+                                              fontSize: 11,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -350,10 +446,18 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                                       children: [
                                         // Activate Button
                                         IconButton(
-                                          icon: const Icon(Icons.play_circle_outline, color: Colors.greenAccent),
+                                          icon: const Icon(
+                                            Icons.play_circle_outline,
+                                            color: Colors.greenAccent,
+                                          ),
                                           tooltip: 'Convert to Active Subject',
                                           onPressed: () {
-                                            ref.read(subjectRepositoryProvider.notifier).editSubject(
+                                            ref
+                                                .read(
+                                                  subjectRepositoryProvider
+                                                      .notifier,
+                                                )
+                                                .editSubject(
                                                   sub.id,
                                                   sub.name,
                                                   sub.facultyName,
@@ -364,9 +468,17 @@ class _FutureSemesterPlannerScreenState extends ConsumerState<FutureSemesterPlan
                                           },
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.redAccent,
+                                          ),
                                           onPressed: () {
-                                            ref.read(subjectRepositoryProvider.notifier).deleteSubject(sub.id);
+                                            ref
+                                                .read(
+                                                  subjectRepositoryProvider
+                                                      .notifier,
+                                                )
+                                                .deleteSubject(sub.id);
                                           },
                                         ),
                                       ],

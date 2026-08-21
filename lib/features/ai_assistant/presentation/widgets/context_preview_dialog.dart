@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 
 class ContextPreviewDialog extends ConsumerWidget {
   final VoidCallback onProceed;
@@ -24,7 +23,11 @@ class ContextPreviewDialog extends ConsumerWidget {
           children: [
             const Text(
               'Context Consent Preview',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -32,20 +35,58 @@ class ContextPreviewDialog extends ConsumerWidget {
               style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
             const SizedBox(height: 12),
-            _buildConsentTile('Attendance details', 'attendance', aiSettings.consentFlags, settingsNotifier),
-            _buildConsentTile('Timetable log', 'timetable', aiSettings.consentFlags, settingsNotifier),
-            _buildConsentTile('Planner tasks list', 'tasks', aiSettings.consentFlags, settingsNotifier),
-            _buildConsentTile('Upcoming assignments', 'assignments', aiSettings.consentFlags, settingsNotifier),
-            _buildConsentTile('Upcoming exams list', 'exams', aiSettings.consentFlags, settingsNotifier),
-            _buildConsentTile('CGPA progress details', 'cgpa', aiSettings.consentFlags, settingsNotifier),
-            _buildConsentTile('Note summaries (Disabled by default)', 'notes', aiSettings.consentFlags, settingsNotifier),
+            _buildConsentTile(
+              'Attendance details',
+              'attendance',
+              aiSettings.consentFlags,
+              settingsNotifier,
+            ),
+            _buildConsentTile(
+              'Timetable log',
+              'timetable',
+              aiSettings.consentFlags,
+              settingsNotifier,
+            ),
+            _buildConsentTile(
+              'Planner tasks list',
+              'tasks',
+              aiSettings.consentFlags,
+              settingsNotifier,
+            ),
+            _buildConsentTile(
+              'Upcoming assignments',
+              'assignments',
+              aiSettings.consentFlags,
+              settingsNotifier,
+            ),
+            _buildConsentTile(
+              'Upcoming exams list',
+              'exams',
+              aiSettings.consentFlags,
+              settingsNotifier,
+            ),
+            _buildConsentTile(
+              'CGPA progress details',
+              'cgpa',
+              aiSettings.consentFlags,
+              settingsNotifier,
+            ),
+            _buildConsentTile(
+              'Note summaries (Disabled by default)',
+              'notes',
+              aiSettings.consentFlags,
+              settingsNotifier,
+            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white60),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () {

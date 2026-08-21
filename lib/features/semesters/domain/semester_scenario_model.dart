@@ -46,7 +46,8 @@ class SemesterScenario {
       semesterId: semesterId ?? this.semesterId,
       plannedSubjectIds: plannedSubjectIds ?? this.plannedSubjectIds,
       totalCredits: totalCredits ?? this.totalCredits,
-      estimatedWeeklyStudyHours: estimatedWeeklyStudyHours ?? this.estimatedWeeklyStudyHours,
+      estimatedWeeklyStudyHours:
+          estimatedWeeklyStudyHours ?? this.estimatedWeeklyStudyHours,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -78,10 +79,15 @@ class SemesterScenario {
       semesterId: map['semesterId'],
       plannedSubjectIds: List<String>.from(map['plannedSubjectIds'] ?? []),
       totalCredits: (map['totalCredits'] as num?)?.toDouble() ?? 0.0,
-      estimatedWeeklyStudyHours: (map['estimatedWeeklyStudyHours'] as num?)?.toDouble() ?? 0.0,
+      estimatedWeeklyStudyHours:
+          (map['estimatedWeeklyStudyHours'] as num?)?.toDouble() ?? 0.0,
       status: map['status'] ?? 'Draft',
-      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now(),
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now(),
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'])
+          : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'])
+          : DateTime.now(),
     );
   }
 }

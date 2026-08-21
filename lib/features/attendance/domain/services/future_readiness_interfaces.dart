@@ -1,5 +1,3 @@
-import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
-
 abstract class AttendanceInputSource {
   String get sourceName;
 }

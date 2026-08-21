@@ -33,8 +33,9 @@ class AttendanceCalculator {
     final currentPct = attended / total;
     if (currentPct >= target) return 0;
 
-    if (target >= 1.0)
+    if (target >= 1.0) {
       return 0; // Avoid division by zero/negative if target is 100%
+    }
     final required = (target * total - attended) / (1 - target);
     return math.max(0, required.ceil());
   }

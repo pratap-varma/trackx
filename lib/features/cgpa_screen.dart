@@ -25,8 +25,13 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
   double _simulatedFutureGpa = 9.0;
 
   static const _gradeMap = {
-    'O': 10.0, 'A+': 9.0, 'A': 8.0,
-    'B+': 7.0, 'B': 6.0, 'C': 5.0, 'F': 0.0,
+    'O': 10.0,
+    'A+': 9.0,
+    'A': 8.0,
+    'B+': 7.0,
+    'B': 6.0,
+    'C': 5.0,
+    'F': 0.0,
   };
 
   @override
@@ -59,7 +64,9 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
         String localGrade = _gradeLetter;
         return StatefulBuilder(
           builder: (ctx, setSheet) => Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
             child: Container(
               decoration: const BoxDecoration(
                 color: Color(0xFF0E1628),
@@ -72,7 +79,8 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                 children: [
                   Center(
                     child: Container(
-                      width: 40, height: 4,
+                      width: 40,
+                      height: 4,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(2),
@@ -80,9 +88,19 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text('Record Subject Grade', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Record Subject Grade',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 20),
-                  GlassTextField(controller: _subjectController, labelText: 'Subject Name'),
+                  GlassTextField(
+                    controller: _subjectController,
+                    labelText: 'Subject Name',
+                  ),
                   const SizedBox(height: 12),
                   GlassTextField(
                     controller: _creditsController,
@@ -92,7 +110,10 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                   const SizedBox(height: 16),
 
                   // Grade picker chips
-                  const Text('Select Grade', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  const Text(
+                    'Select Grade',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
@@ -108,12 +129,19 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                         }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+                            color: isSelected
+                                ? color.withValues(alpha: 0.15)
+                                : Colors.white.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? color.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.06),
+                              color: isSelected
+                                  ? color.withValues(alpha: 0.5)
+                                  : Colors.white.withValues(alpha: 0.06),
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -129,7 +157,12 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                               ),
                               Text(
                                 '${e.value.toInt()}',
-                                style: TextStyle(color: isSelected ? color.withValues(alpha: 0.7) : Colors.white24, fontSize: 10),
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? color.withValues(alpha: 0.7)
+                                      : Colors.white24,
+                                  fontSize: 10,
+                                ),
                               ),
                             ],
                           ),
@@ -143,27 +176,52 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                     width: double.infinity,
                     child: GestureDetector(
                       onTap: () {
-                        final credits = int.tryParse(_creditsController.text.trim()) ?? 0;
-                        if (_subjectController.text.trim().isEmpty || credits <= 0) return;
-                        ref.read(courseGradesProvider.notifier).addGrade(CourseGrade(
-                          id: 'grade-${DateTime.now().millisecondsSinceEpoch}',
-                          semesterId: activeSemId,
-                          subjectName: _subjectController.text.trim(),
-                          credits: credits,
-                          grade: _gradeLetter,
-                          gradePoints: _gradePoints,
-                        ));
+                        final credits =
+                            int.tryParse(_creditsController.text.trim()) ?? 0;
+                        if (_subjectController.text.trim().isEmpty ||
+                            credits <= 0) {
+                          return;
+                        }
+                        ref
+                            .read(courseGradesProvider.notifier)
+                            .addGrade(
+                              CourseGrade(
+                                id: 'grade-${DateTime.now().millisecondsSinceEpoch}',
+                                semesterId: activeSemId,
+                                subjectName: _subjectController.text.trim(),
+                                credits: credits,
+                                grade: _gradeLetter,
+                                gradePoints: _gradePoints,
+                              ),
+                            );
                         Navigator.pop(ctx);
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)]),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                          ),
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: const Color(0xFF5B5FEF).withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 4))],
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF5B5FEF,
+                              ).withValues(alpha: 0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: const Center(
-                          child: Text('Save Grade', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                          child: Text(
+                            'Save Grade',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -198,7 +256,14 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                   children: [
                     Icon(Icons.grade_outlined, color: Colors.white24, size: 48),
                     SizedBox(height: 16),
-                    Text('No Active Semester', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      'No Active Semester',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     SizedBox(height: 8),
                     Text(
                       'Please activate a semester in Profile settings first.',
@@ -214,7 +279,9 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
       );
     }
 
-    final activeGrades = grades.where((g) => g.semesterId == activeSem.id).toList();
+    final activeGrades = grades
+        .where((g) => g.semesterId == activeSem.id)
+        .toList();
 
     double totalCredits = 0;
     double totalWeightedPoints = 0;
@@ -225,12 +292,17 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
 
     final simulatedCgpa = (totalCredits + _simulatedFutureCredits) == 0
         ? 0.0
-        : (totalWeightedPoints + (_simulatedFutureGpa * _simulatedFutureCredits)) /
-            (totalCredits + _simulatedFutureCredits);
+        : (totalWeightedPoints +
+                  (_simulatedFutureGpa * _simulatedFutureCredits)) /
+              (totalCredits + _simulatedFutureCredits);
 
     final cgpa = gpaSummary['cgpa']!;
     final sgpa = gpaSummary['sgpa']!;
-    final cgpaColor = cgpa >= 9.0 ? const Color(0xFF10B981) : cgpa >= 7.0 ? const Color(0xFF7BD0FF) : const Color(0xFFF59E0B);
+    final cgpaColor = cgpa >= 9.0
+        ? const Color(0xFF10B981)
+        : cgpa >= 7.0
+        ? const Color(0xFF7BD0FF)
+        : const Color(0xFFF59E0B);
 
     return AppBackground(
       child: Scaffold(
@@ -239,10 +311,21 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 18,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: const Text('CGPA Tracker', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18)),
+          title: const Text(
+            'CGPA Tracker',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 18,
+            ),
+          ),
           centerTitle: true,
           actions: [
             Padding(
@@ -252,7 +335,11 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                 child: GlassContainer(
                   borderRadius: 12,
                   padding: const EdgeInsets.all(8),
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
@@ -274,9 +361,21 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                       children: [
                         Text(
                           cgpa.toStringAsFixed(2),
-                          style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold, letterSpacing: -1),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -1,
+                          ),
                         ),
-                        const Text('CGPA', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1)),
+                        const Text(
+                          'CGPA',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 11,
+                            letterSpacing: 1,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -294,8 +393,18 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
-                        Text(sgpa.toStringAsFixed(2), style: const TextStyle(color: Color(0xFF7BD0FF), fontWeight: FontWeight.bold, fontSize: 22)),
-                        const Text('Sem SGPA', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                        Text(
+                          sgpa.toStringAsFixed(2),
+                          style: const TextStyle(
+                            color: Color(0xFF7BD0FF),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                          ),
+                        ),
+                        const Text(
+                          'Sem SGPA',
+                          style: TextStyle(color: Colors.white38, fontSize: 10),
+                        ),
                       ],
                     ),
                   ),
@@ -307,8 +416,18 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
-                        Text('${activeGrades.length}', style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 22)),
-                        const Text('Subjects', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                        Text(
+                          '${activeGrades.length}',
+                          style: const TextStyle(
+                            color: Color(0xFFF59E0B),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                          ),
+                        ),
+                        const Text(
+                          'Subjects',
+                          style: TextStyle(color: Colors.white38, fontSize: 10),
+                        ),
                       ],
                     ),
                   ),
@@ -320,8 +439,18 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
-                        Text(totalCredits.toInt().toString(), style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 22)),
-                        const Text('Credits', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                        Text(
+                          totalCredits.toInt().toString(),
+                          style: const TextStyle(
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                          ),
+                        ),
+                        const Text(
+                          'Credits',
+                          style: TextStyle(color: Colors.white38, fontSize: 10),
+                        ),
                       ],
                     ),
                   ),
@@ -337,21 +466,40 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('What-If Simulator', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                      Text('Forecast CGPA with future credits', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                      Text(
+                        'What-If Simulator',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        'Forecast CGPA with future credits',
+                        style: TextStyle(color: Colors.white38, fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF8151EB).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF8151EB).withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: const Color(0xFF8151EB).withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     simulatedCgpa.toStringAsFixed(2),
-                    style: const TextStyle(color: Color(0xFFC0C1FF), fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                      color: Color(0xFFC0C1FF),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ],
@@ -366,8 +514,18 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Future Credits', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                      Text('${_simulatedFutureCredits.toInt()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const Text(
+                        'Future Credits',
+                        style: TextStyle(color: Colors.white60, fontSize: 12),
+                      ),
+                      Text(
+                        '${_simulatedFutureCredits.toInt()}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                   SliderTheme(
@@ -375,20 +533,35 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                       activeTrackColor: const Color(0xFF5B5FEF),
                       inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
                       thumbColor: Colors.white,
-                      overlayColor: const Color(0xFF5B5FEF).withValues(alpha: 0.15),
+                      overlayColor: const Color(
+                        0xFF5B5FEF,
+                      ).withValues(alpha: 0.15),
                       trackHeight: 4,
                     ),
                     child: Slider(
                       value: _simulatedFutureCredits,
-                      min: 0, max: 30, divisions: 30,
-                      onChanged: (v) => setState(() => _simulatedFutureCredits = v),
+                      min: 0,
+                      max: 30,
+                      divisions: 30,
+                      onChanged: (v) =>
+                          setState(() => _simulatedFutureCredits = v),
                     ),
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Expected GPA', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                      Text(_simulatedFutureGpa.toStringAsFixed(1), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const Text(
+                        'Expected GPA',
+                        style: TextStyle(color: Colors.white60, fontSize: 12),
+                      ),
+                      Text(
+                        _simulatedFutureGpa.toStringAsFixed(1),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                   SliderTheme(
@@ -396,12 +569,16 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                       activeTrackColor: const Color(0xFF8151EB),
                       inactiveTrackColor: Colors.white.withValues(alpha: 0.08),
                       thumbColor: Colors.white,
-                      overlayColor: const Color(0xFF8151EB).withValues(alpha: 0.15),
+                      overlayColor: const Color(
+                        0xFF8151EB,
+                      ).withValues(alpha: 0.15),
                       trackHeight: 4,
                     ),
                     child: Slider(
                       value: _simulatedFutureGpa,
-                      min: 0, max: 10, divisions: 100,
+                      min: 0,
+                      max: 10,
+                      divisions: 100,
                       onChanged: (v) => setState(() => _simulatedFutureGpa = v),
                     ),
                   ),
@@ -414,9 +591,22 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
             Row(
               children: [
                 const Expanded(
-                  child: Text('Subject Grades', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                  child: Text(
+                    'Subject Grades',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
-                Text('${activeGrades.length} recorded', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11)),
+                Text(
+                  '${activeGrades.length} recorded',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    fontSize: 11,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -427,11 +617,21 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                 padding: const EdgeInsets.all(28),
                 child: Column(
                   children: [
-                    Icon(Icons.grade_outlined, color: Colors.white.withValues(alpha: 0.2), size: 40),
+                    Icon(
+                      Icons.grade_outlined,
+                      color: Colors.white.withValues(alpha: 0.2),
+                      size: 40,
+                    ),
                     const SizedBox(height: 12),
-                    const Text('No grades yet', style: TextStyle(color: Colors.white60, fontSize: 14)),
+                    const Text(
+                      'No grades yet',
+                      style: TextStyle(color: Colors.white60, fontSize: 14),
+                    ),
                     const SizedBox(height: 4),
-                    const Text('Tap + to add your first subject grade.', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    const Text(
+                      'Tap + to add your first subject grade.',
+                      style: TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
                   ],
                 ),
               )
@@ -442,7 +642,10 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: GlassContainer(
                     borderRadius: 16,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -453,7 +656,14 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Center(
-                            child: Text(g.grade, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+                            child: Text(
+                              g.grade,
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -461,14 +671,35 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(g.subjectName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                              Text('${g.credits} credits · ${g.gradePoints.toInt()} pts', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                              Text(
+                                g.subjectName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                '${g.credits} credits · ${g.gradePoints.toInt()} pts',
+                                style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => ref.read(courseGradesProvider.notifier).deleteGrade(g.id),
-                          child: Icon(Icons.delete_outline_rounded, color: const Color(0xFFEF4444).withValues(alpha: 0.6), size: 20),
+                          onTap: () => ref
+                              .read(courseGradesProvider.notifier)
+                              .deleteGrade(g.id),
+                          child: Icon(
+                            Icons.delete_outline_rounded,
+                            color: const Color(
+                              0xFFEF4444,
+                            ).withValues(alpha: 0.6),
+                            size: 20,
+                          ),
                         ),
                       ],
                     ),
@@ -493,10 +724,14 @@ class _CgpaRingPainter extends CustomPainter {
     final radius = (size.width - 18) / 2;
     final progress = (cgpa / 10.0).clamp(0.0, 1.0);
 
-    canvas.drawCircle(center, radius, Paint()
-      ..color = const Color(0xFF1F2A3C)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = const Color(0xFF1F2A3C)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 14,
+    );
 
     if (progress > 0) {
       canvas.drawArc(

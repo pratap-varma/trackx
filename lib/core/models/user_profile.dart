@@ -47,11 +47,11 @@ class UserProfile {
     String? preferredTimezone,
     int? preferredStudySessionMinutes,
     bool? cloudSyncEnabled,
-  })  : defaultAttendanceTarget = defaultAttendanceTarget ?? globalTarget,
-        preferredLanguage = preferredLanguage ?? 'en',
-        preferredTimezone = preferredTimezone ?? 'UTC',
-        preferredStudySessionMinutes = preferredStudySessionMinutes ?? 25,
-        cloudSyncEnabled = cloudSyncEnabled ?? true;
+  }) : defaultAttendanceTarget = defaultAttendanceTarget ?? globalTarget,
+       preferredLanguage = preferredLanguage ?? 'en',
+       preferredTimezone = preferredTimezone ?? 'UTC',
+       preferredStudySessionMinutes = preferredStudySessionMinutes ?? 25,
+       cloudSyncEnabled = cloudSyncEnabled ?? true;
 
   UserProfile copyWith({
     String? id,
@@ -93,15 +93,20 @@ class UserProfile {
       registrationNumber: registrationNumber ?? this.registrationNumber,
       programmeName: programmeName ?? this.programmeName,
       joiningYear: joiningYear ?? this.joiningYear,
-      expectedGraduationYear: expectedGraduationYear ?? this.expectedGraduationYear,
+      expectedGraduationYear:
+          expectedGraduationYear ?? this.expectedGraduationYear,
       currentSemesterId: currentSemesterId ?? this.currentSemesterId,
-      defaultAttendanceTarget: defaultAttendanceTarget ?? this.defaultAttendanceTarget,
+      defaultAttendanceTarget:
+          defaultAttendanceTarget ?? this.defaultAttendanceTarget,
       preferredLanguage: preferredLanguage ?? this.preferredLanguage,
       preferredTimezone: preferredTimezone ?? this.preferredTimezone,
-      preferredStudySessionMinutes: preferredStudySessionMinutes ?? this.preferredStudySessionMinutes,
+      preferredStudySessionMinutes:
+          preferredStudySessionMinutes ?? this.preferredStudySessionMinutes,
       cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
     );
   }
+
+  String get department => branch;
 
   Map<String, dynamic> toMap() {
     return {
@@ -109,6 +114,7 @@ class UserProfile {
       'name': name,
       'email': email,
       'branch': branch,
+      'department': branch,
       'semester': semester,
       'globalTarget': globalTarget,
       'themeMode': themeMode,
@@ -131,26 +137,36 @@ class UserProfile {
   }
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
-    final double globalTargetVal = (map['globalTarget'] as num?)?.toDouble() ?? 75.0;
+    final double globalTargetVal =
+        (map['globalTarget'] as num?)?.toDouble() ?? 75.0;
     return UserProfile(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
       email: map['email'] ?? '',
-      branch: map['branch'] ?? '',
+      branch: map['department'] ?? map['branch'] ?? '',
       semester: map['semester'] ?? 1,
       globalTarget: globalTargetVal,
       themeMode: map['themeMode'] ?? 'dark',
       themeColorPack: map['themeColorPack'] ?? 'purple',
-      onboardingCompleted: map['onboardingCompleted'] ?? false,
-      createdTimestamp: map['createdTimestamp'] ?? 0,
-      updatedTimestamp: map['updatedTimestamp'] ?? 0,
+      onboardingCompleted:
+          map['onboardingCompleted'] ??
+          ((map['name'] ?? '').toString().isNotEmpty &&
+              (map['department'] ?? map['branch'] ?? '').toString().isNotEmpty),
+      createdTimestamp:
+          map['createdTimestamp'] ??
+          (map['createdAt'] is int ? map['createdAt'] : 0),
+      updatedTimestamp:
+          map['updatedTimestamp'] ??
+          (map['updatedAt'] is int ? map['updatedAt'] : 0),
       collegeName: map['collegeName'],
       registrationNumber: map['registrationNumber'],
       programmeName: map['programmeName'],
       joiningYear: map['joiningYear'],
       expectedGraduationYear: map['expectedGraduationYear'],
       currentSemesterId: map['currentSemesterId'],
-      defaultAttendanceTarget: (map['defaultAttendanceTarget'] as num?)?.toDouble() ?? globalTargetVal,
+      defaultAttendanceTarget:
+          (map['defaultAttendanceTarget'] as num?)?.toDouble() ??
+          globalTargetVal,
       preferredLanguage: map['preferredLanguage'] ?? 'en',
       preferredTimezone: map['preferredTimezone'] ?? 'UTC',
       preferredStudySessionMinutes: map['preferredStudySessionMinutes'],

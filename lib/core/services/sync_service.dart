@@ -58,7 +58,8 @@ class SyncService {
 
     try {
       final connectivityResult = await _connectivity.checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+      if (connectivityResult.isEmpty ||
+          !connectivityResult.any((r) => r != ConnectivityResult.none)) {
         _syncing = false;
         return;
       }

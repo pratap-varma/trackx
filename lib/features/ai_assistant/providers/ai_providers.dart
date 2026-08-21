@@ -1,18 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trackx/features/semesters/data/semester_repository.dart';
-import 'package:trackx/features/ai_advisor/domain/models/ai_models.dart';
 import 'package:trackx/features/ai_assistant/data/repositories/ai_conversation_repository.dart';
 import 'package:trackx/features/ai_assistant/data/repositories/ai_action_history_repository.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_usage.dart';
 
-final aiConversationRepositoryProvider = Provider<AiConversationRepository>((ref) {
+final aiConversationRepositoryProvider = Provider<AiConversationRepository>((
+  ref,
+) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AiConversationRepository(prefs);
 });
 
-final aiActionHistoryRepositoryProvider = Provider<AiActionHistoryRepository>((ref) {
+final aiActionHistoryRepositoryProvider = Provider<AiActionHistoryRepository>((
+  ref,
+) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AiActionHistoryRepository(prefs);
 });
@@ -25,6 +27,7 @@ class AiSettingsState {
   final Map<String, bool> consentFlags;
   final String activeConversationId;
   final String provider; // Auto, Gemini, OpenAI, Offline
+  final String customApiKey;
 
   AiSettingsState({
     required this.enableAi,
@@ -33,6 +36,7 @@ class AiSettingsState {
     required this.consentFlags,
     required this.activeConversationId,
     required this.provider,
+    this.customApiKey = '',
   });
 
   AiSettingsState copyWith({
@@ -42,6 +46,7 @@ class AiSettingsState {
     Map<String, bool>? consentFlags,
     String? activeConversationId,
     String? provider,
+    String? customApiKey,
   }) {
     return AiSettingsState(
       enableAi: enableAi ?? this.enableAi,
@@ -50,6 +55,7 @@ class AiSettingsState {
       consentFlags: consentFlags ?? this.consentFlags,
       activeConversationId: activeConversationId ?? this.activeConversationId,
       provider: provider ?? this.provider,
+      customApiKey: customApiKey ?? this.customApiKey,
     );
   }
 }
@@ -58,11 +64,13 @@ class AiSettingsNotifier extends StateNotifier<AiSettingsState> {
   final SharedPreferences _prefs;
 
   AiSettingsNotifier(this._prefs)
-      : super(AiSettingsState(
+    : super(
+        AiSettingsState(
           enableAi: _prefs.getBool('ai_setting_enabled') ?? true,
           saveHistory: _prefs.getBool('ai_setting_save_history') ?? true,
           showConsentPreview: _prefs.getBool('ai_setting_show_preview') ?? true,
           provider: _prefs.getString('ai_setting_provider') ?? 'Auto',
+          customApiKey: _prefs.getString('ai_custom_gemini_api_key') ?? '',
           activeConversationId: 'default',
           consentFlags: {
             'attendance': _prefs.getBool('ai_consent_attendance') ?? true,
@@ -73,7 +81,8 @@ class AiSettingsNotifier extends StateNotifier<AiSettingsState> {
             'cgpa': _prefs.getBool('ai_consent_cgpa') ?? true,
             'notes': _prefs.getBool('ai_consent_notes') ?? false,
           },
-        ));
+        ),
+      );
 
   Future<void> toggleEnableAi(bool val) async {
     state = state.copyWith(enableAi: val);
@@ -95,6 +104,11 @@ class AiSettingsNotifier extends StateNotifier<AiSettingsState> {
     await _prefs.setString('ai_setting_provider', provider);
   }
 
+  Future<void> setCustomApiKey(String key) async {
+    state = state.copyWith(customApiKey: key);
+    await _prefs.setString('ai_custom_gemini_api_key', key);
+  }
+
   Future<void> toggleConsentFlag(String key) async {
     final flags = Map<String, bool>.from(state.consentFlags);
     flags[key] = !(flags[key] ?? false);
@@ -107,23 +121,26 @@ class AiSettingsNotifier extends StateNotifier<AiSettingsState> {
   }
 }
 
-final aiSettingsProvider = StateNotifierProvider<AiSettingsNotifier, AiSettingsState>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return AiSettingsNotifier(prefs);
-});
+final aiSettingsProvider =
+    StateNotifierProvider<AiSettingsNotifier, AiSettingsState>((ref) {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return AiSettingsNotifier(prefs);
+    });
 
 // AI Usage Tracker StateNotifier
 class AiUsageNotifier extends StateNotifier<AiUsageSummary> {
   final SharedPreferences _prefs;
 
   AiUsageNotifier(this._prefs)
-      : super(AiUsageSummary(
+    : super(
+        AiUsageSummary(
           requestsToday: _prefs.getInt('ai_usage_requests_today') ?? 0,
           requestsThisMonth: _prefs.getInt('ai_usage_requests_month') ?? 0,
           maxDailyRequests: 20,
           maxMonthlyRequests: 300,
           offlineFallbacksCount: _prefs.getInt('ai_usage_offline_count') ?? 0,
-        )) {
+        ),
+      ) {
     _resetIfNeeded();
   }
 
@@ -132,10 +149,14 @@ class AiUsageNotifier extends StateNotifier<AiUsageSummary> {
     if (lastRequestStr != null) {
       final lastDate = DateTime.parse(lastRequestStr);
       final now = DateTime.now();
-      if (lastDate.day != now.day || lastDate.month != now.month || lastDate.year != now.year) {
+      if (lastDate.day != now.day ||
+          lastDate.month != now.month ||
+          lastDate.year != now.year) {
         state = AiUsageSummary(
           requestsToday: 0,
-          requestsThisMonth: lastDate.month != now.month ? 0 : state.requestsThisMonth,
+          requestsThisMonth: lastDate.month != now.month
+              ? 0
+              : state.requestsThisMonth,
           maxDailyRequests: state.maxDailyRequests,
           maxMonthlyRequests: state.maxMonthlyRequests,
           offlineFallbacksCount: state.offlineFallbacksCount,
@@ -160,7 +181,10 @@ class AiUsageNotifier extends StateNotifier<AiUsageSummary> {
     state = updated;
     await _prefs.setInt('ai_usage_requests_today', updated.requestsToday);
     await _prefs.setInt('ai_usage_requests_month', updated.requestsThisMonth);
-    await _prefs.setString('ai_usage_last_request_date', DateTime.now().toIso8601String());
+    await _prefs.setString(
+      'ai_usage_last_request_date',
+      DateTime.now().toIso8601String(),
+    );
   }
 
   Future<void> incrementOfflineFallback() async {
@@ -172,11 +196,16 @@ class AiUsageNotifier extends StateNotifier<AiUsageSummary> {
       offlineFallbacksCount: state.offlineFallbacksCount + 1,
     );
     state = updated;
-    await _prefs.setInt('ai_usage_offline_count', updated.offlineFallbacksCount);
+    await _prefs.setInt(
+      'ai_usage_offline_count',
+      updated.offlineFallbacksCount,
+    );
   }
 }
 
-final aiUsageProvider = StateNotifierProvider<AiUsageNotifier, AiUsageSummary>((ref) {
+final aiUsageProvider = StateNotifierProvider<AiUsageNotifier, AiUsageSummary>((
+  ref,
+) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AiUsageNotifier(prefs);
 });

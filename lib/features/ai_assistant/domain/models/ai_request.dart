@@ -10,7 +10,7 @@ enum AiFeatureType {
   revisionAdvice,
   timetableAdvice,
   creditExplanation,
-  semesterScenarioExplanation
+  semesterScenarioExplanation,
 }
 
 class AiRequest {

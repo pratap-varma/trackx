@@ -4,7 +4,8 @@ class TopicMastery {
   final String semesterId;
   final String subjectId;
   final String topicId;
-  final String confidenceLevel; // 'NotStarted', 'Familiar', 'Confident', 'Strong'
+  final String
+  confidenceLevel; // 'NotStarted', 'Familiar', 'Confident', 'Strong'
   final int evidenceCount;
   final DateTime lastReviewedAt;
   final DateTime nextSuggestedReviewAt;
@@ -44,8 +45,12 @@ class TopicMastery {
       topicId: map['topicId'] ?? '',
       confidenceLevel: map['confidenceLevel'] ?? 'NotStarted',
       evidenceCount: map['evidenceCount'] ?? 0,
-      lastReviewedAt: DateTime.parse(map['lastReviewedAt'] ?? DateTime.now().toIso8601String()),
-      nextSuggestedReviewAt: DateTime.parse(map['nextSuggestedReviewAt'] ?? DateTime.now().toIso8601String()),
+      lastReviewedAt: DateTime.parse(
+        map['lastReviewedAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      nextSuggestedReviewAt: DateTime.parse(
+        map['nextSuggestedReviewAt'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 }

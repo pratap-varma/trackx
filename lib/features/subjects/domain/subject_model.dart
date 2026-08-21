@@ -6,7 +6,8 @@ class Subject {
   final String? code;
   final String facultyName;
   final int colorValue;
-  final String type; // 'Theory', 'Laboratory', 'Project', 'Elective', 'Internship', 'Seminar', 'Workshop', 'Custom'
+  final String
+  type; // 'Theory', 'Laboratory', 'Project', 'Elective', 'Internship', 'Seminar', 'Workshop', 'Custom'
   final double? credits;
   final int? weeklyPeriods;
   final double targetAttendance;
@@ -14,8 +15,10 @@ class Subject {
   final int absentClasses;
   final String? grade;
   final double? marks;
-  final String status; // 'Planned', 'Active', 'Completed', 'Dropped', 'Archived'
-  final String expectedDifficulty; // 'Easy', 'Moderate', 'Challenging', 'Very Challenging', 'Not Set'
+  final String
+  status; // 'Planned', 'Active', 'Completed', 'Dropped', 'Archived'
+  final String
+  expectedDifficulty; // 'Easy', 'Moderate', 'Challenging', 'Very Challenging', 'Not Set'
   final int createdAt;
   final int updatedAt;
 
@@ -116,10 +119,12 @@ class Subject {
   }
 
   factory Subject.fromMap(Map<String, dynamic> map) {
-    final double targetAttendanceVal = (map['targetAttendance'] as num?)?.toDouble() ??
+    final double targetAttendanceVal =
+        (map['targetAttendance'] as num?)?.toDouble() ??
         (map['targetOverride'] as num?)?.toDouble() ??
         75.0;
-    final status = map['status'] ?? (map['isArchived'] == true ? 'Archived' : 'Active');
+    final status =
+        map['status'] ?? (map['isArchived'] == true ? 'Archived' : 'Active');
 
     return Subject(
       id: map['id'] ?? '',

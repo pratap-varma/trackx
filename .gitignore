@@ -47,3 +47,19 @@ app.*.map.json
 # Binaries & local sync files
 *.apk
 *-Prataps-Omen*
+
+# Secrets & Credentials
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+firebase.json
+.firebaserc
+lib/firebase_options.dart
+*.env
+*.env.*
+*.key
+*.keystore
+*.jks
+*.p12
+*.pem
+secrets.*
+local.properties

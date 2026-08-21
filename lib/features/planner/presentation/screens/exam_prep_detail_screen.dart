@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
@@ -6,13 +6,13 @@ import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/theme/app_theme.dart';
 
 class ExamPrepDetailScreen extends ConsumerStatefulWidget {
   const ExamPrepDetailScreen({super.key});
 
   @override
-  ConsumerState<ExamPrepDetailScreen> createState() => _ExamPrepDetailScreenState();
+  ConsumerState<ExamPrepDetailScreen> createState() =>
+      _ExamPrepDetailScreenState();
 }
 
 class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
@@ -42,22 +42,36 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Update Prep Details', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text(
+                    'Update Prep Details',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: currentConf,
+                    initialValue: currentConf,
                     style: const TextStyle(color: Colors.white),
                     items: const [
                       DropdownMenuItem(value: 'Low', child: Text('Low')),
-                      DropdownMenuItem(value: 'Developing', child: Text('Developing')),
-                      DropdownMenuItem(value: 'Confident', child: Text('Confident')),
+                      DropdownMenuItem(
+                        value: 'Developing',
+                        child: Text('Developing'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Confident',
+                        child: Text('Confident'),
+                      ),
                       DropdownMenuItem(value: 'Strong', child: Text('Strong')),
                     ],
                     onChanged: (val) => currentConf = val ?? 'Developing',
                     decoration: InputDecoration(
                       labelText: 'Confidence Level',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -65,14 +79,20 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                     controller: _hoursController,
                     style: const TextStyle(color: Colors.white),
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Completed Study Hours', labelStyle: TextStyle(color: Colors.white70)),
+                    decoration: const InputDecoration(
+                      labelText: 'Completed Study Hours',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _testsController,
                     style: const TextStyle(color: Colors.white),
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Practice Test Count', labelStyle: TextStyle(color: Colors.white70)),
+                    decoration: const InputDecoration(
+                      labelText: 'Practice Test Count',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -80,14 +100,22 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white60),
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          final hours = double.tryParse(_hoursController.text.trim()) ?? 0.0;
-                          final tests = int.tryParse(_testsController.text.trim()) ?? 0;
+                          final hours =
+                              double.tryParse(_hoursController.text.trim()) ??
+                              0.0;
+                          final tests =
+                              int.tryParse(_testsController.text.trim()) ?? 0;
 
-                          ref.read(examsProvider.notifier).editExam(
+                          ref
+                              .read(examsProvider.notifier)
+                              .editExam(
                                 exam.copyWith(
                                   confidence: currentConf,
                                   completedStudyHours: hours,
@@ -140,8 +168,28 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                 itemCount: exams.length,
                 itemBuilder: (context, index) {
                   final exam = exams[index];
-                  final sub = subjects.firstWhere((s) => s.id == exam.subjectId, orElse: () => Subject(id: '', userId: '', semesterId: '', name: 'Unknown Subject', facultyName: '', colorValue: 0, type: 'Theory', targetAttendance: 75, presentClasses: 0, absentClasses: 0, status: 'Active', expectedDifficulty: 'Not Set', createdAt: 0, updatedAt: 0));
-                  final daysRemaining = exam.examDate.difference(DateTime.now()).inDays;
+                  final sub = subjects.firstWhere(
+                    (s) => s.id == exam.subjectId,
+                    orElse: () => Subject(
+                      id: '',
+                      userId: '',
+                      semesterId: '',
+                      name: 'Unknown Subject',
+                      facultyName: '',
+                      colorValue: 0,
+                      type: 'Theory',
+                      targetAttendance: 75,
+                      presentClasses: 0,
+                      absentClasses: 0,
+                      status: 'Active',
+                      expectedDifficulty: 'Not Set',
+                      createdAt: 0,
+                      updatedAt: 0,
+                    ),
+                  );
+                  final daysRemaining = exam.examDate
+                      .difference(DateTime.now())
+                      .inDays;
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
@@ -155,19 +203,32 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                               Expanded(
                                 child: Text(
                                   exam.title,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: daysRemaining >= 0 ? Colors.blue.withValues(alpha: 0.15) : Colors.white10,
+                                  color: daysRemaining >= 0
+                                      ? Colors.blue.withValues(alpha: 0.15)
+                                      : Colors.white10,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  daysRemaining >= 0 ? '$daysRemaining Days Left' : 'Completed',
+                                  daysRemaining >= 0
+                                      ? '$daysRemaining Days Left'
+                                      : 'Completed',
                                   style: TextStyle(
-                                    color: daysRemaining >= 0 ? Colors.blueAccent : Colors.white60,
+                                    color: daysRemaining >= 0
+                                        ? Colors.blueAccent
+                                        : Colors.white60,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -176,15 +237,33 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text('Subject: ${sub.name}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                          Text('Exam Date: ${exam.examDate.year}-${exam.examDate.month}-${exam.examDate.day} at ${exam.startTime}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                          Text(
+                            'Subject: ${sub.name}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'Exam Date: ${exam.examDate.year}-${exam.examDate.month}-${exam.examDate.day} at ${exam.startTime}',
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                            ),
+                          ),
                           const Divider(color: Colors.white10, height: 20),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _buildPrepMetric('Confidence', exam.confidence),
-                              _buildPrepMetric('Hours Done', '${exam.completedStudyHours} hrs'),
-                              _buildPrepMetric('Practice Tests', '${exam.practiceTestCount} tests'),
+                              _buildPrepMetric(
+                                'Hours Done',
+                                '${exam.completedStudyHours} hrs',
+                              ),
+                              _buildPrepMetric(
+                                'Practice Tests',
+                                '${exam.practiceTestCount} tests',
+                              ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -194,7 +273,10 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                               TextButton.icon(
                                 onPressed: () => _showEditPrepDialog(exam),
                                 icon: const Icon(Icons.edit, size: 14),
-                                label: const Text('Update Progress', style: TextStyle(fontSize: 11)),
+                                label: const Text(
+                                  'Update Progress',
+                                  style: TextStyle(fontSize: 11),
+                                ),
                               ),
                             ],
                           ),
@@ -214,7 +296,14 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
       children: [
         Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9)),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 12,
+          ),
+        ),
       ],
     );
   }

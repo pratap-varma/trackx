@@ -1,4 +1,3 @@
-import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';

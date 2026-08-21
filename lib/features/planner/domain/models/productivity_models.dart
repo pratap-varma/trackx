@@ -252,7 +252,8 @@ class Exam {
   final String semesterId;
   final String subjectId;
   final String title;
-  final String examType; // Quiz, Midterm, Internal, Lab, Practical, Final, Other
+  final String
+  examType; // Quiz, Midterm, Internal, Lab, Practical, Final, Other
   final DateTime examDate;
   final String startTime;
   final String? endTime;
@@ -297,12 +298,12 @@ class Exam {
     double? plannedStudyHours,
     double? completedStudyHours,
     int? practiceTestCount,
-  })  : syllabusTopics = syllabusTopics ?? [],
-        priority = priority ?? 'Medium',
-        confidence = confidence ?? 'Developing',
-        plannedStudyHours = plannedStudyHours ?? 0.0,
-        completedStudyHours = completedStudyHours ?? 0.0,
-        practiceTestCount = practiceTestCount ?? 0;
+  }) : syllabusTopics = syllabusTopics ?? [],
+       priority = priority ?? 'Medium',
+       confidence = confidence ?? 'Developing',
+       plannedStudyHours = plannedStudyHours ?? 0.0,
+       completedStudyHours = completedStudyHours ?? 0.0,
+       practiceTestCount = practiceTestCount ?? 0;
 
   Exam copyWith({
     String? id,
@@ -404,8 +405,12 @@ class Exam {
       createdAt: map['createdAt'] ?? 0,
       updatedAt: map['updatedAt'] ?? 0,
       syllabusTopics: List<String>.from(map['syllabusTopics'] ?? []),
-      preparationStartDate: map['preparationStartDate'] != null ? DateTime.parse(map['preparationStartDate']) : null,
-      revisionDeadline: map['revisionDeadline'] != null ? DateTime.parse(map['revisionDeadline']) : null,
+      preparationStartDate: map['preparationStartDate'] != null
+          ? DateTime.parse(map['preparationStartDate'])
+          : null,
+      revisionDeadline: map['revisionDeadline'] != null
+          ? DateTime.parse(map['revisionDeadline'])
+          : null,
       priority: map['priority'],
       confidence: map['confidence'],
       plannedStudyHours: (map['plannedStudyHours'] as num?)?.toDouble(),

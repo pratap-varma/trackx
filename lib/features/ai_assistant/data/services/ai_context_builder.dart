@@ -37,7 +37,9 @@ class AiContextBuilder {
       }).toList();
 
       if (subjectFilterId != null) {
-        subjectsContext = subjectsContext.where((s) => s.id == subjectFilterId).toList();
+        subjectsContext = subjectsContext
+            .where((s) => s.id == subjectFilterId)
+            .toList();
       }
     }
 
@@ -64,7 +66,9 @@ class AiContextBuilder {
     if (consentFlags['attendance'] ?? true) {
       attendanceRecords = attendance;
       if (subjectFilterId != null) {
-        attendanceRecords = attendanceRecords.where((a) => a.subjectId == subjectFilterId).toList();
+        attendanceRecords = attendanceRecords
+            .where((a) => a.subjectId == subjectFilterId)
+            .toList();
       }
     }
 
@@ -73,7 +77,9 @@ class AiContextBuilder {
     if (consentFlags['attendance'] ?? true) {
       timetableContext = timetable;
       if (subjectFilterId != null) {
-        timetableContext = timetableContext.where((t) => t.subjectId == subjectFilterId).toList();
+        timetableContext = timetableContext
+            .where((t) => t.subjectId == subjectFilterId)
+            .toList();
       }
     }
 

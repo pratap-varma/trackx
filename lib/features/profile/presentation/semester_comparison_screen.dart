@@ -14,12 +14,20 @@ class SemesterComparisonScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 18,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: const Text(
             'Semester Comparison',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 18,
+            ),
           ),
           centerTitle: true,
         ),
@@ -35,7 +43,12 @@ class SemesterComparisonScreen extends StatelessWidget {
                     flex: 3,
                     child: Text(
                       'Metric',
-                      style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                   ),
                   _semLabel('SEM 1', const Color(0xFF7BD0FF)),
@@ -143,7 +156,11 @@ class SemesterComparisonScreen extends StatelessWidget {
                       color: const Color(0xFF5B5FEF).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFFC0C1FF), size: 18),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: Color(0xFFC0C1FF),
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -152,12 +169,21 @@ class SemesterComparisonScreen extends StatelessWidget {
                       children: [
                         Text(
                           'AI Insight',
-                          style: TextStyle(color: Color(0xFFC0C1FF), fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                          style: TextStyle(
+                            color: Color(0xFFC0C1FF),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                         SizedBox(height: 5),
                         Text(
                           'Your Semester 2 shows a strong upward trend — attendance improved by 7.3% and SGPA grew by 0.44 points. Keep up the momentum!',
-                          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
                         ),
                       ],
                     ),
@@ -177,7 +203,12 @@ class SemesterComparisonScreen extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
@@ -187,7 +218,12 @@ class SemesterComparisonScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10, top: 4, left: 4),
       child: Text(
         title,
-        style: const TextStyle(color: Colors.white30, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+        style: const TextStyle(
+          color: Colors.white30,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
@@ -201,7 +237,9 @@ class SemesterComparisonScreen extends StatelessWidget {
     required String trend,
     required bool isPositive,
   }) {
-    final trendColor = isPositive ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final trendColor = isPositive
+        ? const Color(0xFF10B981)
+        : const Color(0xFFEF4444);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GlassContainer(
@@ -223,7 +261,11 @@ class SemesterComparisonScreen extends StatelessWidget {
               flex: 2,
               child: Text(
                 metric,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             SizedBox(
@@ -240,7 +282,11 @@ class SemesterComparisonScreen extends StatelessWidget {
               child: Text(
                 sem2,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -254,7 +300,11 @@ class SemesterComparisonScreen extends StatelessWidget {
               child: Text(
                 trend,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: trendColor, fontWeight: FontWeight.bold, fontSize: 11),
+                style: TextStyle(
+                  color: trendColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ),
           ],

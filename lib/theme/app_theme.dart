@@ -5,7 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 
 // Provider for dynamic accent color
-final accentColorProvider = StateNotifierProvider<AccentColorNotifier, Color>((ref) {
+final accentColorProvider = StateNotifierProvider<AccentColorNotifier, Color>((
+  ref,
+) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AccentColorNotifier(prefs);
 });
@@ -23,7 +25,7 @@ class AccentColorNotifier extends StateNotifier<Color> {
 
   Future<void> setAccent(Color color) async {
     state = color;
-    await _prefs.setInt(_keyAccent, color.value);
+    await _prefs.setInt(_keyAccent, color.toARGB32());
   }
 }
 
@@ -47,7 +49,9 @@ class AppTheme {
   static const Color darkSurfaceContainer = Color(0xFF1B1F2C);
   static const Color darkSurfaceHigh = Color(0xFF252A37);
   static const Color darkGlassBg = Color(0x14FFFFFF); // 8% white glass
-  static const Color darkGlassBorder = Color(0x1FDEE2F4); // 12% luminous outline
+  static const Color darkGlassBorder = Color(
+    0x1FDEE2F4,
+  ); // 12% luminous outline
 
   // Light Mode Ambient
   static const Color lightBgBase = Color(0xFFF6F8FC);

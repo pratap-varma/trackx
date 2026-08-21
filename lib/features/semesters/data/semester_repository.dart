@@ -2,33 +2,67 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/features/semesters/domain/semester_model.dart';
 
 class SemesterRepository extends StateNotifier<List<Semester>> {
   static const String _keySemesters = 'semesters_list';
   final SharedPreferences _prefs;
+  final Ref? _ref;
 
-  SemesterRepository(this._prefs) : super([]) {
+  SemesterRepository(this._prefs, [this._ref]) : super([]) {
+    _init();
+  }
+
+  String get _currentUserId =>
+      _ref?.read(authRepositoryProvider).userProfile?.id ?? '';
+
+  String _getKey([String? uid]) {
+    final effectiveUid = uid ?? _currentUserId;
+    if (effectiveUid.isEmpty) return _keySemesters;
+    return '${effectiveUid}_$_keySemesters';
+  }
+
+  void _init() {
     _load();
+    _ref?.listen<AuthState>(authRepositoryProvider, (previous, next) {
+      if (previous?.userProfile?.id != next.userProfile?.id ||
+          previous?.status != next.status) {
+        _load();
+      }
+    });
   }
 
   void _load() {
-    final jsonStr = _prefs.getString(_keySemesters);
+    final uid = _currentUserId;
+    if (uid.isEmpty) {
+      state = [];
+      return;
+    }
+    final key = _getKey(uid);
+    final jsonStr = _prefs.getString(key);
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
             .map((item) => Semester.fromMap(item as Map<String, dynamic>))
+            .where((s) => s.userId == uid || s.userId.isEmpty)
+            .map((s) => s.userId != uid ? s.copyWith(userId: uid) : s)
             .toList();
       } catch (_) {
         state = [];
       }
+    } else {
+      state = [];
     }
   }
 
   Future<void> _save() async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
+    final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((s) => s.toMap()).toList());
-    await _prefs.setString(_keySemesters, jsonStr);
+    await _prefs.setString(key, jsonStr);
   }
 
   Future<void> createSemester(
@@ -45,11 +79,14 @@ class SemesterRepository extends StateNotifier<List<Semester>> {
     String? status,
   }) async {
     final progId = programmeId ?? '';
-    final hasActiveInProg = state.any((sem) => sem.programmeId == progId && sem.status == 'Active');
+    final hasActiveInProg = state.any(
+      (sem) => sem.programmeId == progId && sem.status == 'Active',
+    );
+    final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
 
     final newSem = Semester(
       id: 'sem-${DateTime.now().millisecondsSinceEpoch}',
-      userId: 'user_1',
+      userId: uid,
       programmeId: progId,
       name: name,
       semesterNumber: number ?? 1,
@@ -70,12 +107,23 @@ class SemesterRepository extends StateNotifier<List<Semester>> {
   }
 
   Future<void> updateSemester(Semester updated) async {
-    state = state.map((sem) => sem.id == updated.id ? updated.copyWith(updatedAt: DateTime.now().millisecondsSinceEpoch) : sem).toList();
+    state = state
+        .map(
+          (sem) => sem.id == updated.id
+              ? updated.copyWith(
+                  updatedAt: DateTime.now().millisecondsSinceEpoch,
+                )
+              : sem,
+        )
+        .toList();
     await _save();
   }
 
   Future<void> setActiveSemester(String id) async {
-    final targetSem = state.firstWhere((s) => s.id == id, orElse: () => state.first);
+    final targetSem = state.firstWhere(
+      (s) => s.id == id,
+      orElse: () => state.first,
+    );
     final progId = targetSem.programmeId;
 
     state = state.map((sem) {
@@ -148,13 +196,14 @@ class SemesterRepository extends StateNotifier<List<Semester>> {
 // Providers
 final semesterRepositoryProvider =
     StateNotifierProvider<SemesterRepository, List<Semester>>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return SemesterRepository(prefs);
-});
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return SemesterRepository(prefs, ref);
+    });
 
 final activeSemesterProvider = Provider<Semester?>((ref) {
   final list = ref.watch(semesterRepositoryProvider);
   final active = list.where((sem) => sem.isActive).toList();
-  return active.isNotEmpty ? active.first : (list.isNotEmpty ? list.first : null);
+  return active.isNotEmpty
+      ? active.first
+      : (list.isNotEmpty ? list.first : null);
 });
-

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
@@ -15,7 +16,8 @@ class SubjectDetailScreen extends ConsumerStatefulWidget {
   const SubjectDetailScreen({super.key, required this.subjectId});
 
   @override
-  ConsumerState<SubjectDetailScreen> createState() => _SubjectDetailScreenState();
+  ConsumerState<SubjectDetailScreen> createState() =>
+      _SubjectDetailScreenState();
 }
 
 class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
@@ -42,12 +44,19 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             children: [
               const Text(
                 'Override Target',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Set a custom attendance target for this subject.',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 12,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -64,8 +73,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white60,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: const Text('Cancel'),
@@ -75,24 +88,42 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
-                        final val = double.tryParse(_overrideController.text.trim());
+                        final val = double.tryParse(
+                          _overrideController.text.trim(),
+                        );
                         if (val != null && val >= 1 && val <= 100) {
                           final subjects = ref.read(subjectRepositoryProvider);
-                          final sub = subjects.firstWhere((s) => s.id == widget.subjectId);
-                          await ref.read(subjectRepositoryProvider.notifier).editSubject(
-                            sub.id, sub.name, sub.facultyName, sub.colorValue, val,
+                          final sub = subjects.firstWhere(
+                            (s) => s.id == widget.subjectId,
                           );
+                          await ref
+                              .read(subjectRepositoryProvider.notifier)
+                              .editSubject(
+                                sub.id,
+                                sub.name,
+                                sub.facultyName,
+                                sub.colorValue,
+                                val,
+                              );
                           if (context.mounted) Navigator.pop(context);
                         }
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)]),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Center(
-                          child: Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            'Save',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -121,7 +152,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(2),
@@ -129,9 +161,20 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Delete Record?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            const Text(
+              'Delete Record?',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
             const SizedBox(height: 8),
-            const Text('This attendance log will be permanently removed.', style: TextStyle(color: Colors.white54, fontSize: 13), textAlign: TextAlign.center),
+            const Text(
+              'This attendance log will be permanently removed.',
+              style: TextStyle(color: Colors.white54, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -140,9 +183,13 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     onPressed: () => Navigator.pop(ctx),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white60,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -152,28 +199,51 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       final backup = rec;
-                      await ref.read(attendanceRepositoryProvider.notifier).deleteAttendance(rec.id);
+                      await ref
+                          .read(attendanceRepositoryProvider.notifier)
+                          .deleteAttendance(rec.id);
                       if (ctx.mounted) {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                          content: const Text('Attendance deleted.'),
-                          action: SnackBarAction(
-                            label: 'UNDO',
-                            onPressed: () async {
-                              await ref.read(attendanceRepositoryProvider.notifier).insertRecord(backup);
-                            },
+                        ScaffoldMessenger.of(ctx).clearSnackBars();
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: const Text('Attendance record deleted.'),
+                            duration: const Duration(milliseconds: 2000),
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.only(
+                              bottom: 24,
+                              left: 16,
+                              right: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            action: SnackBarAction(
+                              label: 'UNDO',
+                              textColor: const Color(0xFF7BD0FF),
+                              onPressed: () async {
+                                await ref
+                                    .read(attendanceRepositoryProvider.notifier)
+                                    .insertRecord(backup);
+                              },
+                            ),
                           ),
-                        ));
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFEF4444),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: 0,
                     ),
-                    child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -184,14 +254,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     );
   }
 
-  Color get _riskColor {
-    return 'danger' == 'danger' ? const Color(0xFFEF4444) : const Color(0xFF10B981);
-  }
-
   @override
   Widget build(BuildContext context) {
     final stats = ref.watch(statsProvider);
-    final subjectStatsList = stats.allSubjectStats.where((s) => s.subject.id == widget.subjectId).toList();
+    final subjectStatsList = stats.allSubjectStats
+        .where((s) => s.subject.id == widget.subjectId)
+        .toList();
 
     if (subjectStatsList.isEmpty) {
       return AppBackground(
@@ -200,12 +268,19 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 18,
+              ),
               onPressed: () => context.pop(),
             ),
           ),
           body: const Center(
-            child: Text('Subject not found', style: TextStyle(color: Colors.white)),
+            child: Text(
+              'Subject not found',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ),
       );
@@ -213,18 +288,24 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
 
     final subStats = subjectStatsList.first;
     final sub = subStats.subject;
-    final records = ref.watch(attendanceRepositoryProvider).where((r) => r.subjectId == sub.id).toList();
+    final records = ref
+        .watch(attendanceRepositoryProvider)
+        .where((r) => r.subjectId == sub.id)
+        .toList();
 
     final filteredRecords = records.where((r) {
       if (_filter == 'present') return r.status == 'present';
       if (_filter == 'absent') return r.status == 'absent';
       return true;
-    }).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
     final subjectColor = Color(sub.colorValue);
     final pct = subStats.percentage;
-    final pctColor = pct >= subStats.target ? const Color(0xFF10B981) : pct >= 60 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444);
+    final pctColor = pct >= subStats.target
+        ? const Color(0xFF10B981)
+        : pct >= 60
+        ? const Color(0xFFF59E0B)
+        : const Color(0xFFEF4444);
 
     final riskLabel = subStats.riskLevel.toUpperCase();
     final riskColor = switch (subStats.riskLevel.toLowerCase()) {
@@ -240,14 +321,29 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 18,
+            ),
             onPressed: () => context.pop(),
           ),
-          title: Text(sub.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+          title: Text(
+            sub.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
           centerTitle: true,
           actions: [
             IconButton(
-              icon: Icon(Icons.tune_rounded, color: Colors.white.withValues(alpha: 0.6), size: 20),
+              icon: Icon(
+                Icons.tune_rounded,
+                color: Colors.white.withValues(alpha: 0.6),
+                size: 20,
+              ),
               onPressed: () => _showOverrideDialog(subStats.target),
               tooltip: 'Override Target',
             ),
@@ -277,7 +373,11 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           child: Center(
                             child: Text(
                               '${pct.toStringAsFixed(0)}%',
-                              style: TextStyle(color: pctColor, fontWeight: FontWeight.bold, fontSize: 18),
+                              style: TextStyle(
+                                color: pctColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
                         ),
@@ -288,26 +388,54 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              sub.facultyName.isNotEmpty ? sub.facultyName : 'Instructor Not Set',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                              sub.facultyName.isNotEmpty
+                                  ? sub.facultyName
+                                  : 'Instructor Not Set',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: riskColor.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(7),
                               ),
-                              child: Text(riskLabel, style: TextStyle(color: riskColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                riskLabel,
+                                style: TextStyle(
+                                  color: riskColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 10),
                             Row(
                               children: [
-                                _miniStat(subStats.presentCount.toString(), 'Present', const Color(0xFF10B981)),
+                                _miniStat(
+                                  subStats.presentCount.toString(),
+                                  'Present',
+                                  const Color(0xFF10B981),
+                                ),
                                 const SizedBox(width: 16),
-                                _miniStat(subStats.absentCount.toString(), 'Absent', const Color(0xFFEF4444)),
+                                _miniStat(
+                                  subStats.absentCount.toString(),
+                                  'Absent',
+                                  const Color(0xFFEF4444),
+                                ),
                                 const SizedBox(width: 16),
-                                _miniStat('${subStats.totalCount}', 'Total', Colors.white54),
+                                _miniStat(
+                                  '${subStats.totalCount}',
+                                  'Total',
+                                  Colors.white54,
+                                ),
                               ],
                             ),
                           ],
@@ -316,36 +444,64 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Container(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+                  Container(
+                    height: 1,
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
                   const SizedBox(height: 14),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Target: ${subStats.target.toInt()}%', style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                      Text(
+                        'Target: ${subStats.target.toInt()}%',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
+                      ),
                       if (subStats.safeBunks > 0)
                         Row(
                           children: [
-                            const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981), size: 14),
+                            const Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: Color(0xFF10B981),
+                              size: 14,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Can bunk ${subStats.safeBunks} more',
-                              style: const TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Color(0xFF10B981),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         )
                       else if (subStats.requiredRecovery > 0)
                         Row(
                           children: [
-                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 14),
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: Color(0xFFEF4444),
+                              size: 14,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Need ${subStats.requiredRecovery} more',
-                              style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Color(0xFFEF4444),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         )
                       else
-                        const Text('At threshold', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                        const Text(
+                          'At threshold',
+                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                        ),
                     ],
                   ),
                 ],
@@ -357,7 +513,14 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Attendance Log', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                const Text(
+                  'Attendance Log',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
                 Row(
                   children: ['all', 'present', 'absent'].map((f) {
                     final isActive = _filter == f;
@@ -371,16 +534,25 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
-                          color: isActive ? fColor.withValues(alpha: 0.12) : Colors.transparent,
+                          color: isActive
+                              ? fColor.withValues(alpha: 0.12)
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isActive ? fColor.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.06),
+                            color: isActive
+                                ? fColor.withValues(alpha: 0.3)
+                                : Colors.white.withValues(alpha: 0.06),
                           ),
                         ),
                         child: Text(
-                          f == 'all' ? 'All' : f[0].toUpperCase() + f.substring(1),
+                          f == 'all'
+                              ? 'All'
+                              : f[0].toUpperCase() + f.substring(1),
                           style: TextStyle(
                             color: isActive ? fColor : Colors.white30,
                             fontSize: 10,
@@ -401,11 +573,20 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   padding: const EdgeInsets.all(32),
                   child: Column(
                     children: [
-                      Icon(Icons.event_busy_outlined, color: Colors.white.withValues(alpha: 0.15), size: 40),
+                      Icon(
+                        Icons.event_busy_outlined,
+                        color: Colors.white.withValues(alpha: 0.15),
+                        size: 40,
+                      ),
                       const SizedBox(height: 12),
                       Text(
-                        _filter == 'all' ? 'No attendance logged yet' : 'No ${_filter} records',
-                        style: const TextStyle(color: Colors.white60, fontSize: 13),
+                        _filter == 'all'
+                            ? 'No attendance logged yet'
+                            : 'No $_filter records',
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -413,16 +594,30 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               )
             else
               ...filteredRecords.map((rec) {
-                final isEditable = AttendanceRepository.canEditAttendance(rec, DateTime.now());
+                final isEditable = AttendanceRepository.canEditAttendance(
+                  rec,
+                  DateTime.now(),
+                );
                 final isPresent = rec.status == 'present';
-                final statusColor = isPresent ? const Color(0xFF10B981) : const Color(0xFFEF4444);
-                final dateStr = '${rec.date.day}/${rec.date.month}/${rec.date.year}';
+                final statusColor = isPresent
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFFEF4444);
+                
+                final markedTimestamp = rec.updatedAt > 0 ? rec.updatedAt : rec.createdAt;
+                final markedTime = markedTimestamp > 0
+                    ? DateTime.fromMillisecondsSinceEpoch(markedTimestamp)
+                    : rec.date;
+                final timeFormatted = DateFormat('hh:mm a').format(markedTime);
+                final dateFormatted = DateFormat('EEE, MMM d, yyyy').format(rec.date);
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: GlassContainer(
                     borderRadius: 14,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Row(
                       children: [
                         // Status dot
@@ -432,7 +627,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           decoration: BoxDecoration(
                             color: statusColor,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: statusColor.withValues(alpha: 0.4), blurRadius: 4)],
+                            boxShadow: [
+                              BoxShadow(
+                                color: statusColor.withValues(alpha: 0.4),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -440,33 +640,80 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(dateStr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
                               Text(
-                                rec.periodNumber != null ? 'Period ${rec.periodNumber}' : 'Subject-wise',
-                                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                dateFormatted,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    size: 11,
+                                    color: const Color(0xFF7BD0FF),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Marked at $timeFormatted',
+                                    style: const TextStyle(
+                                      color: Color(0xFF7BD0FF),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (rec.periodNumber != null) ...[
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '• Period ${rec.periodNumber}',
+                                      style: const TextStyle(
+                                        color: Colors.white38,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             rec.status.toUpperCase(),
-                            style: TextStyle(color: statusColor, fontSize: 9, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         if (isEditable)
                           GestureDetector(
                             onTap: () => _confirmDeleteRecord(context, rec),
-                            child: Icon(Icons.delete_outline_rounded, color: Colors.white.withValues(alpha: 0.25), size: 18),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.white.withValues(alpha: 0.25),
+                              size: 18,
+                            ),
                           )
                         else
-                          Icon(Icons.lock_outline_rounded, color: Colors.white.withValues(alpha: 0.12), size: 15),
+                          Icon(
+                            Icons.lock_outline_rounded,
+                            color: Colors.white.withValues(alpha: 0.12),
+                            size: 15,
+                          ),
                       ],
                     ),
                   ),
@@ -482,7 +729,14 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
         Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9)),
       ],
     );
@@ -494,17 +748,25 @@ class _AttendanceRingPainter extends CustomPainter {
   final Color color;
   final Color subjectColor;
 
-  _AttendanceRingPainter({required this.progress, required this.color, required this.subjectColor});
+  _AttendanceRingPainter({
+    required this.progress,
+    required this.color,
+    required this.subjectColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - 10) / 2;
 
-    canvas.drawCircle(center, radius, Paint()
-      ..color = const Color(0xFF1F2A3C)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = const Color(0xFF1F2A3C)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 8,
+    );
 
     if (progress > 0) {
       canvas.drawArc(

@@ -40,7 +40,9 @@ class RevisionItem {
       topicId: map['topicId'] ?? '',
       intervalStage: map['intervalStage'] ?? 0,
       dueAt: DateTime.parse(map['dueAt'] ?? DateTime.now().toIso8601String()),
-      lastReviewedAt: DateTime.parse(map['lastReviewedAt'] ?? DateTime.now().toIso8601String()),
+      lastReviewedAt: DateTime.parse(
+        map['lastReviewedAt'] ?? DateTime.now().toIso8601String(),
+      ),
       status: map['status'] ?? 'Pending',
     );
   }

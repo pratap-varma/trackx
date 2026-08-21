@@ -2,33 +2,78 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/authentication/domain/auth_state.dart';
+import 'package:trackx/features/timetable/data/services/notification_service.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 
 class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
   static const String _keyTimetable = 'timetable_entries_list';
   final SharedPreferences _prefs;
+  final Ref? _ref;
 
-  TimetableRepository(this._prefs) : super([]) {
+  TimetableRepository(this._prefs, [this._ref]) : super([]) {
+    _init();
+  }
+
+  String get _currentUserId =>
+      _ref?.read(authRepositoryProvider).userProfile?.id ?? '';
+
+  String _getKey([String? uid]) {
+    final effectiveUid = uid ?? _currentUserId;
+    if (effectiveUid.isEmpty) return _keyTimetable;
+    return '${effectiveUid}_$_keyTimetable';
+  }
+
+  void _init() {
     _load();
+    _ref?.listen<AuthState>(authRepositoryProvider, (previous, next) {
+      if (previous?.userProfile?.id != next.userProfile?.id ||
+          previous?.status != next.status) {
+        _load();
+      }
+    });
   }
 
   void _load() {
-    final jsonStr = _prefs.getString(_keyTimetable);
+    final uid = _currentUserId;
+    if (uid.isEmpty) {
+      state = [];
+      return;
+    }
+    final key = _getKey(uid);
+    final jsonStr = _prefs.getString(key);
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
             .map((item) => TimetableEntry.fromMap(item as Map<String, dynamic>))
+            .where((e) => e.userId == uid || e.userId.isEmpty)
+            .map((e) => e.userId != uid ? e.copyWith(userId: uid) : e)
             .toList();
       } catch (_) {
         state = [];
       }
+    } else {
+      state = [];
     }
   }
 
   Future<void> _save() async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
+    final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyTimetable, jsonStr);
+    await _prefs.setString(key, jsonStr);
+    _syncNotifications();
+  }
+
+  void _syncNotifications() {
+    try {
+      final notifService = _ref?.read(notificationServiceProvider);
+      final globalTarget =
+          _ref?.read(authRepositoryProvider).userProfile?.globalTarget ?? 75.0;
+      notifService?.scheduleReminders(state, globalTarget);
+    } catch (_) {}
   }
 
   /// Conflict prevention rules:
@@ -65,10 +110,15 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
   }
 
   Future<String?> addEntry(TimetableEntry entry) async {
-    final conflictMsg = verifyConflict(entry);
+    final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
+    final userScopedEntry = entry.userId != uid
+        ? entry.copyWith(userId: uid)
+        : entry;
+
+    final conflictMsg = verifyConflict(userScopedEntry);
     if (conflictMsg != null) return conflictMsg;
 
-    state = [...state, entry];
+    state = [...state, userScopedEntry];
     await _save();
     return null;
   }
@@ -108,10 +158,11 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
     // Clear destination day first
     await clearDay(semesterId, toDay);
 
+    final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
     final copied = sourceEntries.map((e) {
       return TimetableEntry(
         id: 'entry-${DateTime.now().millisecondsSinceEpoch}-${e.periodNumber}',
-        userId: e.userId,
+        userId: uid,
         semesterId: e.semesterId,
         subjectId: e.subjectId,
         dayOfWeek: toDay,
@@ -141,11 +192,16 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
     state = state.where((e) => e.semesterId != semesterId).toList();
     await _save();
   }
+
+  Future<void> deleteEntriesForSubject(String subjectId) async {
+    state = state.where((e) => e.subjectId != subjectId).toList();
+    await _save();
+  }
 }
 
 // Provider
 final timetableRepositoryProvider =
     StateNotifierProvider<TimetableRepository, List<TimetableEntry>>((ref) {
       final prefs = ref.watch(sharedPreferencesProvider);
-      return TimetableRepository(prefs);
+      return TimetableRepository(prefs, ref);
     });

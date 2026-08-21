@@ -1,11 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/subjects/data/course_repository.dart';
 import 'package:trackx/features/subjects/domain/personal_course_model.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/theme/app_theme.dart';
 
@@ -13,7 +12,8 @@ class CoursePlanningScreen extends ConsumerStatefulWidget {
   const CoursePlanningScreen({super.key});
 
   @override
-  ConsumerState<CoursePlanningScreen> createState() => _CoursePlanningScreenState();
+  ConsumerState<CoursePlanningScreen> createState() =>
+      _CoursePlanningScreenState();
 }
 
 class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
@@ -58,48 +58,92 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Add Course Entry', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text(
+                    'Add Course Entry',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 16),
-                  GlassTextField(controller: _titleController, labelText: 'Course Title'),
+                  GlassTextField(
+                    controller: _titleController,
+                    labelText: 'Course Title',
+                  ),
                   const SizedBox(height: 12),
-                  GlassTextField(controller: _codeController, labelText: 'Course Code'),
+                  GlassTextField(
+                    controller: _codeController,
+                    labelText: 'Course Code',
+                  ),
                   const SizedBox(height: 12),
-                  GlassTextField(controller: _creditsController, labelText: 'Credits', keyboardType: TextInputType.number),
+                  GlassTextField(
+                    controller: _creditsController,
+                    labelText: 'Credits',
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 12),
-                  GlassTextField(controller: _descController, labelText: 'Description'),
+                  GlassTextField(
+                    controller: _descController,
+                    labelText: 'Description',
+                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedType,
+                    initialValue: _selectedType,
                     style: const TextStyle(color: Colors.white),
                     items: const [
                       DropdownMenuItem(value: 'Theory', child: Text('Theory')),
-                      DropdownMenuItem(value: 'Laboratory', child: Text('Laboratory')),
-                      DropdownMenuItem(value: 'Project', child: Text('Project')),
-                      DropdownMenuItem(value: 'Elective', child: Text('Elective')),
-                      DropdownMenuItem(value: 'Internship', child: Text('Internship')),
+                      DropdownMenuItem(
+                        value: 'Laboratory',
+                        child: Text('Laboratory'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Project',
+                        child: Text('Project'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Elective',
+                        child: Text('Elective'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Internship',
+                        child: Text('Internship'),
+                      ),
                     ],
                     onChanged: (val) => _selectedType = val ?? 'Theory',
                     decoration: InputDecoration(
                       labelText: 'Type',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _selectedDifficulty,
+                    initialValue: _selectedDifficulty,
                     style: const TextStyle(color: Colors.white),
                     items: const [
                       DropdownMenuItem(value: 'Easy', child: Text('Easy')),
-                      DropdownMenuItem(value: 'Moderate', child: Text('Moderate')),
-                      DropdownMenuItem(value: 'Challenging', child: Text('Challenging')),
-                      DropdownMenuItem(value: 'Very Challenging', child: Text('Very Challenging')),
+                      DropdownMenuItem(
+                        value: 'Moderate',
+                        child: Text('Moderate'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Challenging',
+                        child: Text('Challenging'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Very Challenging',
+                        child: Text('Very Challenging'),
+                      ),
                     ],
                     onChanged: (val) => _selectedDifficulty = val ?? 'Moderate',
                     decoration: InputDecoration(
                       labelText: 'Difficulty',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -108,17 +152,24 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white60),
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () {
                           final title = _titleController.text.trim();
                           final code = _codeController.text.trim();
-                          final credits = double.tryParse(_creditsController.text.trim());
+                          final credits = double.tryParse(
+                            _creditsController.text.trim(),
+                          );
                           final desc = _descController.text.trim();
 
                           if (title.isNotEmpty) {
-                            ref.read(courseRepositoryProvider.notifier).createCourse(
+                            ref
+                                .read(courseRepositoryProvider.notifier)
+                                .createCourse(
                                   title: title,
                                   courseCode: code.isNotEmpty ? code : null,
                                   description: desc.isNotEmpty ? desc : null,
@@ -146,10 +197,15 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
   }
 
   void _convertCourseToSubject(PersonalCourse course) {
-    final semesters = ref.read(semesterRepositoryProvider).where((s) => s.status != 'Archived').toList();
+    final semesters = ref
+        .read(semesterRepositoryProvider)
+        .where((s) => s.status != 'Archived')
+        .toList();
 
     if (semesters.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please create a semester first.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please create a semester first.')),
+      );
       return;
     }
 
@@ -166,13 +222,26 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Convert to Semester Subject', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text(
+                      'Convert to Semester Subject',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       dropdownColor: Colors.purple.shade900,
-                      value: selectedSemId,
+                      initialValue: selectedSemId,
                       style: const TextStyle(color: Colors.white),
-                      items: semesters.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                      items: semesters
+                          .map(
+                            (s) => DropdownMenuItem(
+                              value: s.id,
+                              child: Text(s.name),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (val) {
                         if (val != null) {
                           setDialogState(() => selectedSemId = val);
@@ -180,7 +249,9 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                       },
                       decoration: InputDecoration(
                         labelText: 'Target Semester',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -189,22 +260,33 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.white60),
+                          ),
                         ),
                         ElevatedButton(
                           onPressed: () async {
-                            final success = await ref.read(courseRepositoryProvider.notifier).convertToSubject(
+                            final success = await ref
+                                .read(courseRepositoryProvider.notifier)
+                                .convertToSubject(
                                   courseId: course.id,
                                   semesterId: selectedSemId,
                                   facultyName: 'TBD',
                                   colorValue: 0xFF9C27B0,
                                   ref: ref,
                                 );
-                            if (mounted) Navigator.pop(context);
-                            if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Course mapped to subject successfully.')));
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed. Subject already exists in that semester.')));
+                            if (context.mounted) Navigator.of(context).pop();
+                            if (mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    success
+                                        ? 'Course mapped to subject successfully.'
+                                        : 'Failed. Subject already exists in that semester.',
+                                  ),
+                                ),
+                              );
                             }
                           },
                           child: const Text('Convert'),
@@ -227,7 +309,8 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
     final filtered = list.where((c) {
       if (_searchQuery.isEmpty) return true;
       final q = _searchQuery.toLowerCase();
-      return c.title.toLowerCase().contains(q) || (c.courseCode?.toLowerCase().contains(q) ?? false);
+      return c.title.toLowerCase().contains(q) ||
+          (c.courseCode?.toLowerCase().contains(q) ?? false);
     }).toList();
 
     return AppBackground(
@@ -250,17 +333,27 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
           children: [
             // Safe Notice
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
+              ),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.blueAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 0.5),
+                  border: Border.all(
+                    color: Colors.blueAccent.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
                 ),
                 child: const Text(
                   'This is a personal course catalogue. Confirm official availability and requirements with your college.',
-                  style: TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -270,7 +363,10 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: GlassContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 child: TextField(
                   controller: _searchController,
                   style: const TextStyle(color: Colors.white),
@@ -293,7 +389,12 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
             // List
             Expanded(
               child: filtered.isEmpty
-                  ? const Center(child: Text('No courses found.', style: TextStyle(color: Colors.white38)))
+                  ? const Center(
+                      child: Text(
+                        'No courses found.',
+                        style: TextStyle(color: Colors.white38),
+                      ),
+                    )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       itemCount: filtered.length,
@@ -307,41 +408,72 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Text(
                                         '${course.title} (${course.courseCode ?? "No Code"})',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ),
                                     Text(
                                       course.status,
-                                      style: const TextStyle(color: AppTheme.accentPurple, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: AppTheme.accentPurple,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 if (course.description != null)
-                                  Text(course.description!, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                                  Text(
+                                    course.description!,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                    ),
+                                  ),
                                 const SizedBox(height: 6),
                                 Text(
                                   'Credits: ${course.credits ?? "TBD"} â€¢ Type: ${course.subjectType} â€¢ Difficulty: ${course.expectedDifficulty}',
-                                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                                  style: const TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 10,
+                                  ),
                                 ),
                                 const SizedBox(height: 12),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
-                                    if (course.status == 'Interested' || course.status == 'Planned')
+                                    if (course.status == 'Interested' ||
+                                        course.status == 'Planned')
                                       TextButton.icon(
-                                        onPressed: () => _convertCourseToSubject(course),
+                                        onPressed: () =>
+                                            _convertCourseToSubject(course),
                                         icon: const Icon(Icons.add, size: 14),
-                                        label: const Text('Convert to Subject', style: TextStyle(fontSize: 11)),
+                                        label: const Text(
+                                          'Convert to Subject',
+                                          style: TextStyle(fontSize: 11),
+                                        ),
                                       ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                      onPressed: () => ref.read(courseRepositoryProvider.notifier).deleteCourse(course.id),
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.redAccent,
+                                        size: 18,
+                                      ),
+                                      onPressed: () => ref
+                                          .read(
+                                            courseRepositoryProvider.notifier,
+                                          )
+                                          .deleteCourse(course.id),
                                     ),
                                   ],
                                 ),

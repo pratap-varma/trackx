@@ -30,23 +30,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authRepositoryProvider.notifier).register(
+    FocusScope.of(context).unfocus();
+    await ref
+        .read(authRepositoryProvider.notifier)
+        .register(
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
-    if (!mounted) return;
-    final state = ref.read(authRepositoryProvider);
-    if (state.status == AuthStatus.authenticated) {
-      context.go('/onboarding');
-    } else if (state.status == AuthStatus.error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.errorMessage ?? 'Registration failed')),
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authRepositoryProvider, (previous, next) {
+      if (next.status == AuthStatus.error && next.errorMessage != null) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: const Color(0xFFE53935),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      } else if (next.status == AuthStatus.authenticated) {
+        context.go('/onboarding');
+      }
+    });
+
     final authState = ref.watch(authRepositoryProvider);
     final isLoading = authState.status == AuthStatus.loading;
 
@@ -82,13 +94,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.35),
+                          color: const Color(
+                            0xFF5B5FEF,
+                          ).withValues(alpha: 0.35),
                           blurRadius: 24,
                           offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.track_changes_rounded, color: Colors.white, size: 30),
+                    child: const Icon(
+                      Icons.track_changes_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   const Text(
@@ -133,11 +151,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     obscureText: _obscurePassword,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: Colors.white38,
                         size: 20,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     validator: (val) {
                       if (val == null || val.length < 6) {
@@ -178,7 +199,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                              color: const Color(
+                                0xFF5B5FEF,
+                              ).withValues(alpha: 0.4),
                               blurRadius: 20,
                               offset: const Offset(0, 6),
                             ),
@@ -214,7 +237,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     children: [
                       Text(
                         'Already have an account? ',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 13),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          fontSize: 13,
+                        ),
                       ),
                       GestureDetector(
                         onTap: () => context.pop(),

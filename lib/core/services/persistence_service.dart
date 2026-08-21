@@ -13,10 +13,18 @@ class PersistenceService {
   Future<void> saveUserProfile(UserProfile profile) async {
     final jsonStr = jsonEncode(profile.toMap());
     await _prefs.setString(_keyProfile, jsonStr);
+    if (profile.id.isNotEmpty) {
+      await _prefs.setString('${_keyProfile}_${profile.id}', jsonStr);
+    }
   }
 
-  UserProfile? getUserProfile() {
-    final jsonStr = _prefs.getString(_keyProfile);
+  UserProfile? getUserProfile([String? userId]) {
+    String? jsonStr;
+    if (userId != null && userId.isNotEmpty) {
+      jsonStr = _prefs.getString('${_keyProfile}_$userId');
+    }
+    jsonStr ??= _prefs.getString(_keyProfile);
+
     if (jsonStr == null) return null;
     try {
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;

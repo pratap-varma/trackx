@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:trackx/features/ai_assistant/data/services/ai_provider.dart';
+import 'package:trackx/features/ai_assistant/data/services/offline_fallback_provider.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_request.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_response.dart';
 
@@ -31,24 +32,12 @@ class GeminiAiProvider implements AiProvider {
   Future<AiResponse> generate(AiRequest request) async {
     final apiKey = _getApiKey();
     if (apiKey.isEmpty) {
-      return AiResponse(
-        id: 'resp-err-${DateTime.now().millisecondsSinceEpoch}',
-        requestId: request.id,
-        text: 'Gemini API key is not configured. Please supply a valid GEMINI_API_KEY environment variable to use cloud features.',
-        sources: [],
-        suggestedActions: [],
-        confidence: AiConfidence.limitedInformation,
-        limitations: ['API Key missing.'],
-        modelId: 'gemini-1.5-flash',
-        createdAt: DateTime.now(),
-      );
+      // Seamlessly fallback to offline intelligence engine if no API key is set
+      return OfflineFallbackProvider().generate(request);
     }
 
     try {
-      final model = GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: apiKey,
-      );
+      final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
 
       final systemPrompt = '''
 You are the TrackX AI Academic Assistant, a private personal academic companion for students.
@@ -87,7 +76,8 @@ JSON Schema to follow EXACTLY:
 }
 ''';
 
-      final userPromptContent = '''
+      final userPromptContent =
+          '''
 Context details:
 ${jsonEncode(request.context)}
 
@@ -101,7 +91,7 @@ ${request.userPrompt}
       ]);
 
       final rawText = response.text ?? '';
-      
+
       // Clean JSON delimiters if Gemini wrapped them in ```json ... ```
       String cleanedText = rawText.trim();
       if (cleanedText.startsWith('```json')) {
@@ -114,12 +104,17 @@ ${request.userPrompt}
 
       try {
         final Map<String, dynamic> decoded = jsonDecode(cleanedText);
-        
-        final List<dynamic> rawSources = decoded['sources'] as List? ?? [];
-        final sources = rawSources.map((e) => AiSourceReference.fromMap(Map<String, dynamic>.from(e))).toList();
 
-        final List<dynamic> rawActions = decoded['suggestedActions'] as List? ?? [];
-        final actions = rawActions.map((e) => AiSuggestedAction.fromMap(Map<String, dynamic>.from(e))).toList();
+        final List<dynamic> rawSources = decoded['sources'] as List? ?? [];
+        final sources = rawSources
+            .map((e) => AiSourceReference.fromMap(Map<String, dynamic>.from(e)))
+            .toList();
+
+        final List<dynamic> rawActions =
+            decoded['suggestedActions'] as List? ?? [];
+        final actions = rawActions
+            .map((e) => AiSuggestedAction.fromMap(Map<String, dynamic>.from(e)))
+            .toList();
 
         final confidenceStr = decoded['confidence'] ?? 'moderate';
         final confidence = AiConfidence.values.firstWhere(
@@ -156,17 +151,23 @@ ${request.userPrompt}
         );
       }
     } catch (e) {
-      return AiResponse(
-        id: 'resp-gemini-err-${DateTime.now().millisecondsSinceEpoch}',
-        requestId: request.id,
-        text: 'A connection or API error occurred: $e',
-        sources: [],
-        suggestedActions: [],
-        confidence: AiConfidence.limitedInformation,
-        limitations: ['Network or provider failure.'],
-        modelId: 'gemini-1.5-flash',
-        createdAt: DateTime.now(),
-      );
+      // If cloud Gemini fails or times out, seamlessly return local offline intelligence
+      try {
+        return await OfflineFallbackProvider().generate(request);
+      } catch (_) {
+        return AiResponse(
+          id: 'resp-err-${DateTime.now().millisecondsSinceEpoch}',
+          requestId: request.id,
+          text:
+              'I am currently working offline. Ask me about your subjects, attendance predictions, revision planning, or exams!',
+          sources: [],
+          suggestedActions: [],
+          confidence: AiConfidence.limitedInformation,
+          limitations: ['Offline mode'],
+          modelId: 'offline',
+          createdAt: DateTime.now(),
+        );
+      }
     }
   }
 }

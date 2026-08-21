@@ -51,7 +51,7 @@ class AcademicContextBuilder {
             (t) => {
               'title': t.title,
               'priority': t.priority,
-              'dueDate': t.dueDate?.toIso8601String(),
+              'dueDate': t.dueDate.toIso8601String(),
             },
           )
           .toList();

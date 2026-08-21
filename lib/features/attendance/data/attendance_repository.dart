@@ -2,18 +2,45 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 
 class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
   static const String _keyAttendance = 'attendance_records_list';
   final SharedPreferences _prefs;
+  final Ref? _ref;
 
-  AttendanceRepository(this._prefs) : super([]) {
+  AttendanceRepository(this._prefs, [this._ref]) : super([]) {
+    _init();
+  }
+
+  String get _currentUserId =>
+      _ref?.read(authRepositoryProvider).userProfile?.id ?? '';
+
+  String _getKey([String? uid]) {
+    final effectiveUid = uid ?? _currentUserId;
+    if (effectiveUid.isEmpty) return _keyAttendance;
+    return '${effectiveUid}_$_keyAttendance';
+  }
+
+  void _init() {
     _load();
+    _ref?.listen<AuthState>(authRepositoryProvider, (previous, next) {
+      if (previous?.userProfile?.id != next.userProfile?.id ||
+          previous?.status != next.status) {
+        _load();
+      }
+    });
   }
 
   void _load() {
-    final jsonStr = _prefs.getString(_keyAttendance);
+    final uid = _currentUserId;
+    if (uid.isEmpty) {
+      state = [];
+      return;
+    }
+    final key = _getKey(uid);
+    final jsonStr = _prefs.getString(key);
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
@@ -21,16 +48,23 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
             .map(
               (item) => AttendanceRecord.fromMap(item as Map<String, dynamic>),
             )
+            .where((r) => r.userId == uid || r.userId.isEmpty)
+            .map((r) => r.userId != uid ? r.copyWith(userId: uid) : r)
             .toList();
       } catch (_) {
         state = [];
       }
+    } else {
+      state = [];
     }
   }
 
   Future<void> _save() async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
+    final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((r) => r.toMap()).toList());
-    await _prefs.setString(_keyAttendance, jsonStr);
+    await _prefs.setString(key, jsonStr);
   }
 
   /// 24-hour editing rule
@@ -48,10 +82,14 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
     int? periodNumber,
     required String status,
   }) async {
+    final effectiveUserId = userId.isNotEmpty
+        ? userId
+        : (_currentUserId.isNotEmpty ? _currentUserId : 'user');
+
     // Check if attendance record already exists for this User, Subject, Date, Period
     final existingIndex = state.indexWhere(
       (r) =>
-          r.userId == userId &&
+          r.userId == effectiveUserId &&
           r.subjectId == subjectId &&
           r.semesterId == semesterId &&
           r.periodNumber == periodNumber &&
@@ -78,7 +116,7 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
 
     final record = AttendanceRecord(
       id: 'att-${DateTime.now().millisecondsSinceEpoch}',
-      userId: userId,
+      userId: effectiveUserId,
       semesterId: semesterId,
       subjectId: subjectId,
       date: date,
@@ -122,6 +160,11 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
     await _save();
   }
 
+  Future<void> deleteRecordsForSubject(String subjectId) async {
+    state = state.where((r) => r.subjectId != subjectId).toList();
+    await _save();
+  }
+
   // Restore/Undo support helper
   Future<void> insertRecord(AttendanceRecord record) async {
     state = [...state, record];
@@ -138,5 +181,5 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
 final attendanceRepositoryProvider =
     StateNotifierProvider<AttendanceRepository, List<AttendanceRecord>>((ref) {
       final prefs = ref.watch(sharedPreferencesProvider);
-      return AttendanceRepository(prefs);
+      return AttendanceRepository(prefs, ref);
     });

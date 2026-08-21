@@ -50,9 +50,14 @@ class FloatingDock extends StatelessWidget {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isActive ? const Color(0xFF1B243B) : Colors.transparent,
+                    color: isActive
+                        ? const Color(0xFF1B243B)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -60,7 +65,9 @@ class FloatingDock extends StatelessWidget {
                     children: [
                       Icon(
                         item.icon,
-                        color: isActive ? const Color(0xFFC0C1FF) : Colors.white.withValues(alpha: 0.45),
+                        color: isActive
+                            ? const Color(0xFFC0C1FF)
+                            : Colors.white.withValues(alpha: 0.45),
                         size: 22,
                       ),
                       const SizedBox(height: 4),
@@ -68,8 +75,12 @@ class FloatingDock extends StatelessWidget {
                         item.label,
                         style: TextStyle(
                           fontSize: 10,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                          color: isActive ? const Color(0xFFDEE2F4) : Colors.white.withValues(alpha: 0.45),
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isActive
+                              ? const Color(0xFFDEE2F4)
+                              : Colors.white.withValues(alpha: 0.45),
                         ),
                       ),
                     ],

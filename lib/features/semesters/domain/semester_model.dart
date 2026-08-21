@@ -96,7 +96,8 @@ class Semester {
   }
 
   factory Semester.fromMap(Map<String, dynamic> map) {
-    final status = map['status'] ?? (map['isActive'] == true ? 'Active' : 'Completed');
+    final status =
+        map['status'] ?? (map['isActive'] == true ? 'Active' : 'Completed');
     return Semester(
       id: map['id'] ?? '',
       userId: map['userId'] ?? '',

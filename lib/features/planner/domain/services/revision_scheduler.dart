@@ -1,5 +1,4 @@
 import 'package:trackx/features/subjects/domain/topic_model.dart';
-import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 
 class RevisionScheduleResult {
   final DateTime suggestedDate;
@@ -25,7 +24,7 @@ class RevisionScheduler {
   }) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     // 1. Determine baseline interval based on confidence and difficulty
     int diffWeight = 2; // Default Moderate
     switch (topic.difficulty) {
@@ -61,12 +60,13 @@ class RevisionScheduler {
     }
 
     // Intensity: higher means needs review sooner
-    final intensity = diffWeight + confWeight; 
-    
+    final intensity = diffWeight + confWeight;
+
     // Suggested interval in days
     int intervalDays = 4;
     if (intensity >= 7) {
-      intervalDays = 1; // High difficulty, low confidence -> review almost daily
+      intervalDays =
+          1; // High difficulty, low confidence -> review almost daily
     } else if (intensity >= 5) {
       intervalDays = 3;
     } else if (intensity >= 3) {
@@ -95,10 +95,12 @@ class RevisionScheduler {
     // If suggested date is overcrowded, try next available day.
     int maxSearchDays = 10;
     while (maxSearchDays > 0) {
-      final isOvercrowded = existingCommitmentDates.any((d) =>
-          d.year == suggested.year &&
-          d.month == suggested.month &&
-          d.day == suggested.day);
+      final isOvercrowded = existingCommitmentDates.any(
+        (d) =>
+            d.year == suggested.year &&
+            d.month == suggested.month &&
+            d.day == suggested.day,
+      );
       if (isOvercrowded) {
         suggested = suggested.add(const Duration(days: 1));
         // Clamp to exam date minus 1 if exam is set
@@ -118,9 +120,11 @@ class RevisionScheduler {
     // 3. Determine duration
     int duration = preferredStudySessionMinutes;
     if (intensity >= 7) {
-      duration = (preferredStudySessionMinutes * 1.5).round(); // Extend session for challenging topics
+      duration = (preferredStudySessionMinutes * 1.5)
+          .round(); // Extend session for challenging topics
     } else if (intensity <= 3) {
-      duration = (preferredStudySessionMinutes * 0.8).round(); // Shorter session for strong topics
+      duration = (preferredStudySessionMinutes * 0.8)
+          .round(); // Shorter session for strong topics
     }
 
     // 4. Generate alternatives
@@ -135,11 +139,14 @@ class RevisionScheduler {
     // 5. Construct reasons
     String reason = '';
     if (intensity >= 7) {
-      reason = 'High difficulty and low confidence. Recommended to review sooner for active recall.';
+      reason =
+          'High difficulty and low confidence. Recommended to review sooner for active recall.';
     } else if (topic.confidence == 'Strong') {
-      reason = 'Strong confidence level. A spaced-repetition refresh is suggested to maintain retention.';
+      reason =
+          'Strong confidence level. A spaced-repetition refresh is suggested to maintain retention.';
     } else {
-      reason = 'Based on moderate topic complexity. Clean slot scheduled before exam date.';
+      reason =
+          'Based on moderate topic complexity. Clean slot scheduled before exam date.';
     }
 
     return RevisionScheduleResult(

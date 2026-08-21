@@ -4,8 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
+import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
+import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
+import 'package:trackx/features/calendar/providers/calendar_provider.dart';
+import 'package:trackx/features/calendar/presentation/widgets/calendar_event_details_sheet.dart';
+import 'package:trackx/features/calendar/presentation/widgets/calendar_integration_sheet.dart';
+import 'package:trackx/features/planner/providers/calendar_conflict_provider.dart';
+import 'package:trackx/features/planner/presentation/widgets/calendar_conflict_details_sheet.dart';
+import 'package:trackx/features/planner/presentation/widgets/exam_import_sheet.dart';
+import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 
 class PlannerScreen extends ConsumerStatefulWidget {
@@ -94,7 +103,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white54,
+                      ),
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
@@ -117,7 +129,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                     dividerColor: Colors.transparent,
                     labelColor: Colors.white,
                     unselectedLabelColor: Colors.white60,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                     tabs: const [
                       Tab(text: '📝 Task / Assignment'),
                       Tab(text: '🎓 Exam / Quiz'),
@@ -129,10 +144,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 SizedBox(
                   height: 380,
                   child: TabBarView(
-                    children: [
-                      _buildTaskForm(ctx),
-                      _buildExamForm(ctx),
-                    ],
+                    children: [_buildTaskForm(ctx), _buildExamForm(ctx)],
                   ),
                 ),
               ],
@@ -162,7 +174,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             const SizedBox(height: 14),
 
             // Subject selector
-            const Text('Subject', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+            const Text(
+              'Subject',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -192,7 +211,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             const SizedBox(height: 14),
 
             // Due Date
-            const Text('Due Date', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+            const Text(
+              'Due Date',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 6),
             GestureDetector(
               onTap: () async {
@@ -207,11 +233,16 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 }
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF131A2B),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -220,7 +251,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       DateFormat('MM/dd/yyyy').format(_modalDueDate),
                       style: const TextStyle(color: Colors.white, fontSize: 14),
                     ),
-                    const Icon(Icons.calendar_today_rounded, color: Colors.white54, size: 18),
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      color: Colors.white54,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -228,7 +263,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             const SizedBox(height: 14),
 
             // Priority
-            const Text('Priority Level', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+            const Text(
+              'Priority Level',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 6),
             Row(
               children: ['Low', 'Medium', 'High'].map((p) {
@@ -240,9 +282,15 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF5B5FEF) : const Color(0xFF131A2B),
+                        color: isSelected
+                            ? const Color(0xFF5B5FEF)
+                            : const Color(0xFF131A2B),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.06)),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.transparent
+                              : Colors.white.withValues(alpha: 0.06),
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -297,7 +345,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Center(
-                  child: Text('Save Assignment', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  child: Text(
+                    'Save Assignment',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -326,7 +381,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             const SizedBox(height: 14),
 
             // Subject selector
-            const Text('Subject', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+            const Text(
+              'Subject',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -362,7 +424,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Exam Date', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Exam Date',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       GestureDetector(
                         onTap: () async {
@@ -377,15 +446,23 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF131A2B),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
                           ),
                           child: Text(
                             DateFormat('MMM dd, yyyy').format(_examDate),
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -397,7 +474,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Time', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Time',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       GestureDetector(
                         onTap: () async {
@@ -410,15 +494,23 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF131A2B),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
                           ),
                           child: Text(
                             _examTime.format(context),
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -430,7 +522,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             const SizedBox(height: 14),
 
             // Exam Type (Midterm, Final, Quiz)
-            const Text('Exam Type', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+            const Text(
+              'Exam Type',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 6),
             Row(
               children: ['Quiz', 'Midterm', 'Final'].map((t) {
@@ -442,9 +541,15 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF5B5FEF) : const Color(0xFF131A2B),
+                        color: isSelected
+                            ? const Color(0xFF5B5FEF)
+                            : const Color(0xFF131A2B),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.06)),
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.transparent
+                              : Colors.white.withValues(alpha: 0.06),
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -499,7 +604,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Center(
-                  child: Text('Save Upcoming Exam', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  child: Text(
+                    'Save Upcoming Exam',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -541,7 +653,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               children: [
                 const Text(
                   'Upcoming Exams & Quizzes',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_rounded, color: Color(0xFFC0C1FF)),
@@ -557,7 +673,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24.0),
                 child: Center(
-                  child: Text('No upcoming exams scheduled.', style: TextStyle(color: Colors.white54)),
+                  child: Text(
+                    'No upcoming exams scheduled.',
+                    style: TextStyle(color: Colors.white54),
+                  ),
                 ),
               )
             else
@@ -566,8 +685,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 final badge = daysLeft <= 0
                     ? 'TODAY'
                     : daysLeft == 1
-                        ? 'TOMORROW'
-                        : 'IN $daysLeft DAYS';
+                    ? 'TOMORROW'
+                    : 'IN $daysLeft DAYS';
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -575,7 +694,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF131A2B),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,23 +706,89 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                         children: [
                           Text(
                             badge,
-                            style: const TextStyle(color: Color(0xFFFF8B94), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                            style: const TextStyle(
+                              color: Color(0xFFFF8B94),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
                           ),
-                          Text(
-                            '${(ex.preparationProgress).toInt()}% Prep',
-                            style: const TextStyle(color: Color(0xFFC0C1FF), fontSize: 11, fontWeight: FontWeight.bold),
+                          Row(
+                            children: [
+                              Text(
+                                '${(ex.preparationProgress).toInt()}% Prep',
+                                style: const TextStyle(
+                                  color: Color(0xFFC0C1FF),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  _showEditScheduledExamDialog(ex);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(
+                                    Icons.edit_outlined,
+                                    color: Color(0xFF7BD0FF),
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              GestureDetector(
+                                onTap: () {
+                                  ref.read(examsProvider.notifier).deleteExam(ex.id);
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).clearSnackBars();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Deleted "${ex.title}"'),
+                                      duration: const Duration(milliseconds: 1500),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: Colors.redAccent,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
                         ex.title,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${DateFormat('MMM dd, yyyy').format(ex.examDate)} • ${ex.startTime}',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        '${DateFormat('EEEE, MMM dd, yyyy').format(ex.examDate)} • ${ex.startTime}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -609,6 +796,293 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               }),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEditScheduledExamDialog(Exam exam) {
+    HapticFeedback.lightImpact();
+    DateTime editDate = exam.examDate;
+    String editType = exam.examType;
+    final titleCtrl = TextEditingController(text: exam.title);
+    final timeCtrl = TextEditingController(text: exam.startTime);
+    final syllabusCtrl = TextEditingController(text: exam.syllabus);
+    double progress = exam.preparationProgress;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setEditState) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFF0E1628),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: EdgeInsets.only(
+              left: 22,
+              right: 22,
+              top: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Edit Exam Details',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 1. Interactive Date Picker
+                  const Text(
+                    'EXAM DATE',
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: editDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                      );
+                      if (picked != null) {
+                        setEditState(() => editDate = picked);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131A2B),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF5B5FEF).withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_month_rounded, color: Color(0xFF7BD0FF), size: 18),
+                              const SizedBox(width: 10),
+                              Text(
+                                DateFormat('EEEE, MMM d, yyyy').format(editDate),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Change Date',
+                              style: TextStyle(
+                                color: Color(0xFF7BD0FF),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 2. Exam Type Selector
+                  const Text(
+                    'EXAM TYPE',
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: ['Quiz', 'Midterm', 'Final', 'Lab Practical', 'Internal'].map((t) {
+                        final isSelected = editType.toLowerCase() == t.toLowerCase();
+                        return GestureDetector(
+                          onTap: () => setEditState(() => editType = t),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected ? const Color(0xFF5B5FEF) : const Color(0xFF131A2B),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected ? Colors.transparent : Colors.white12,
+                              ),
+                            ),
+                            child: Text(
+                              t,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.white60,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 3. Exam Title
+                  GlassTextField(
+                    controller: titleCtrl,
+                    labelText: 'Exam Title',
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 4. Time & Syllabus
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GlassTextField(
+                          controller: timeCtrl,
+                          labelText: 'Time (e.g. 10:30 AM)',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GlassTextField(
+                          controller: syllabusCtrl,
+                          labelText: 'Syllabus / Topics',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 5. Preparation Progress Slider
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'PREPARATION PROGRESS',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${progress.toInt()}%',
+                        style: const TextStyle(
+                          color: Color(0xFF7BD0FF),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Slider(
+                    value: progress,
+                    min: 0.0,
+                    max: 100.0,
+                    activeColor: const Color(0xFF5B5FEF),
+                    inactiveColor: Colors.white12,
+                    onChanged: (val) => setEditState(() => progress = val),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Save Changes Button
+                  GestureDetector(
+                    onTap: () {
+                      final newTitle = titleCtrl.text.trim();
+                      if (newTitle.isNotEmpty) {
+                        final updated = exam.copyWith(
+                          title: newTitle,
+                          examDate: editDate,
+                          examType: editType,
+                          startTime: timeCtrl.text.trim(),
+                          syllabus: syllabusCtrl.text.trim(),
+                          preparationProgress: progress,
+                          updatedAt: DateTime.now().millisecondsSinceEpoch,
+                        );
+                        ref.read(examsProvider.notifier).editExam(updated);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).clearSnackBars();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Exam details updated successfully!'),
+                            duration: Duration(milliseconds: 1500),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -636,23 +1110,90 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                     color: Color(0xFF1B243B),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.notifications_active_rounded, color: Color(0xFFC0C1FF), size: 20),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Color(0xFFC0C1FF),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Planner Notifications', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text('Smart study & exam reminders', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text(
+                      'Planner Notifications',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      'Smart study & exam reminders',
+                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            _reminderItem('Chemistry Midterm in 3 days', 'Review lab notes before 8 PM tonight', Icons.science_outlined),
-            const SizedBox(height: 12),
-            _reminderItem('Calculus Assignment Due Tomorrow', 'Submission portal closes at 11:59 PM', Icons.calculate_outlined),
-            const SizedBox(height: 24),
+            Builder(
+              builder: (context) {
+                final currentExams = ref.read(examsProvider);
+                final currentTasks = ref
+                    .read(tasksProvider)
+                    .where((t) => !t.isCompleted)
+                    .toList();
+
+                if (currentExams.isEmpty && currentTasks.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A2B),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'No active reminders. Add exams or tasks to get alerts.',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: [
+                    ...currentExams.take(2).map((ex) {
+                      final daysLeft = ex.examDate
+                          .difference(DateTime.now())
+                          .inDays;
+                      final daysStr = daysLeft <= 0
+                          ? 'today'
+                          : (daysLeft == 1 ? 'tomorrow' : 'in $daysLeft days');
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _reminderItem(
+                          '${ex.title} $daysStr',
+                          'Exam scheduled at ${ex.startTime}',
+                          Icons.school_outlined,
+                        ),
+                      );
+                    }),
+                    ...currentTasks.take(2).map((t) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _reminderItem(
+                          t.title,
+                          'Priority: ${t.priority}',
+                          Icons.task_alt_rounded,
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -661,9 +1202,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   backgroundColor: const Color(0xFF5B5FEF),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                child: const Text('Mark All as Read', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Mark All as Read',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -688,9 +1234,19 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
               ],
             ),
           ),
@@ -704,16 +1260,45 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final tasks = ref.watch(tasksProvider);
     final exams = ref.watch(examsProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
+    final timetableEntries = ref.watch(timetableRepositoryProvider);
+    final activeSem = ref.watch(activeSemesterProvider);
+    final allHolidays = ref.watch(calendarRepositoryProvider);
+    final selectedDayHolidays = ref.watch(
+      holidaysForSelectedDateProvider(_selectedDate),
+    );
+    final selectedPersonalEvents = ref.watch(
+      personalEventsForSelectedDateProvider(_selectedDate),
+    );
+    final conflicts = ref.watch(
+      conflictsForSelectedDateProvider(_selectedDate),
+    );
+    final isCalendarConnected = ref.watch(isCalendarConnectedProvider);
+
+    final dayClasses =
+        timetableEntries
+            .where(
+              (e) =>
+                  e.dayOfWeek == _selectedDate.weekday &&
+                  (activeSem == null || e.semesterId == activeSem.id) &&
+                  e.isEnabled,
+            )
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     // Week Strip
-    final weekStart = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+    final weekStart = _selectedDate.subtract(
+      Duration(days: _selectedDate.weekday - 1),
+    );
     final weekDays = List.generate(7, (i) => weekStart.add(Duration(days: i)));
     final monthYearFormatted = DateFormat('MMMM yyyy').format(_selectedDate);
 
     final searchQuery = _searchController.text.trim().toLowerCase();
     final filteredTasks = tasks.where((t) {
-      final matchesPriority = _selectedPriority == 'All' || t.priority.toLowerCase() == _selectedPriority.toLowerCase();
-      final matchesSearch = searchQuery.isEmpty || t.title.toLowerCase().contains(searchQuery);
+      final matchesPriority =
+          _selectedPriority == 'All' ||
+          t.priority.toLowerCase() == _selectedPriority.toLowerCase();
+      final matchesSearch =
+          searchQuery.isEmpty || t.title.toLowerCase().contains(searchQuery);
       return matchesPriority && matchesSearch;
     }).toList();
 
@@ -724,7 +1309,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         elevation: 0,
         leading: const Padding(
           padding: EdgeInsets.only(left: 16.0),
-          child: Icon(Icons.calendar_today_rounded, color: Colors.white, size: 22),
+          child: Icon(
+            Icons.calendar_today_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
         ),
         titleSpacing: 8,
         title: _isSearching
@@ -733,7 +1322,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF131A2B),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF5B5FEF).withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: const Color(0xFF5B5FEF).withValues(alpha: 0.5),
+                  ),
                 ),
                 child: TextField(
                   controller: _searchController,
@@ -743,7 +1334,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                     hintText: 'Search tasks & exams...',
                     hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                   ),
                   onChanged: (v) => setState(() {}),
                 ),
@@ -758,7 +1352,24 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               ),
         actions: [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded, color: Colors.white, size: 22),
+            tooltip: isCalendarConnected
+                ? 'Google Calendar (Connected)'
+                : 'Connect Google Calendar',
+            icon: Icon(
+              Icons.event_available_rounded,
+              color: isCalendarConnected
+                  ? const Color(0xFF10B981)
+                  : Colors.white70,
+              size: 22,
+            ),
+            onPressed: () => CalendarIntegrationSheet.show(context),
+          ),
+          IconButton(
+            icon: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
             onPressed: () {
               setState(() {
                 if (_isSearching) {
@@ -769,7 +1380,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
             onPressed: _showNotificationsSheet,
           ),
         ],
@@ -794,20 +1409,36 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.chevron_left_rounded, color: Colors.white70, size: 22),
+                        icon: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: Colors.white70,
+                          size: 22,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () {
-                          setState(() => _selectedDate = _selectedDate.subtract(const Duration(days: 7)));
+                          setState(
+                            () => _selectedDate = _selectedDate.subtract(
+                              const Duration(days: 7),
+                            ),
+                          );
                         },
                       ),
                       const SizedBox(width: 16),
                       IconButton(
-                        icon: const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 22),
+                        icon: const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white70,
+                          size: 22,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () {
-                          setState(() => _selectedDate = _selectedDate.add(const Duration(days: 7)));
+                          setState(
+                            () => _selectedDate = _selectedDate.add(
+                              const Duration(days: 7),
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -824,16 +1455,27 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   final dayName = DateFormat('E').format(day).toUpperCase();
                   final dayNumber = day.day.toString();
 
+                  final isHolidayDay = allHolidays.any((h) => h.occursOn(day));
+                  final hasConflict = ref.watch(hasConflictOnDateProvider(day));
+
                   return GestureDetector(
                     onTap: () => setState(() => _selectedDate = day),
                     child: Container(
                       width: 44,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFFC0C1FF) : const Color(0xFF131A2B),
+                        color: isSelected
+                            ? const Color(0xFFC0C1FF)
+                            : const Color(0xFF131A2B),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.06),
+                          color: isSelected
+                              ? Colors.transparent
+                              : hasConflict
+                              ? const Color(0xFFEF4444).withValues(alpha: 0.5)
+                              : isHolidayDay
+                              ? const Color(0xFFF59E0B).withValues(alpha: 0.35)
+                              : Colors.white.withValues(alpha: 0.06),
                         ),
                       ),
                       child: Column(
@@ -841,7 +1483,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                           Text(
                             dayName,
                             style: TextStyle(
-                              color: isSelected ? const Color(0xFF0E00AA) : Colors.white54,
+                              color: isSelected
+                                  ? const Color(0xFF0E00AA)
+                                  : Colors.white54,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -850,11 +1494,38 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                           Text(
                             dayNumber,
                             style: TextStyle(
-                              color: isSelected ? const Color(0xFF0E00AA) : Colors.white,
+                              color: isSelected
+                                  ? const Color(0xFF0E00AA)
+                                  : Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          if (hasConflict) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              width: 4,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color(0xFF0E00AA)
+                                    : const Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ] else if (isHolidayDay) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              width: 4,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? const Color(0xFF0E00AA)
+                                    : const Color(0xFFF59E0B),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -875,16 +1546,60 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => _showAllExamsSheet(exams),
-                    child: const Text(
-                      'View All',
-                      style: TextStyle(
-                        color: Color(0xFF7BD0FF),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => ExamImportSheet.show(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5B5FEF).withValues(
+                              alpha: 0.18,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF5B5FEF).withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.document_scanner_rounded,
+                                color: Color(0xFFC0C1FF),
+                                size: 12,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Scan Date-Sheet',
+                                style: TextStyle(
+                                  color: Color(0xFFC0C1FF),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      TextButton(
+                        onPressed: () => _showAllExamsSheet(exams),
+                        child: const Text(
+                          'View All',
+                          style: TextStyle(
+                            color: Color(0xFF7BD0FF),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -892,26 +1607,126 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
 
               // Horizontal Exam Cards
               if (exams.isEmpty)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF131A2B),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.04),
+                    ),
+                  ),
+                  child: Column(
                     children: [
-                      _examCard(
-                        badge: 'IN 3 DAYS',
-                        title: 'Chemistry Midterm',
-                        date: 'Oct 28 • 10:30 AM',
-                        icon: Icons.science_outlined,
-                        progress: 0.7,
-                        onTap: () => _showAllExamsSheet(exams),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1B243B),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.event_note_outlined,
+                              color: Color(0xFF7BD0FF),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'No upcoming exams scheduled',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Upload your exam timetable PDF or photo to automatically generate exam countdowns.',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 14),
-                      _examCard(
-                        badge: 'IN 12 DAYS',
-                        title: 'Calculus Final',
-                        date: 'Nov 06 • 09:00 AM',
-                        icon: Icons.calculate_outlined,
-                        progress: 0.3,
-                        onTap: () => _showAllExamsSheet(exams),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => ExamImportSheet.show(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF5B5FEF),
+                                      Color(0xFF8151EB),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.document_scanner_rounded,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      '📸 Scan Exam PDF',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _showAddDialog,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1B243B),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white24),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    '+ Add Manually',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -921,19 +1736,22 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: exams.map((ex) {
-                      final daysLeft = ex.examDate.difference(DateTime.now()).inDays;
+                      final daysLeft = ex.examDate
+                          .difference(DateTime.now())
+                          .inDays;
                       final badge = daysLeft <= 0
                           ? 'TODAY'
                           : daysLeft == 1
-                              ? 'TOMORROW'
-                              : 'IN $daysLeft DAYS';
+                          ? 'TOMORROW'
+                          : 'IN $daysLeft DAYS';
 
                       return Padding(
                         padding: const EdgeInsets.only(right: 14.0),
                         child: _examCard(
                           badge: badge,
                           title: ex.title,
-                          date: '${DateFormat('MMM dd').format(ex.examDate)} • ${ex.startTime}',
+                          date:
+                              '${DateFormat('MMM dd').format(ex.examDate)} • ${ex.startTime}',
                           icon: Icons.school_outlined,
                           progress: ex.preparationProgress / 100.0,
                           onTap: () => _showAllExamsSheet(exams),
@@ -957,16 +1775,24 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                     ),
                   ),
                   PopupMenuButton<String>(
-                    onSelected: (val) => setState(() => _selectedPriority = val),
+                    onSelected: (val) =>
+                        setState(() => _selectedPriority = val),
                     color: const Color(0xFF131A2B),
-                    itemBuilder: (ctx) => ['All', 'High', 'Medium', 'Low'].map((p) {
-                      return PopupMenuItem<String>(
-                        value: p,
-                        child: Text(p, style: const TextStyle(color: Colors.white)),
-                      );
-                    }).toList(),
+                    itemBuilder: (ctx) =>
+                        ['All', 'High', 'Medium', 'Low'].map((p) {
+                          return PopupMenuItem<String>(
+                            value: p,
+                            child: Text(
+                              p,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }).toList(),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1B243B),
                         borderRadius: BorderRadius.circular(12),
@@ -975,10 +1801,18 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                         children: [
                           Text(
                             _selectedPriority,
-                            style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white54, size: 16),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white54,
+                            size: 16,
+                          ),
                         ],
                       ),
                     ),
@@ -997,13 +1831,31 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const Text('No tasks matching your search.', style: TextStyle(color: Colors.white54)),
-                        const SizedBox(height: 12),
+                        const Icon(
+                          Icons.task_alt_rounded,
+                          color: Colors.white38,
+                          size: 36,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _searchController.text.trim().isNotEmpty
+                              ? 'No tasks matching your search.'
+                              : 'No plans yet. Create a task or add your timetable to get started.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
                         ElevatedButton(
                           onPressed: _showAddDialog,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF5B5FEF),
                             foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: const Text('+ Add Task / Exam'),
                         ),
@@ -1014,7 +1866,12 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               else
                 ...filteredTasks.map((t) {
                   final isDone = t.isCompleted;
-                  final subName = subjects.where((s) => s.id == t.subjectId).firstOrNull?.name ?? 'General';
+                  final subName =
+                      subjects
+                          .where((s) => s.id == t.subjectId)
+                          .firstOrNull
+                          ?.name ??
+                      'General';
                   final tagColor = switch (t.priority.toLowerCase()) {
                     'high' => const Color(0xFFEF4444),
                     'low' => const Color(0xFF10B981),
@@ -1028,7 +1885,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       color: const Color(0xFF131A2B),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDone ? const Color(0xFF10B981).withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.06),
+                        color: isDone
+                            ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.06),
                       ),
                     ),
                     child: Row(
@@ -1043,14 +1902,22 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                             height: 32,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: isDone ? const Color(0xFF10B981) : Colors.transparent,
+                              color: isDone
+                                  ? const Color(0xFF10B981)
+                                  : Colors.transparent,
                               border: Border.all(
-                                color: isDone ? Colors.transparent : Colors.white38,
+                                color: isDone
+                                    ? Colors.transparent
+                                    : Colors.white38,
                                 width: 2,
                               ),
                             ),
                             child: isDone
-                                ? const Icon(Icons.check_rounded, color: Colors.black, size: 18)
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    color: Colors.black,
+                                    size: 18,
+                                  )
                                 : null,
                           ),
                         ),
@@ -1065,19 +1932,27 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                                   color: isDone ? Colors.white38 : Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '$subName • ${DateFormat('MMM dd').format(t.dueDate)}',
-                                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: tagColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
@@ -1110,30 +1985,376 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               ),
               const SizedBox(height: 16),
 
-              _scheduleTimelineItem(
-                time: '09:00 - 10:30 AM',
-                title: 'Theoretical Physics',
-                subtitle: 'Room 402 • Prof. Higgins',
-              ),
-              const SizedBox(height: 14),
+              // Schedule Conflicts Alert for Selected Date
+              if (conflicts.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14.0),
+                  child: GestureDetector(
+                    onTap: () => CalendarConflictDetailsSheet.show(
+                      context,
+                      conflicts: conflicts,
+                      date: _selectedDate,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${conflicts.length} Schedule ${conflicts.length == 1 ? 'Conflict' : 'Conflicts'} Detected',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  conflicts.first.description,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
 
-              _scheduleTimelineItem(
-                time: '11:00 - 12:30 PM',
-                title: 'English Literature',
-                subtitle: 'Hall B • Dr. Aris',
-              ),
-              const SizedBox(height: 14),
-
-              // Suggested Study Block
-              _suggestedStudyBlock(
-                title: 'Prep for Chem Midterm',
-                subtitle: 'Based on your performance in Lab 2',
-                onAdd: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Scheduled "Prep for Chem Midterm" into your calendar!')),
+              // Public Holidays for Selected Date
+              if (selectedDayHolidays.isNotEmpty)
+                ...selectedDayHolidays.map((holiday) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14.0),
+                    child: GestureDetector(
+                      onTap: () =>
+                          CalendarEventDetailsSheet.show(context, holiday),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFF59E0B,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: const Color(
+                              0xFFF59E0B,
+                            ).withValues(alpha: 0.35),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFFF59E0B,
+                                ).withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.celebration_rounded,
+                                color: Color(0xFFF59E0B),
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFFF59E0B,
+                                          ).withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'PUBLIC HOLIDAY',
+                                          style: TextStyle(
+                                            color: Color(0xFFF59E0B),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        holiday.source,
+                                        style: const TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    holiday.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.white38,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   );
-                },
-              ),
+                }),
+              // Personal Google Calendar Events for Selected Date
+              if (selectedPersonalEvents.isNotEmpty)
+                ...selectedPersonalEvents.map((event) {
+                  final timeFormat = DateFormat('h:mm a');
+                  final timeStr = event.isAllDay
+                      ? 'All day'
+                      : '${timeFormat.format(event.startDateTime.toLocal())} - ${timeFormat.format(event.endDateTime.toLocal())}';
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14.0),
+                    child: GestureDetector(
+                      onTap: () =>
+                          CalendarEventDetailsSheet.show(context, event),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF4285F4,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF4285F4,
+                            ).withValues(alpha: 0.35),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF4285F4,
+                                ).withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.event_note_rounded,
+                                color: Color(0xFF4285F4),
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFF4285F4,
+                                          ).withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          timeStr,
+                                          style: const TextStyle(
+                                            color: Color(0xFF7BD0FF),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        event.calendarName,
+                                        style: const TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    event.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  if (event.location != null &&
+                                      event.location!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      event.location!,
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.white38,
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+
+              if (dayClasses.isEmpty && selectedPersonalEvents.isEmpty)
+                GlassContainer(
+                  borderRadius: 18,
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          selectedDayHolidays.isNotEmpty
+                              ? Icons.celebration_rounded
+                              : Icons.calendar_today_outlined,
+                          color: selectedDayHolidays.isNotEmpty
+                              ? const Color(0xFFF59E0B)
+                              : Colors.white38,
+                          size: 32,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          selectedDayHolidays.isNotEmpty
+                              ? 'Public Holiday • ${selectedDayHolidays.first.title}'
+                              : 'No classes or events scheduled today',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          selectedDayHolidays.isNotEmpty
+                              ? 'Enjoy your holiday! No academic classes or personal events scheduled.'
+                              : 'Add your timetable or connect Google Calendar to see your schedule.',
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...dayClasses.map((entry) {
+                  final sub = subjects.cast<Subject?>().firstWhere(
+                    (s) => s?.id == entry.subjectId,
+                    orElse: () => null,
+                  );
+                  final facultyStr = sub?.facultyName.isNotEmpty == true
+                      ? ' • ${sub!.facultyName}'
+                      : '';
+                  final roomStr = entry.room != null && entry.room!.isNotEmpty
+                      ? 'Room ${entry.room}'
+                      : 'Classroom';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _scheduleTimelineItem(
+                      time:
+                          '${entry.startTimeDisplay} - ${entry.endTimeDisplay}',
+                      title: sub?.name ?? 'Scheduled Class',
+                      subtitle: '$roomStr$facultyStr',
+                    ),
+                  );
+                }),
+
+              if (exams.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _suggestedStudyBlock(
+                  title: 'Prep for ${exams.first.title}',
+                  subtitle:
+                      'Exam on ${DateFormat('MMM dd').format(exams.first.examDate)} (${exams.first.preparationProgress.toInt()}% completed)',
+                  onAdd: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Scheduled revision for "${exams.first.title}" into your calendar!',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
 
@@ -1156,7 +2377,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 ],
               ),
               child: IconButton(
-                icon: const Icon(Icons.add_rounded, color: Color(0xFF0E00AA), size: 28),
+                icon: const Icon(
+                  Icons.add_rounded,
+                  color: Color(0xFF0E00AA),
+                  size: 28,
+                ),
                 onPressed: _showAddDialog,
               ),
             ),
@@ -1214,7 +2439,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined, color: Colors.white38, size: 12),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  color: Colors.white38,
+                  size: 12,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   date,
@@ -1271,7 +2500,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             children: [
               Text(
                 time,
-                style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 6),
               Container(
@@ -1279,19 +2512,28 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF131A2B),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -1352,15 +2594,26 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
                         ),
-                        const Icon(Icons.auto_awesome_rounded, color: Color(0xFFC0C1FF), size: 16),
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Color(0xFFC0C1FF),
+                          size: 16,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: Colors.white60, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     SizedBox(
@@ -1378,7 +2631,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                         ),
                         child: const Text(
                           'Add to Schedule',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ),

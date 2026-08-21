@@ -4,7 +4,8 @@ class AcademicResource {
   final String? subjectId;
   final String? topicId;
   final String title;
-  final String type; // 'Note', 'Link', 'Video', 'PDF', 'Image', 'Document', 'Practice Set', 'Past Paper', 'Book', 'Other'
+  final String
+  type; // 'Note', 'Link', 'Video', 'PDF', 'Image', 'Document', 'Practice Set', 'Past Paper', 'Book', 'Other'
   final String? url;
   final String? localFilePath;
   final String? cloudFileReference;
@@ -98,8 +99,12 @@ class AcademicResource {
       description: map['description'],
       tags: List<String>.from(map['tags'] ?? []),
       isFavorite: map['isFavorite'] ?? false,
-      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now(),
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now(),
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'])
+          : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'])
+          : DateTime.now(),
     );
   }
 }

@@ -1,31 +1,37 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/ai_advisor/domain/models/ai_models.dart';
 import 'package:trackx/features/ai_advisor/presentation/screens/ai_privacy_screen.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
-import 'package:trackx/theme/app_theme.dart';
+
+import 'package:trackx/features/attendance/providers/stats_provider.dart';
+import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/planner/providers/productivity_provider.dart';
+import 'package:trackx/features/subjects/data/subject_repository.dart';
 
 final aiProviderPreference = StateProvider<String>((ref) => 'Auto');
 
 final chatMessagesProvider =
     StateNotifierProvider<ChatMessagesNotifier, List<AiMessage>>((ref) {
-      return ChatMessagesNotifier();
+      return ChatMessagesNotifier(ref);
     });
 
 class ChatMessagesNotifier extends StateNotifier<List<AiMessage>> {
-  ChatMessagesNotifier() : super([]) {
+  final Ref _ref;
+
+  ChatMessagesNotifier(this._ref) : super([]) {
     // Add default initial greeting
+    final profile = _ref.read(authRepositoryProvider).userProfile;
+    final name = profile?.name.isNotEmpty == true ? ', ${profile!.name}' : '';
     state = [
       AiMessage(
         id: 'init',
         conversationId: 'c1',
         sender: 'ai',
         content:
-            'Hello! I am your TrackX AI Advisor. How can I help you optimize your studies and attendance today?',
+            'Hello$name! I am your TrackX AI Advisor. How can I help you optimize your studies and attendance today?',
         timestamp: DateTime.now().millisecondsSinceEpoch,
       ),
     ];
@@ -42,43 +48,90 @@ class ChatMessagesNotifier extends StateNotifier<List<AiMessage>> {
 
     state = [...state, userMsg];
 
+    final stats = _ref.read(statsProvider);
+    final subjects = _ref.read(subjectRepositoryProvider);
+    final exams = _ref.read(examsProvider);
+    final tasks = _ref.read(tasksProvider);
+
     // Generate responsive response contextually
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    Future.delayed(const Duration(milliseconds: 800), () {
       String reply = '';
       List<StructuredAction> actions = [];
 
-      if (provider == 'Offline only') {
+      final lower = content.toLowerCase();
+
+      if (subjects.isEmpty) {
         reply =
-            '[Offline Insight] Based on your offline timetable logs, DBMS requires attendance in the next 2 classes to hit your 75% target.';
-        actions = [
-          StructuredAction(
-            type: 'OpenSubject',
-            parameters: {'subjectId': 'dbms'},
-          ),
-        ];
-      } else {
-        if (content.toLowerCase().contains('miss')) {
+            'No attendance data yet. Add your subjects and attendance to get personalized insights.';
+      } else if (lower.contains('miss') ||
+          lower.contains('bunk') ||
+          lower.contains('attendance')) {
+        final lowSubjects = stats.allSubjectStats
+            .where((s) => s.percentage < s.target)
+            .toList();
+        if (lowSubjects.isNotEmpty) {
+          final worst = lowSubjects.first;
           reply =
-              'Missing tomorrow\'s class keeps your DBMS attendance at 76%. However, it leaves you with a narrow 1% margin above your target.';
+              'Your attendance in ${worst.subject.name} is currently ${worst.percentage.toStringAsFixed(0)}% (Target: ${worst.target.toStringAsFixed(0)}%). Missing another class will reduce it further. You need ${worst.requiredRecovery} classes to recover.';
           actions = [
             StructuredAction(
-              type: 'OpenForecast',
-              parameters: {'subjectId': 'dbms'},
-            ),
-          ];
-        } else if (content.toLowerCase().contains('study') ||
-            content.toLowerCase().contains('week')) {
-          reply =
-              'Here is your generated study plan draft: \n• Friday: 2 hrs DBMS revision\n• Saturday: 1.5 hrs DAA preparation.';
-          actions = [
-            StructuredAction(
-              type: 'CreateStudySessionDraft',
-              parameters: {'hours': 2},
+              type: 'OpenSubject',
+              parameters: {'subjectId': worst.subject.id},
             ),
           ];
         } else {
+          final firstSub = stats.allSubjectStats.first;
           reply =
-              'I recommend completing your DBMS assignment due tomorrow first, followed by your DAA homework prep.';
+              'All your enrolled subjects are currently above target! In ${firstSub.subject.name}, your attendance is ${firstSub.percentage.toStringAsFixed(0)}% with ${firstSub.safeBunks} safe skips available.';
+          actions = [
+            StructuredAction(
+              type: 'OpenForecast',
+              parameters: {'subjectId': firstSub.subject.id},
+            ),
+          ];
+        }
+      } else if (lower.contains('study') ||
+          lower.contains('week') ||
+          lower.contains('plan')) {
+        final subNames = subjects.take(2).map((s) => s.name).toList();
+        if (subNames.length >= 2) {
+          reply =
+              'Here is your generated study plan draft:\n• Friday: 2 hrs ${subNames[0]} revision\n• Saturday: 1.5 hrs ${subNames[1]} preparation.';
+        } else if (subNames.isNotEmpty) {
+          reply =
+              'Here is your generated study plan draft:\n• Friday: 2 hrs ${subNames[0]} revision.';
+        } else {
+          reply =
+              'No subjects added yet. Add subjects to generate an optimized study plan.';
+        }
+        actions = [
+          StructuredAction(
+            type: 'CreateStudySessionDraft',
+            parameters: {'hours': 2},
+          ),
+        ];
+      } else if (lower.contains('exam')) {
+        if (exams.isNotEmpty) {
+          final nextExam = exams.first;
+          reply =
+              'Your upcoming exam is ${nextExam.title}. Current preparation progress is ${nextExam.preparationProgress.toStringAsFixed(0)}%. I recommend reviewing the key formula sheets and practice assignments.';
+        } else {
+          reply =
+              'No upcoming exams found in your planner. Add your exam dates in the Planner to track revision timelines.';
+        }
+      } else {
+        if (tasks.isNotEmpty) {
+          final pending = tasks.where((t) => !t.isCompleted).toList();
+          if (pending.isNotEmpty) {
+            reply =
+                'I recommend completing your pending task "${pending.first.title}" first to stay on track.';
+          } else {
+            reply =
+                'All your current tasks are completed! Keep up the great work maintaining your study goals.';
+          }
+        } else {
+          reply =
+              'Your attendance and study routines are synchronized. How else can I assist your academic planning?';
         }
       }
 

@@ -13,7 +13,9 @@ class AiActionHistoryRepository {
     if (jsonStr == null) return [];
     try {
       final List<dynamic> decoded = jsonDecode(jsonStr);
-      return decoded.map((e) => AiActionRecord.fromMap(Map<String, dynamic>.from(e))).toList();
+      return decoded
+          .map((e) => AiActionRecord.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (_) {
       return [];
     }
@@ -30,7 +32,11 @@ class AiActionHistoryRepository {
     await saveActionRecords(list);
   }
 
-  Future<void> updateActionRecordStatus(String id, AiActionStatus status, {DateTime? confirmedAt}) async {
+  Future<void> updateActionRecordStatus(
+    String id,
+    AiActionStatus status, {
+    DateTime? confirmedAt,
+  }) async {
     final list = getActionRecords();
     final updated = list.map((e) {
       if (e.id == id) {

@@ -51,7 +51,9 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
     final authState = ref.read(authRepositoryProvider);
     final userId = authState.userProfile?.id ?? 'guest';
 
-    await ref.read(attendanceRepositoryProvider.notifier).markAttendance(
+    await ref
+        .read(attendanceRepositoryProvider.notifier)
+        .markAttendance(
           userId: userId,
           semesterId: widget.activeSemId,
           subjectId: widget.stats.subject.id,
@@ -72,7 +74,9 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
 
     final total = widget.stats.totalCount;
     final present = widget.stats.presentCount;
-    final pctIfPresent = total > 0 ? ((present + 1) / (total + 1) * 100) : 100.0;
+    final pctIfPresent = total > 0
+        ? ((present + 1) / (total + 1) * 100)
+        : 100.0;
     final pctIfAbsent = total > 0 ? (present / (total + 1) * 100) : 0.0;
 
     final onTrack = pct >= target;
@@ -132,11 +136,20 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 13, color: Colors.white38),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 13,
+                        color: Colors.white38,
+                      ),
                       const SizedBox(width: 4),
                       Text(
-                        sub.facultyName.isNotEmpty ? sub.facultyName : 'Faculty',
-                        style: const TextStyle(color: Colors.white38, fontSize: 13),
+                        sub.facultyName.isNotEmpty
+                            ? sub.facultyName
+                            : 'Faculty',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -145,11 +158,16 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                   // Current Attendance card
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.07),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -200,33 +218,60 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.06),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.trending_up_rounded, size: 16, color: successGreen),
+                                  const Icon(
+                                    Icons.trending_up_rounded,
+                                    size: 16,
+                                    color: successGreen,
+                                  ),
                                   const Spacer(),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: successGreen.withValues(alpha: 0.12),
+                                      color: successGreen.withValues(
+                                        alpha: 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
                                       '+${(pctIfPresent - pct).abs().toStringAsFixed(0)}%',
-                                      style: const TextStyle(color: successGreen, fontSize: 10, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: successGreen,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              const Text('If Present', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                              const Text(
+                                'If Present',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                ),
+                              ),
                               const SizedBox(height: 2),
-                              Text('${pctIfPresent.toStringAsFixed(0)}%',
-                                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                              Text(
+                                '${pctIfPresent.toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -238,33 +283,58 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.06),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.trending_down_rounded, size: 16, color: dangerRed),
+                                  const Icon(
+                                    Icons.trending_down_rounded,
+                                    size: 16,
+                                    color: dangerRed,
+                                  ),
                                   const Spacer(),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: dangerRed.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
                                       '-${(pct - pctIfAbsent).abs().toStringAsFixed(0)}%',
-                                      style: const TextStyle(color: dangerRed, fontSize: 10, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: dangerRed,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              const Text('If Absent', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                              const Text(
+                                'If Absent',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                ),
+                              ),
                               const SizedBox(height: 2),
-                              Text('${pctIfAbsent.toStringAsFixed(0)}%',
-                                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                              Text(
+                                '${pctIfAbsent.toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -294,11 +364,14 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: (safeToBunk ? primaryBlue : dangerRed).withValues(alpha: 0.15),
+                            color: (safeToBunk ? primaryBlue : dangerRed)
+                                .withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
-                            safeToBunk ? Icons.auto_awesome_rounded : Icons.warning_amber_rounded,
+                            safeToBunk
+                                ? Icons.auto_awesome_rounded
+                                : Icons.warning_amber_rounded,
                             color: safeToBunk ? primaryBlue : dangerRed,
                             size: 20,
                           ),
@@ -322,7 +395,11 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                                 safeToBunk
                                     ? 'You can skip $safeBunks more class${safeBunks != 1 ? "es" : ""} and stay above your ${target.toStringAsFixed(0)}% target.'
                                     : 'Attend ${widget.stats.requiredRecovery} more class${widget.stats.requiredRecovery != 1 ? "es" : ""} to reach ${target.toStringAsFixed(0)}%.',
-                                style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
                               ),
                             ],
                           ),
@@ -341,7 +418,9 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                         backgroundColor: primaryBlue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         elevation: 0,
                       ),
                       child: const Row(
@@ -349,7 +428,13 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                         children: [
                           Icon(Icons.how_to_reg_rounded, size: 18),
                           SizedBox(width: 10),
-                          Text('Mark Present', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(
+                            'Mark Present',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -363,16 +448,26 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                       onPressed: () => _markAndClose('absent'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white70,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.airplanemode_active_rounded, size: 18),
                           SizedBox(width: 10),
-                          Text('Skip Class', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          Text(
+                            'Skip Class',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -406,7 +501,8 @@ class AttendanceLoggedOverlay extends StatefulWidget {
   });
 
   @override
-  State<AttendanceLoggedOverlay> createState() => _AttendanceLoggedOverlayState();
+  State<AttendanceLoggedOverlay> createState() =>
+      _AttendanceLoggedOverlayState();
 }
 
 class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
@@ -419,15 +515,27 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
     _scaleAnim = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6, curve: Curves.elasticOut)),
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+      ),
     );
     _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.4, curve: Curves.easeOut)),
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+      ),
     );
     _checkAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.3, 0.9, curve: Curves.easeOut)),
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.3, 0.9, curve: Curves.easeOut),
+      ),
     );
     _controller.forward();
     HapticFeedback.heavyImpact();
@@ -471,9 +579,16 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1A2A5E),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: const Color(0xFF3B5BDB), width: 2),
+                                  border: Border.all(
+                                    color: const Color(0xFF3B5BDB),
+                                    width: 2,
+                                  ),
                                 ),
-                                child: const Icon(Icons.check_rounded, color: Color(0xFF3B5BDB), size: 36),
+                                child: const Icon(
+                                  Icons.check_rounded,
+                                  color: Color(0xFF3B5BDB),
+                                  size: 36,
+                                ),
                               ),
                             );
                           },
@@ -485,7 +600,12 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                 const SizedBox(height: 36),
                 const Text(
                   'Attendance Logged!',
-                  style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -501,7 +621,9 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -512,17 +634,32 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                           color: Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.science_outlined, color: Colors.white54, size: 22),
+                        child: const Icon(
+                          Icons.science_outlined,
+                          color: Colors.white54,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(widget.subjectName,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                            Text(widget.subjectCode,
-                                style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                            Text(
+                              widget.subjectName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            Text(
+                              widget.subjectCode,
+                              style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -531,14 +668,27 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                         children: [
                           Text(
                             '${widget.newPercentage.toStringAsFixed(0)}%',
-                            style: const TextStyle(color: Color(0xFF3B5BDB), fontSize: 22, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Color(0xFF3B5BDB),
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Row(
                             children: [
-                              const Icon(Icons.trending_up_rounded, size: 12, color: Color(0xFF10B981)),
+                              const Icon(
+                                Icons.trending_up_rounded,
+                                size: 12,
+                                color: Color(0xFF10B981),
+                              ),
                               const SizedBox(width: 2),
-                              Text('+${widget.change.toStringAsFixed(0)}%',
-                                  style: const TextStyle(color: Color(0xFF10B981), fontSize: 11)),
+                              Text(
+                                '+${widget.change.toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                  color: Color(0xFF10B981),
+                                  fontSize: 11,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -556,13 +706,21 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                       backgroundColor: const Color(0xFF3B5BDB),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                       elevation: 0,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Back to Dashboard', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text(
+                          'Back to Dashboard',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
                         SizedBox(width: 8),
                         Icon(Icons.arrow_forward_rounded, size: 18),
                       ],
@@ -591,7 +749,10 @@ class _ConcentricRingsPainter extends CustomPainter {
     }
     final bgPaint = Paint()
       ..shader = RadialGradient(
-        colors: [const Color(0xFF12215C).withValues(alpha: 0.5), Colors.transparent],
+        colors: [
+          const Color(0xFF12215C).withValues(alpha: 0.5),
+          Colors.transparent,
+        ],
       ).createShader(Rect.fromCircle(center: center, radius: 90));
     canvas.drawCircle(center, 90, bgPaint);
   }

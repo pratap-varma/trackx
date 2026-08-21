@@ -17,17 +17,28 @@ class GraduationProgressScreen extends ConsumerWidget {
     final subjects = ref.watch(subjectRepositoryProvider);
 
     final progId = activeProg?.id ?? '';
-    final progSemesters = semesters.where((s) => s.programmeId == progId).toList();
+    final progSemesters = semesters
+        .where((s) => s.programmeId == progId)
+        .toList();
     final progSemIds = progSemesters.map((s) => s.id).toSet();
-    final progSubjects = subjects.where((s) => progSemIds.contains(s.semesterId)).toList();
+    final progSubjects = subjects
+        .where((s) => progSemIds.contains(s.semesterId))
+        .toList();
 
     final totalSemesters = activeProg?.totalSemesters ?? 8;
-    final completedSems = progSemesters.where((s) => s.status == 'Completed').length;
+    final completedSems = progSemesters
+        .where((s) => s.status == 'Completed')
+        .length;
     final activeSems = progSemesters.where((s) => s.status == 'Active').length;
-    final remainingSems = (totalSemesters - completedSems - activeSems).clamp(0, totalSemesters);
+    final remainingSems = (totalSemesters - completedSems - activeSems).clamp(
+      0,
+      totalSemesters,
+    );
 
     final totalSubjects = progSubjects.length;
-    final completedSubs = progSubjects.where((s) => s.status == 'Completed').length;
+    final completedSubs = progSubjects
+        .where((s) => s.status == 'Completed')
+        .length;
     final activeSubs = progSubjects.where((s) => s.status == 'Active').length;
     final plannedSubs = progSubjects.where((s) => s.status == 'Planned').length;
 
@@ -42,7 +53,9 @@ class GraduationProgressScreen extends ConsumerWidget {
         .where((s) => s.status == 'Planned' && s.credits != null)
         .fold(0.0, (sum, s) => sum + (s.credits ?? 0.0));
 
-    final overallProgress = totalSemesters > 0 ? completedSems / totalSemesters : 0.0;
+    final overallProgress = totalSemesters > 0
+        ? completedSems / totalSemesters
+        : 0.0;
 
     return AppBackground(
       child: Scaffold(
@@ -51,12 +64,20 @@ class GraduationProgressScreen extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 18,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: const Text(
             'Graduation Progress',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 18,
+            ),
           ),
           centerTitle: true,
         ),
@@ -70,11 +91,19 @@ class GraduationProgressScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.school_outlined, color: Colors.white.withValues(alpha: 0.3), size: 48),
+                        Icon(
+                          Icons.school_outlined,
+                          color: Colors.white.withValues(alpha: 0.3),
+                          size: 48,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           'No Programme Set',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         const Text(
@@ -98,7 +127,9 @@ class GraduationProgressScreen extends ConsumerWidget {
                           width: 180,
                           height: 180,
                           child: CustomPaint(
-                            painter: _GraduationRingPainter(progress: overallProgress),
+                            painter: _GraduationRingPainter(
+                              progress: overallProgress,
+                            ),
                             child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -114,7 +145,10 @@ class GraduationProgressScreen extends ConsumerWidget {
                                   ),
                                   const Text(
                                     'Complete',
-                                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                                    style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -124,12 +158,19 @@ class GraduationProgressScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         Text(
                           activeProg.name,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${activeProg.degreeType ?? 'Degree'} · Expected ${activeProg.expectedGraduationYear ?? 'TBD'}',
-                          style: const TextStyle(color: Colors.white38, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -142,17 +183,27 @@ class GraduationProgressScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF5B5FEF).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF5B5FEF).withValues(alpha: 0.2)),
+                      border: Border.all(
+                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.info_outline_rounded, color: Color(0xFFC0C1FF), size: 16),
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          color: Color(0xFFC0C1FF),
+                          size: 16,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'This is a personal planning estimate based on your TrackX data. Always confirm with your college for official requirements.',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11, height: 1.5),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 11,
+                              height: 1.5,
+                            ),
                           ),
                         ),
                       ],
@@ -164,15 +215,25 @@ class GraduationProgressScreen extends ConsumerWidget {
                   _sectionTitle('Semester Progress'),
                   const SizedBox(height: 12),
                   _statRow([
-                    _statBlock('$completedSems', 'Completed', const Color(0xFF10B981)),
-                    _statBlock('$activeSems', 'Active', const Color(0xFF5B5FEF)),
+                    _statBlock(
+                      '$completedSems',
+                      'Completed',
+                      const Color(0xFF10B981),
+                    ),
+                    _statBlock(
+                      '$activeSems',
+                      'Active',
+                      const Color(0xFF5B5FEF),
+                    ),
                     _statBlock('$remainingSems', 'Remaining', Colors.white38),
                     _statBlock('$totalSemesters', 'Total', Colors.white54),
                   ]),
                   const SizedBox(height: 12),
                   _progressBar(
                     label: '$completedSems / $totalSemesters semesters',
-                    value: totalSemesters > 0 ? completedSems / totalSemesters : 0,
+                    value: totalSemesters > 0
+                        ? completedSems / totalSemesters
+                        : 0,
                     color: const Color(0xFF10B981),
                   ),
                   const SizedBox(height: 24),
@@ -181,15 +242,33 @@ class GraduationProgressScreen extends ConsumerWidget {
                   _sectionTitle('Credits Tracker'),
                   const SizedBox(height: 12),
                   _statRow([
-                    _statBlock('${completedCredits.toInt()}', 'Completed', const Color(0xFF10B981)),
-                    _statBlock('${activeCredits.toInt()}', 'In Progress', const Color(0xFF5B5FEF)),
-                    _statBlock('${plannedCredits.toInt()}', 'Planned', const Color(0xFF7BD0FF)),
-                    if (targetCredits > 0) _statBlock('${targetCredits.toInt()}', 'Target', Colors.white38),
+                    _statBlock(
+                      '${completedCredits.toInt()}',
+                      'Completed',
+                      const Color(0xFF10B981),
+                    ),
+                    _statBlock(
+                      '${activeCredits.toInt()}',
+                      'In Progress',
+                      const Color(0xFF5B5FEF),
+                    ),
+                    _statBlock(
+                      '${plannedCredits.toInt()}',
+                      'Planned',
+                      const Color(0xFF7BD0FF),
+                    ),
+                    if (targetCredits > 0)
+                      _statBlock(
+                        '${targetCredits.toInt()}',
+                        'Target',
+                        Colors.white38,
+                      ),
                   ]),
                   if (targetCredits > 0) ...[
                     const SizedBox(height: 12),
                     _progressBar(
-                      label: '${completedCredits.toInt()} / ${targetCredits.toInt()} credits',
+                      label:
+                          '${completedCredits.toInt()} / ${targetCredits.toInt()} credits',
                       value: completedCredits / targetCredits,
                       color: const Color(0xFF7BD0FF),
                     ),
@@ -197,7 +276,10 @@ class GraduationProgressScreen extends ConsumerWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Set a target in Programme Settings to enable credit calculations.',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 10),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -206,15 +288,29 @@ class GraduationProgressScreen extends ConsumerWidget {
                   _sectionTitle('Syllabus Completion'),
                   const SizedBox(height: 12),
                   _statRow([
-                    _statBlock('$completedSubs', 'Completed', const Color(0xFF10B981)),
-                    _statBlock('$activeSubs', 'Active', const Color(0xFF5B5FEF)),
-                    _statBlock('$plannedSubs', 'Planned', const Color(0xFFF59E0B)),
+                    _statBlock(
+                      '$completedSubs',
+                      'Completed',
+                      const Color(0xFF10B981),
+                    ),
+                    _statBlock(
+                      '$activeSubs',
+                      'Active',
+                      const Color(0xFF5B5FEF),
+                    ),
+                    _statBlock(
+                      '$plannedSubs',
+                      'Planned',
+                      const Color(0xFFF59E0B),
+                    ),
                     _statBlock('$totalSubjects', 'Total', Colors.white38),
                   ]),
                   const SizedBox(height: 12),
                   _progressBar(
                     label: '$completedSubs / $totalSubjects subjects',
-                    value: totalSubjects > 0 ? completedSubs / totalSubjects : 0,
+                    value: totalSubjects > 0
+                        ? completedSubs / totalSubjects
+                        : 0,
                     color: const Color(0xFFF59E0B),
                   ),
                   const SizedBox(height: 24),
@@ -226,13 +322,28 @@ class GraduationProgressScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Programme Summary',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        const Text(
+                          'Programme Summary',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                         const SizedBox(height: 14),
                         _summaryRow('Programme', activeProg.name),
-                        _summaryRow('Degree', activeProg.degreeType ?? 'Not Set'),
-                        _summaryRow('Joining Year', '${activeProg.joiningYear}'),
-                        _summaryRow('Expected Graduation', '${activeProg.expectedGraduationYear ?? 'Not Set'}'),
+                        _summaryRow(
+                          'Degree',
+                          activeProg.degreeType ?? 'Not Set',
+                        ),
+                        _summaryRow(
+                          'Joining Year',
+                          '${activeProg.joiningYear}',
+                        ),
+                        _summaryRow(
+                          'Expected Graduation',
+                          '${activeProg.expectedGraduationYear ?? 'Not Set'}',
+                        ),
                       ],
                     ),
                   ),
@@ -243,7 +354,14 @@ class GraduationProgressScreen extends ConsumerWidget {
   }
 
   static Widget _sectionTitle(String title) {
-    return Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15));
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 15,
+      ),
+    );
   }
 
   static Widget _statRow(List<Widget> items) {
@@ -260,14 +378,28 @@ class GraduationProgressScreen extends ConsumerWidget {
   static Widget _statBlock(String value, String label, Color color) {
     return Column(
       children: [
-        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 20)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         const SizedBox(height: 3),
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white38, fontSize: 10),
+        ),
       ],
     );
   }
 
-  static Widget _progressBar({required String label, required double value, required Color color}) {
+  static Widget _progressBar({
+    required String label,
+    required double value,
+    required Color color,
+  }) {
     final pct = (value * 100).clamp(0.0, 100.0).toInt();
     return GlassContainer(
       borderRadius: 14,
@@ -277,8 +409,18 @@ class GraduationProgressScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
-              Text('$pct%', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+              Text(
+                '$pct%',
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -302,8 +444,18 @@ class GraduationProgressScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 13)),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white38, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );

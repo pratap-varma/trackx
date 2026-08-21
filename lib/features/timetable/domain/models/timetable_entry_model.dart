@@ -64,8 +64,9 @@ class TimetableEntry {
 
   bool isCompleted(DateTime currentTime) {
     if (!isEnabled) return false;
-    if (currentTime.weekday != dayOfWeek)
+    if (currentTime.weekday != dayOfWeek) {
       return currentTime.weekday > dayOfWeek;
+    }
 
     final currentMinutes = currentTime.hour * 60 + currentTime.minute;
     return currentMinutes >= endTime;

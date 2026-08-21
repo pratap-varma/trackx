@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/core/models/user_profile.dart';
 import 'package:trackx/core/services/persistence_service.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/core/services/sync_service.dart';
+import 'package:trackx/features/calendar/providers/calendar_provider.dart';
 
 // SharedPreferences Provider
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -23,6 +25,7 @@ class AuthRepository extends StateNotifier<AuthState> {
   final PersistenceService _persistence;
   final Ref? _ref;
   fb.FirebaseAuth? _firebaseAuth;
+  FirebaseFirestore? _firestore;
 
   AuthRepository(this._persistence, [this._ref]) : super(AuthState.initial()) {
     _init();
@@ -31,31 +34,12 @@ class AuthRepository extends StateNotifier<AuthState> {
   void _init() {
     try {
       _firebaseAuth = fb.FirebaseAuth.instance;
-      _firebaseAuth!.authStateChanges().listen((fbUser) {
-        if (fbUser != null) {
-          // Sync active user context
-          _ref?.read(syncServiceProvider).setActiveUser(fbUser.uid);
+      _firestore = FirebaseFirestore.instance;
 
-          final profile = _persistence.getUserProfile();
-          if (profile != null) {
-            state = AuthState.authenticated(profile);
-          } else {
-            // Construct default user profile
-            final defProfile = UserProfile(
-              id: fbUser.uid,
-              name: fbUser.displayName ?? '',
-              email: fbUser.email ?? '',
-              branch: '',
-              semester: 1,
-              globalTarget: 75.0,
-              themeMode: 'dark',
-              themeColorPack: 'purple',
-              onboardingCompleted: false,
-              createdTimestamp: DateTime.now().millisecondsSinceEpoch,
-              updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
-            );
-            state = AuthState.authenticated(defProfile);
-          }
+      _firebaseAuth!.authStateChanges().listen((fbUser) async {
+        if (fbUser != null) {
+          _ref?.read(syncServiceProvider).setActiveUser(fbUser.uid);
+          await _loadUserProfileFromFirestoreOrCache(fbUser);
         } else {
           _ref?.read(syncServiceProvider).setActiveUser(null);
           final token = _persistence.getAuthToken();
@@ -80,133 +64,251 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> login(String email, String password) async {
-    state = AuthState.loading();
-    try {
-      final cred = await _firebaseAuth!.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+  Future<void> _loadUserProfileFromFirestoreOrCache(fb.User fbUser) async {
+    // 1. Instant Cache-First: If profile is cached locally, authenticate immediately!
+    final cachedProfile = _persistence.getUserProfile(fbUser.uid);
+    if (cachedProfile != null) {
+      await _persistence.saveAuthToken(fbUser.uid);
+      state = AuthState.authenticated(cachedProfile);
+    } else {
+      // 2. Instant Optimistic Profile: Don't block UI on Firestore roundtrips
+      final initialProfile = UserProfile(
+        id: fbUser.uid,
+        name: fbUser.displayName ?? '',
+        email: fbUser.email ?? '',
+        branch: '',
+        semester: 1,
+        globalTarget: 75.0,
+        themeMode: 'dark',
+        themeColorPack: 'purple',
+        onboardingCompleted: false,
+        createdTimestamp: DateTime.now().millisecondsSinceEpoch,
+        updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
       );
-      final fbUser = cred.user;
+      await _persistence.saveAuthToken(fbUser.uid);
+      await _persistence.saveUserProfile(initialProfile);
+      state = AuthState.authenticated(initialProfile);
+    }
 
-      if (fbUser != null) {
+    // 3. Fast background sync with Firestore (non-blocking)
+    _syncProfileFromFirestoreBackground(fbUser);
+  }
+
+  Future<void> _syncProfileFromFirestoreBackground(fb.User fbUser) async {
+    try {
+      if (_firestore == null) return;
+      final doc = await _firestore!
+          .collection('users')
+          .doc(fbUser.uid)
+          .get()
+          .timeout(const Duration(seconds: 3));
+
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        final String name = data['name']?.toString() ?? '';
+        final String department =
+            data['department']?.toString() ??
+            data['branch']?.toString() ??
+            '';
+        final bool isOnboarded =
+            data['onboardingCompleted'] == true ||
+            (name.isNotEmpty && department.isNotEmpty);
+
         final profile = UserProfile(
           id: fbUser.uid,
-          name: '',
-          email: email,
-          branch: '',
-          semester: 1,
-          globalTarget: 75.0,
-          themeMode: 'dark',
-          themeColorPack: 'purple',
-          onboardingCompleted: false,
-          createdTimestamp: DateTime.now().millisecondsSinceEpoch,
-          updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
+          name: name.isNotEmpty ? name : (fbUser.displayName ?? ''),
+          email: data['email']?.toString() ?? fbUser.email ?? '',
+          branch: department,
+          semester: (data['semester'] as num?)?.toInt() ?? 1,
+          globalTarget: (data['globalTarget'] as num?)?.toDouble() ?? 75.0,
+          themeMode: data['themeMode']?.toString() ?? 'dark',
+          themeColorPack: data['themeColorPack']?.toString() ?? 'purple',
+          onboardingCompleted: isOnboarded,
+          createdTimestamp: data['createdTimestamp'] is int
+              ? data['createdTimestamp']
+              : (data['createdAt'] is Timestamp
+                    ? (data['createdAt'] as Timestamp).millisecondsSinceEpoch
+                    : DateTime.now().millisecondsSinceEpoch),
+          updatedTimestamp: data['updatedTimestamp'] is int
+              ? data['updatedTimestamp']
+              : (data['updatedAt'] is Timestamp
+                    ? (data['updatedAt'] as Timestamp).millisecondsSinceEpoch
+                    : DateTime.now().millisecondsSinceEpoch),
+          collegeName: data['collegeName']?.toString(),
+          registrationNumber: data['registrationNumber']?.toString(),
+          programmeName: data['programmeName']?.toString(),
+          joiningYear: (data['joiningYear'] as num?)?.toInt(),
+          expectedGraduationYear: (data['expectedGraduationYear'] as num?)
+              ?.toInt(),
+          currentSemesterId: data['currentSemesterId']?.toString(),
+          defaultAttendanceTarget: (data['defaultAttendanceTarget'] as num?)
+              ?.toDouble(),
+          preferredLanguage: data['preferredLanguage']?.toString() ?? 'en',
+          preferredTimezone: data['preferredTimezone']?.toString() ?? 'UTC',
+          preferredStudySessionMinutes:
+              (data['preferredStudySessionMinutes'] as num?)?.toInt() ?? 25,
+          cloudSyncEnabled: data['cloudSyncEnabled'] ?? true,
         );
 
-        await _persistence.saveAuthToken('fb-session-token');
         await _persistence.saveUserProfile(profile);
         state = AuthState.authenticated(profile);
       }
     } catch (_) {
-      // Fallback to local Mock Auth for test runner safety
-      if (email == 'test@example.com' && password == 'password123') {
-        final profile = UserProfile(
-          id: 'mock-user-1',
-          name: 'Rohan Sharma',
-          email: email,
-          branch: 'Computer Science',
-          semester: 5,
-          globalTarget: 75.0,
-          themeMode: 'dark',
-          themeColorPack: 'purple',
-          onboardingCompleted: true,
-          createdTimestamp: DateTime.now().millisecondsSinceEpoch,
-          updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
-        );
+      // Ignored for background sync; local state is already loaded
+    }
+  }
 
-        await _persistence.saveAuthToken('mock-session-token');
-        await _persistence.saveUserProfile(profile);
-        state = AuthState.authenticated(profile);
-      } else if (email.isNotEmpty && password.length >= 6) {
-        final profile = UserProfile(
-          id: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
-          name: '',
-          email: email,
-          branch: '',
-          semester: 1,
-          globalTarget: 75.0,
-          themeMode: 'dark',
-          themeColorPack: 'purple',
-          onboardingCompleted: false,
-          createdTimestamp: DateTime.now().millisecondsSinceEpoch,
-          updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
-        );
-
-        await _persistence.saveAuthToken('mock-session-token');
-        await _persistence.saveUserProfile(profile);
-        state = AuthState.authenticated(profile);
-      } else {
-        state = AuthState.error(
-          'Invalid credentials. Password must be >= 6 characters.',
-        );
+  Future<void> login(String email, String password) async {
+    state = AuthState.loading();
+    try {
+      if (_firebaseAuth == null) {
+        state = AuthState.error('Authentication service is not available.');
+        return;
       }
+      final cred = await _firebaseAuth!.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      final fbUser = cred.user;
+      if (fbUser != null) {
+        await _loadUserProfileFromFirestoreOrCache(fbUser);
+        return;
+      }
+      state = AuthState.error('No user account returned from sign-in.');
+    } on fb.FirebaseAuthException catch (e) {
+      String msg;
+      switch (e.code) {
+        case 'user-not-found':
+          msg = 'No account found with this email.';
+          break;
+        case 'wrong-password':
+        case 'invalid-credential':
+          msg = 'Incorrect email or password. Please verify your credentials.';
+          break;
+        case 'invalid-email':
+          msg = 'The email address is invalid.';
+          break;
+        case 'user-disabled':
+          msg = 'This user account has been disabled.';
+          break;
+        case 'too-many-requests':
+          msg = 'Too many failed attempts. Please wait a moment and try again.';
+          break;
+        case 'network-request-failed':
+          msg = 'Network connection failed. Please check your internet connection.';
+          break;
+        default:
+          msg = e.message ?? 'Login failed (${e.code}).';
+      }
+      state = AuthState.error(msg);
+    } catch (e) {
+      state = AuthState.error('Login failed: ${e.toString()}');
     }
   }
 
   Future<void> register(String email, String password) async {
     state = AuthState.loading();
     try {
+      if (_firebaseAuth == null) {
+        state = AuthState.error('Authentication service is not available.');
+        return;
+      }
       final cred = await _firebaseAuth!.createUserWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
       final fbUser = cred.user;
-
       if (fbUser != null) {
-        final profile = UserProfile(
-          id: fbUser.uid,
-          name: '',
-          email: email,
-          branch: '',
-          semester: 1,
-          globalTarget: 75.0,
-          themeMode: 'dark',
-          themeColorPack: 'purple',
-          onboardingCompleted: false,
-          createdTimestamp: DateTime.now().millisecondsSinceEpoch,
-          updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
-        );
-
-        await _persistence.saveAuthToken('fb-session-token');
-        await _persistence.saveUserProfile(profile);
-        state = AuthState.authenticated(profile);
+        await _loadUserProfileFromFirestoreOrCache(fbUser);
+        return;
       }
-    } catch (_) {
-      // Mock Fallback
-      if (email.contains('@') && password.length >= 6) {
-        final profile = UserProfile(
-          id: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
-          name: '',
-          email: email,
-          branch: '',
-          semester: 1,
-          globalTarget: 75.0,
-          themeMode: 'dark',
-          themeColorPack: 'purple',
-          onboardingCompleted: false,
-          createdTimestamp: DateTime.now().millisecondsSinceEpoch,
-          updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
-        );
-
-        await _persistence.saveAuthToken('mock-session-token');
-        await _persistence.saveUserProfile(profile);
-        state = AuthState.authenticated(profile);
-      } else {
-        state = AuthState.error(
-          'Invalid registration details. Password must be >= 6 chars.',
-        );
+      state = AuthState.error('Failed to create user account.');
+    } on fb.FirebaseAuthException catch (e) {
+      String msg;
+      switch (e.code) {
+        case 'email-already-in-use':
+          msg = 'An account already exists with this email.';
+          break;
+        case 'invalid-email':
+          msg = 'The email address is invalid.';
+          break;
+        case 'weak-password':
+          msg = 'Password is too weak. Please use at least 6 characters.';
+          break;
+        case 'operation-not-allowed':
+          msg = 'Email/password sign-in is not enabled in Firebase Console.';
+          break;
+        case 'network-request-failed':
+          msg = 'Network connection failed. Please check your internet connection.';
+          break;
+        default:
+          msg = e.message ?? 'Registration failed (${e.code}).';
       }
+      state = AuthState.error(msg);
+    } catch (e) {
+      state = AuthState.error('Registration failed: ${e.toString()}');
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    state = AuthState.loading();
+    try {
+      final googleSignIn = GoogleSignIn();
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        // User closed/cancelled Google sign-in
+        final currentProfile = _persistence.getUserProfile();
+        if (currentProfile != null) {
+          state = AuthState.authenticated(currentProfile);
+        } else {
+          state = AuthState.unauthenticated();
+        }
+        return;
+      }
+      final googleAuth = await googleUser.authentication;
+      final cred = fb.GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      if (_firebaseAuth != null) {
+        final userCred = await _firebaseAuth!.signInWithCredential(cred);
+        final fbUser = userCred.user;
+        if (fbUser != null) {
+          await _loadUserProfileFromFirestoreOrCache(fbUser);
+          return;
+        }
+      }
+      state = AuthState.error('Authentication service is not available.');
+    } on fb.FirebaseAuthException catch (e) {
+      String msg = e.message ?? 'Google Sign-In failed (${e.code}).';
+      if (e.code == 'account-exists-with-different-credential') {
+        msg = 'An account already exists with this email using a different sign-in method.';
+      }
+      state = AuthState.error(msg);
+    } catch (e) {
+      String msg = e.toString();
+      if (msg.contains('ApiException: 10') || msg.contains('DEVELOPER_ERROR')) {
+        msg = 'Google Sign-In requires SHA-1 fingerprint added to Firebase Console project settings.';
+      } else if (msg.contains('network_error') || msg.contains('Network error')) {
+        msg = 'Network error during Google Sign-In. Please check your connection.';
+      }
+      state = AuthState.error('Google Sign In failed: $msg');
+    }
+  }
+
+  Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      if (_firebaseAuth != null) {
+        await _firebaseAuth!.sendPasswordResetEmail(email: email.trim());
+        return true;
+      }
+      return false;
+    } on fb.FirebaseAuthException catch (e) {
+      state = AuthState.error(e.message ?? 'Failed to send password reset email.');
+      return false;
+    } catch (e) {
+      state = AuthState.error('Failed to send reset email: ${e.toString()}');
+      return false;
     }
   }
 
@@ -217,24 +319,61 @@ class AuthRepository extends StateNotifier<AuthState> {
     double target,
   ) async {
     final currentProfile = state.userProfile;
-    if (currentProfile == null) return;
+    final uid = currentProfile?.id ?? _firebaseAuth?.currentUser?.uid;
+    if (uid == null || uid.isEmpty) return;
 
-    final updated = currentProfile.copyWith(
-      name: name,
-      branch: branch,
-      semester: semester,
-      globalTarget: target,
-      onboardingCompleted: true,
-      updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
-    );
+    final updated =
+        (currentProfile ??
+                UserProfile(
+                  id: uid,
+                  name: name,
+                  email: _firebaseAuth?.currentUser?.email ?? '',
+                  branch: branch,
+                  semester: semester,
+                  globalTarget: target,
+                  themeMode: 'dark',
+                  themeColorPack: 'purple',
+                  onboardingCompleted: true,
+                  createdTimestamp: DateTime.now().millisecondsSinceEpoch,
+                  updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
+                ))
+            .copyWith(
+              id: uid,
+              name: name,
+              branch: branch,
+              semester: semester,
+              globalTarget: target,
+              onboardingCompleted: true,
+              updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
+            );
 
     await _persistence.saveUserProfile(updated);
     state = AuthState.authenticated(updated);
 
-    // Push profile update to Firestore Sync
-    _ref
-        ?.read(syncServiceProvider)
-        .addToQueue('profile', updated.id, 'update', updated.toMap());
+    // Save permanently to Firestore users/{uid}
+    try {
+      if (_firestore != null) {
+        await _firestore!.collection('users').doc(uid).set({
+          'id': uid,
+          'name': name,
+          'department': branch,
+          'branch': branch,
+          'email': updated.email,
+          'semester': semester,
+          'globalTarget': target,
+          'themeMode': updated.themeMode,
+          'themeColorPack': updated.themeColorPack,
+          'onboardingCompleted': true,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {
+      // Enqueue to sync service if offline
+      _ref
+          ?.read(syncServiceProvider)
+          .addToQueue('profile', uid, 'update', updated.toMap());
+    }
   }
 
   Future<void> updateProfile(
@@ -256,6 +395,7 @@ class AuthRepository extends StateNotifier<AuthState> {
   }) async {
     final currentProfile = state.userProfile;
     if (currentProfile == null) return;
+    final uid = currentProfile.id;
 
     final updated = currentProfile.copyWith(
       name: name,
@@ -279,15 +419,43 @@ class AuthRepository extends StateNotifier<AuthState> {
     await _persistence.saveUserProfile(updated);
     state = AuthState.authenticated(updated);
 
-    _ref
-        ?.read(syncServiceProvider)
-        .addToQueue('profile', updated.id, 'update', updated.toMap());
+    try {
+      if (_firestore != null) {
+        await _firestore!.collection('users').doc(uid).set({
+          'name': name,
+          'department': branch,
+          'branch': branch,
+          'semester': semester,
+          'globalTarget': target,
+          'collegeName': collegeName,
+          'registrationNumber': registrationNumber,
+          'programmeName': programmeName,
+          'joiningYear': joiningYear,
+          'expectedGraduationYear': expectedGraduationYear,
+          'currentSemesterId': currentSemesterId,
+          'defaultAttendanceTarget': defaultAttendanceTarget,
+          'preferredLanguage': preferredLanguage,
+          'preferredTimezone': preferredTimezone,
+          'preferredStudySessionMinutes': preferredStudySessionMinutes,
+          'cloudSyncEnabled': cloudSyncEnabled,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {
+      _ref
+          ?.read(syncServiceProvider)
+          .addToQueue('profile', updated.id, 'update', updated.toMap());
+    }
   }
 
   Future<void> logout() async {
     try {
       await _firebaseAuth?.signOut();
     } catch (_) {}
+    try {
+      await _ref?.read(calendarRepositoryProvider.notifier).disconnect();
+    } catch (_) {}
+    _ref?.read(syncServiceProvider).setActiveUser(null);
     await _persistence.clearSession();
     state = AuthState.unauthenticated();
   }

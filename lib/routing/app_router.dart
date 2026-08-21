@@ -45,10 +45,7 @@ class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
   RouterNotifier(this._ref) {
-    _ref.listen<AuthState>(
-      authRepositoryProvider,
-      (_, __) => notifyListeners(),
-    );
+    _ref.listen<AuthState>(authRepositoryProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -102,10 +99,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/backup',
         builder: (context, state) => const BackupScreen(),
       ),
-      GoRoute(
-        path: '/ai',
-        builder: (context, state) => const AIChatScreen(),
-      ),
+      GoRoute(path: '/ai', builder: (context, state) => const AIChatScreen()),
       GoRoute(
         path: '/classrooms',
         builder: (context, state) => const ClassroomMappingScreen(),
@@ -196,10 +190,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final goingToSplash = state.matchedLocation == '/splash';
 
       if (status == AuthStatus.loading) {
+        // If already on auth pages, stay on auth page while loading
+        if (goingToAuth) return null;
         return goingToSplash ? null : '/splash';
       }
 
-      if (status == AuthStatus.unauthenticated) {
+      if (status == AuthStatus.unauthenticated || status == AuthStatus.error) {
         return goingToAuth ? null : '/login';
       }
 

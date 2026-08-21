@@ -7,28 +7,53 @@ import 'package:trackx/features/subjects/domain/subject_dependency_model.dart';
 class DependencyRepository extends StateNotifier<List<SubjectDependency>> {
   static const String _keyDependencies = 'px_subject_dependencies_list';
   final SharedPreferences _prefs;
+  final Ref? _ref;
 
-  DependencyRepository(this._prefs) : super([]) {
+  DependencyRepository(this._prefs, [this._ref]) : super([]) {
     _load();
   }
 
+  String get _currentUserId =>
+      _ref?.read(authRepositoryProvider).userProfile?.id ?? '';
+
+  String _getKey([String? uid]) {
+    final effectiveUid = uid ?? _currentUserId;
+    if (effectiveUid.isEmpty) return _keyDependencies;
+    return '${effectiveUid}_$_keyDependencies';
+  }
+
   void _load() {
-    final jsonStr = _prefs.getString(_keyDependencies);
+    final uid = _currentUserId;
+    if (uid.isEmpty) {
+      state = [];
+      return;
+    }
+    final key = _getKey(uid);
+    final jsonStr = _prefs.getString(key);
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
-            .map((item) => SubjectDependency.fromMap(item as Map<String, dynamic>))
+            .map(
+              (item) => SubjectDependency.fromMap(item as Map<String, dynamic>),
+            )
+            .where((d) => d.userId == uid || d.userId.isEmpty)
+            .map((d) => d.userId != uid ? d.copyWith(userId: uid) : d)
             .toList();
       } catch (_) {
         state = [];
       }
+    } else {
+      state = [];
     }
   }
 
   Future<void> _save() async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
+    final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((d) => d.toMap()).toList());
-    await _prefs.setString(_keyDependencies, jsonStr);
+    await _prefs.setString(key, jsonStr);
   }
 
   bool causesCycle(String subjectId, String requiredSubjectId) {
@@ -85,9 +110,11 @@ class DependencyRepository extends StateNotifier<List<SubjectDependency>> {
     }
 
     // Check duplicate
-    final isDuplicate = state.any((dep) =>
-        dep.subjectId == subjectId &&
-        dep.requiredSubjectId == requiredSubjectId);
+    final isDuplicate = state.any(
+      (dep) =>
+          dep.subjectId == subjectId &&
+          dep.requiredSubjectId == requiredSubjectId,
+    );
     if (isDuplicate) {
       return 'This dependency already exists.';
     }
@@ -97,9 +124,10 @@ class DependencyRepository extends StateNotifier<List<SubjectDependency>> {
       return 'Circular dependency detected.';
     }
 
+    final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
     final newDep = SubjectDependency(
       id: 'dep-${DateTime.now().millisecondsSinceEpoch}',
-      userId: 'user_1',
+      userId: uid,
       subjectId: subjectId,
       requiredSubjectId: requiredSubjectId,
       type: type,
@@ -120,7 +148,12 @@ class DependencyRepository extends StateNotifier<List<SubjectDependency>> {
   }
 
   Future<void> removeDependenciesForSubject(String subjectId) async {
-    state = state.where((dep) => dep.subjectId != subjectId && dep.requiredSubjectId != subjectId).toList();
+    state = state
+        .where(
+          (dep) =>
+              dep.subjectId != subjectId && dep.requiredSubjectId != subjectId,
+        )
+        .toList();
     await _save();
   }
 
@@ -133,6 +166,6 @@ class DependencyRepository extends StateNotifier<List<SubjectDependency>> {
 // Providers
 final dependencyRepositoryProvider =
     StateNotifierProvider<DependencyRepository, List<SubjectDependency>>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return DependencyRepository(prefs);
-});
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return DependencyRepository(prefs, ref);
+    });

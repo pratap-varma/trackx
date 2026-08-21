@@ -6,8 +6,9 @@ import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 
 class ProductivityRepository {
   final SharedPreferences _prefs;
+  final Ref? _ref;
 
-  ProductivityRepository(this._prefs);
+  ProductivityRepository(this._prefs, [this._ref]);
 
   static const String _keyTasks = 'px_tasks_list';
   static const String _keyAssignments = 'px_assignments_list';
@@ -18,60 +19,102 @@ class ProductivityRepository {
   static const String _keyGrades = 'px_course_grades_list';
   static const String _keyHolidays = 'px_academic_holidays_list';
 
+  String get _currentUserId =>
+      _ref?.read(authRepositoryProvider).userProfile?.id ?? '';
+
+  String _getKey(String baseKey, [String? uidOverride]) {
+    final uid = uidOverride ?? _currentUserId;
+    if (uid.isEmpty) return baseKey;
+    return '${uid}_$baseKey';
+  }
+
   // --- Tasks ---
-  List<Task> getTasks() {
-    final raw = _prefs.getString(_keyTasks);
+  List<Task> getTasks([String? uidOverride]) {
+    final uid = uidOverride ?? _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyTasks, uid));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded.map((e) => Task.fromMap(e)).toList();
+      return decoded
+          .map((e) => Task.fromMap(e))
+          .where(
+            (t) => t.userId == uid || t.userId.isEmpty || t.userId == 'user',
+          )
+          .toList();
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> saveTasks(List<Task> list) async {
+  Future<void> saveTasks(List<Task> list, [String? uidOverride]) async {
+    final uid = uidOverride ?? _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyTasks, str);
+    await _prefs.setString(_getKey(_keyTasks, uid), str);
   }
 
   // --- Assignments ---
-  List<Assignment> getAssignments() {
-    final raw = _prefs.getString(_keyAssignments);
+  List<Assignment> getAssignments([String? uidOverride]) {
+    final uid = uidOverride ?? _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyAssignments, uid));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded.map((e) => Assignment.fromMap(e)).toList();
+      return decoded
+          .map((e) => Assignment.fromMap(e))
+          .where(
+            (a) => a.userId == uid || a.userId.isEmpty || a.userId == 'user',
+          )
+          .toList();
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> saveAssignments(List<Assignment> list) async {
+  Future<void> saveAssignments(
+    List<Assignment> list, [
+    String? uidOverride,
+  ]) async {
+    final uid = uidOverride ?? _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyAssignments, str);
+    await _prefs.setString(_getKey(_keyAssignments, uid), str);
   }
 
   // --- Exams ---
-  List<Exam> getExams() {
-    final raw = _prefs.getString(_keyExams);
+  List<Exam> getExams([String? uidOverride]) {
+    final uid = uidOverride ?? _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyExams, uid));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded.map((e) => Exam.fromMap(e)).toList();
+      return decoded
+          .map((e) => Exam.fromMap(e))
+          .where(
+            (ex) =>
+                ex.userId == uid || ex.userId.isEmpty || ex.userId == 'user',
+          )
+          .toList();
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> saveExams(List<Exam> list) async {
+  Future<void> saveExams(List<Exam> list, [String? uidOverride]) async {
+    final uid = uidOverride ?? _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyExams, str);
+    await _prefs.setString(_getKey(_keyExams, uid), str);
   }
 
   // --- Revision Topics ---
   List<RevisionTopic> getRevisionTopics() {
-    final raw = _prefs.getString(_keyRevisionTopics);
+    final uid = _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyRevisionTopics));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
@@ -82,13 +125,17 @@ class ProductivityRepository {
   }
 
   Future<void> saveRevisionTopics(List<RevisionTopic> list) async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyRevisionTopics, str);
+    await _prefs.setString(_getKey(_keyRevisionTopics), str);
   }
 
   // --- Notes ---
   List<Note> getNotes() {
-    final raw = _prefs.getString(_keyNotes);
+    final uid = _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyNotes));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
@@ -99,30 +146,43 @@ class ProductivityRepository {
   }
 
   Future<void> saveNotes(List<Note> list) async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyNotes, str);
+    await _prefs.setString(_getKey(_keyNotes), str);
   }
 
   // --- Study Sessions ---
   List<StudySession> getStudySessions() {
-    final raw = _prefs.getString(_keyStudySessions);
+    final uid = _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyStudySessions));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded.map((e) => StudySession.fromMap(e)).toList();
+      return decoded
+          .map((e) => StudySession.fromMap(e))
+          .where(
+            (s) => s.userId == uid || s.userId.isEmpty || s.userId == 'user',
+          )
+          .toList();
     } catch (_) {
       return [];
     }
   }
 
   Future<void> saveStudySessions(List<StudySession> list) async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyStudySessions, str);
+    await _prefs.setString(_getKey(_keyStudySessions), str);
   }
 
   // --- Grades ---
   List<CourseGrade> getCourseGrades() {
-    final raw = _prefs.getString(_keyGrades);
+    final uid = _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyGrades));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
@@ -133,13 +193,17 @@ class ProductivityRepository {
   }
 
   Future<void> saveCourseGrades(List<CourseGrade> list) async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyGrades, str);
+    await _prefs.setString(_getKey(_keyGrades), str);
   }
 
   // --- Holidays ---
   List<AcademicHoliday> getHolidays() {
-    final raw = _prefs.getString(_keyHolidays);
+    final uid = _currentUserId;
+    if (uid.isEmpty) return [];
+    final raw = _prefs.getString(_getKey(_keyHolidays));
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
@@ -150,12 +214,14 @@ class ProductivityRepository {
   }
 
   Future<void> saveHolidays(List<AcademicHoliday> list) async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
     final str = jsonEncode(list.map((e) => e.toMap()).toList());
-    await _prefs.setString(_keyHolidays, str);
+    await _prefs.setString(_getKey(_keyHolidays), str);
   }
 }
 
 final productivityRepositoryProvider = Provider<ProductivityRepository>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ProductivityRepository(prefs);
+  return ProductivityRepository(prefs, ref);
 });

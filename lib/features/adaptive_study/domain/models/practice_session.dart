@@ -58,10 +58,16 @@ class PracticeSession {
       plannedDuration: map['plannedDuration'] ?? 30,
       actualDuration: map['actualDuration'] ?? 0,
       score: map['score'] != null ? (map['score'] as num).toDouble() : null,
-      maximumScore: map['maximumScore'] != null ? (map['maximumScore'] as num).toDouble() : null,
+      maximumScore: map['maximumScore'] != null
+          ? (map['maximumScore'] as num).toDouble()
+          : null,
       selfRating: map['selfRating'] ?? 3,
-      startedAt: DateTime.parse(map['startedAt'] ?? DateTime.now().toIso8601String()),
-      completedAt: DateTime.parse(map['completedAt'] ?? DateTime.now().toIso8601String()),
+      startedAt: DateTime.parse(
+        map['startedAt'] ?? DateTime.now().toIso8601String(),
+      ),
+      completedAt: DateTime.parse(
+        map['completedAt'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 }

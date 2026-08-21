@@ -1,9 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
-import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
 import 'package:trackx/features/notes/data/resource_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
@@ -12,7 +11,8 @@ import 'package:trackx/theme/app_theme.dart';
 
 class SearchResult {
   final String title;
-  final String category; // 'Semester', 'Subject', 'Attendance', 'Task', 'Exam', 'Assignment', 'Note', 'Resource'
+  final String
+  category; // 'Semester', 'Subject', 'Attendance', 'Task', 'Exam', 'Assignment', 'Note', 'Resource'
   final String matchedIn;
   final String? route;
 
@@ -34,7 +34,8 @@ class GlobalSearchScreen extends ConsumerStatefulWidget {
 class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   final _searchController = TextEditingController();
   String _query = '';
-  String _selectedFilter = 'All'; // 'All', 'Semester', 'Subject', 'Attendance', 'Task', 'Exam', 'Assignment', 'Note', 'Resource'
+  String _selectedFilter =
+      'All'; // 'All', 'Semester', 'Subject', 'Attendance', 'Task', 'Exam', 'Assignment', 'Note', 'Resource'
 
   @override
   void dispose() {
@@ -52,19 +53,23 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final semesters = ref.read(semesterRepositoryProvider);
     for (final sem in semesters) {
       if (sem.name.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: sem.name,
-          category: 'Semester',
-          matchedIn: 'Found in Semester name',
-          route: '/semester-manage',
-        ));
-      } else if (sem.notes?.toLowerCase().contains(q) ?? false) {
-        results.add(SearchResult(
-          title: sem.name,
-          category: 'Semester',
-          matchedIn: 'Found in Semester notes: "${sem.notes}"',
-          route: '/semester-manage',
-        ));
+        results.add(
+          SearchResult(
+            title: sem.name,
+            category: 'Semester',
+            matchedIn: 'Found in Semester name',
+            route: '/semester-manage',
+          ),
+        );
+      } else if (sem.notes.toLowerCase().contains(q)) {
+        results.add(
+          SearchResult(
+            title: sem.name,
+            category: 'Semester',
+            matchedIn: 'Found in Semester notes: "${sem.notes}"',
+            route: '/semester-manage',
+          ),
+        );
       }
     }
 
@@ -72,26 +77,32 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final subjects = ref.read(subjectRepositoryProvider);
     for (final sub in subjects) {
       if (sub.name.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: sub.name,
-          category: 'Subject',
-          matchedIn: 'Found in Subject name',
-          route: '/subject-detail/${sub.id}',
-        ));
+        results.add(
+          SearchResult(
+            title: sub.name,
+            category: 'Subject',
+            matchedIn: 'Found in Subject name',
+            route: '/subject-detail/${sub.id}',
+          ),
+        );
       } else if (sub.code?.toLowerCase().contains(q) ?? false) {
-        results.add(SearchResult(
-          title: sub.name,
-          category: 'Subject',
-          matchedIn: 'Found in Subject code: ${sub.code}',
-          route: '/subject-detail/${sub.id}',
-        ));
+        results.add(
+          SearchResult(
+            title: sub.name,
+            category: 'Subject',
+            matchedIn: 'Found in Subject code: ${sub.code}',
+            route: '/subject-detail/${sub.id}',
+          ),
+        );
       } else if (sub.facultyName.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: sub.name,
-          category: 'Subject',
-          matchedIn: 'Found in Faculty name: ${sub.facultyName}',
-          route: '/subject-detail/${sub.id}',
-        ));
+        results.add(
+          SearchResult(
+            title: sub.name,
+            category: 'Subject',
+            matchedIn: 'Found in Faculty name: ${sub.facultyName}',
+            route: '/subject-detail/${sub.id}',
+          ),
+        );
       }
     }
 
@@ -101,17 +112,21 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final tasks = ref.read(tasksProvider);
     for (final task in tasks) {
       if (task.title.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: task.title,
-          category: 'Task',
-          matchedIn: 'Found in Task title',
-        ));
+        results.add(
+          SearchResult(
+            title: task.title,
+            category: 'Task',
+            matchedIn: 'Found in Task title',
+          ),
+        );
       } else if (task.description?.toLowerCase().contains(q) ?? false) {
-        results.add(SearchResult(
-          title: task.title,
-          category: 'Task',
-          matchedIn: 'Found in Task details: "${task.description}"',
-        ));
+        results.add(
+          SearchResult(
+            title: task.title,
+            category: 'Task',
+            matchedIn: 'Found in Task details: "${task.description}"',
+          ),
+        );
       }
     }
 
@@ -119,19 +134,23 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final exams = ref.read(examsProvider);
     for (final exam in exams) {
       if (exam.title.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: exam.title,
-          category: 'Exam',
-          matchedIn: 'Found in Exam title',
-          route: '/exam-prep',
-        ));
+        results.add(
+          SearchResult(
+            title: exam.title,
+            category: 'Exam',
+            matchedIn: 'Found in Exam title',
+            route: '/exam-prep',
+          ),
+        );
       } else if (exam.syllabus.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: exam.title,
-          category: 'Exam',
-          matchedIn: 'Found in Exam syllabus: "${exam.syllabus}"',
-          route: '/exam-prep',
-        ));
+        results.add(
+          SearchResult(
+            title: exam.title,
+            category: 'Exam',
+            matchedIn: 'Found in Exam syllabus: "${exam.syllabus}"',
+            route: '/exam-prep',
+          ),
+        );
       }
     }
 
@@ -139,17 +158,22 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final assignments = ref.read(assignmentsProvider);
     for (final assign in assignments) {
       if (assign.title.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: assign.title,
-          category: 'Assignment',
-          matchedIn: 'Found in Assignment title',
-        ));
+        results.add(
+          SearchResult(
+            title: assign.title,
+            category: 'Assignment',
+            matchedIn: 'Found in Assignment title',
+          ),
+        );
       } else if (assign.description?.toLowerCase().contains(q) ?? false) {
-        results.add(SearchResult(
-          title: assign.title,
-          category: 'Assignment',
-          matchedIn: 'Found in Assignment description: "${assign.description}"',
-        ));
+        results.add(
+          SearchResult(
+            title: assign.title,
+            category: 'Assignment',
+            matchedIn:
+                'Found in Assignment description: "${assign.description}"',
+          ),
+        );
       }
     }
 
@@ -157,19 +181,23 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final notes = ref.read(notesProvider);
     for (final note in notes) {
       if (note.title.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: note.title,
-          category: 'Note',
-          matchedIn: 'Found in Note title',
-          route: '/notes',
-        ));
+        results.add(
+          SearchResult(
+            title: note.title,
+            category: 'Note',
+            matchedIn: 'Found in Note title',
+            route: '/notes',
+          ),
+        );
       } else if (note.content.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: note.title,
-          category: 'Note',
-          matchedIn: 'Found in Note content: "${note.content}"',
-          route: '/notes',
-        ));
+        results.add(
+          SearchResult(
+            title: note.title,
+            category: 'Note',
+            matchedIn: 'Found in Note content: "${note.content}"',
+            route: '/notes',
+          ),
+        );
       }
     }
 
@@ -177,19 +205,23 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
     final resources = ref.read(resourceRepositoryProvider);
     for (final res in resources) {
       if (res.title.toLowerCase().contains(q)) {
-        results.add(SearchResult(
-          title: res.title,
-          category: 'Resource',
-          matchedIn: 'Found in Resource title',
-          route: '/resources',
-        ));
+        results.add(
+          SearchResult(
+            title: res.title,
+            category: 'Resource',
+            matchedIn: 'Found in Resource title',
+            route: '/resources',
+          ),
+        );
       } else if (res.description?.toLowerCase().contains(q) ?? false) {
-        results.add(SearchResult(
-          title: res.title,
-          category: 'Resource',
-          matchedIn: 'Found in Resource description: "${res.description}"',
-          route: '/resources',
-        ));
+        results.add(
+          SearchResult(
+            title: res.title,
+            category: 'Resource',
+            matchedIn: 'Found in Resource description: "${res.description}"',
+            route: '/resources',
+          ),
+        );
       }
     }
 
@@ -204,7 +236,17 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final searchResults = _performSearch();
-    final categories = ['All', 'Semester', 'Subject', 'Attendance', 'Task', 'Exam', 'Assignment', 'Note', 'Resource'];
+    final categories = [
+      'All',
+      'Semester',
+      'Subject',
+      'Attendance',
+      'Task',
+      'Exam',
+      'Assignment',
+      'Note',
+      'Resource',
+    ];
 
     return AppBackground(
       child: Scaffold(
@@ -220,9 +262,15 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
           children: [
             // Search Text Field
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
+              ),
               child: GlassContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: TextField(
                   controller: _searchController,
                   style: const TextStyle(color: Colors.white),
@@ -256,7 +304,13 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                     padding: const EdgeInsets.only(right: 8.0),
                     child: FilterChip(
                       selected: isSelected,
-                      label: Text(cat, style: TextStyle(color: isSelected ? Colors.black : Colors.white70, fontSize: 11)),
+                      label: Text(
+                        cat,
+                        style: TextStyle(
+                          color: isSelected ? Colors.black : Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
                       backgroundColor: Colors.white.withValues(alpha: 0.05),
                       selectedColor: Colors.tealAccent,
                       checkmarkColor: Colors.black,
@@ -279,70 +333,99 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.search_rounded, color: Colors.white38, size: 48),
+                          Icon(
+                            Icons.search_rounded,
+                            color: Colors.white38,
+                            size: 48,
+                          ),
                           SizedBox(height: 16),
-                          Text('Type to search across TrackX data offline', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                          Text(
+                            'Type to search across TrackX data offline',
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     )
                   : searchResults.isEmpty
-                      ? const Center(child: Text('No matching records found.', style: TextStyle(color: Colors.white38)))
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                          itemCount: searchResults.length,
-                          itemBuilder: (context, index) {
-                            final res = searchResults[index];
+                  ? const Center(
+                      child: Text(
+                        'No matching records found.',
+                        style: TextStyle(color: Colors.white38),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      itemCount: searchResults.length,
+                      itemBuilder: (context, index) {
+                        final res = searchResults[index];
 
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: GestureDetector(
-                                onTap: () {
-                                  if (res.route != null) {
-                                    context.push(res.route!);
-                                  }
-                                },
-                                child: GlassContainer(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.08),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          _getIconForCategory(res.category),
-                                          color: AppTheme.accentPurple,
-                                          size: 18,
-                                        ),
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              if (res.route != null) {
+                                context.push(res.route!);
+                              }
+                            },
+                            child: GlassContainer(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              res.title,
-                                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              res.matchedIn,
-                                              style: const TextStyle(color: Colors.white60, fontSize: 11),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (res.route != null)
-                                        const Icon(Icons.arrow_forward_ios, color: Colors.white38, size: 12),
-                                    ],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _getIconForCategory(res.category),
+                                      color: AppTheme.accentPurple,
+                                      size: 18,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          res.title,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          res.matchedIn,
+                                          style: const TextStyle(
+                                            color: Colors.white60,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (res.route != null)
+                                    const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.white38,
+                                      size: 12,
+                                    ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

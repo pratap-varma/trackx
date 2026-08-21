@@ -53,7 +53,7 @@ void main() {
           endDate: DateTime.now().add(const Duration(days: 60)),
           createdAt: DateTime.now().millisecondsSinceEpoch,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
-        )
+        ),
       ];
 
       mockSubjects = [
@@ -109,9 +109,9 @@ void main() {
           attachmentPaths: const [],
           createdAt: DateTime.now().millisecondsSinceEpoch,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
-        )
+        ),
       ];
-      
+
       mockExams = [
         Exam(
           id: 'exam-1',
@@ -126,7 +126,7 @@ void main() {
           examDate: DateTime.now().add(const Duration(days: 10)),
           createdAt: DateTime.now().millisecondsSinceEpoch,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
-        )
+        ),
       ];
     });
 
@@ -207,7 +207,9 @@ void main() {
         title: 'Study for DBMS Midterm',
         category: 'Study',
         priority: 'High',
-        dueDate: DateTime.now().add(const Duration(days: 12)), // Exam is in 10 days
+        dueDate: DateTime.now().add(
+          const Duration(days: 12),
+        ), // Exam is in 10 days
         isCompleted: false,
         recurrenceRule: 'None',
         createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -220,45 +222,51 @@ void main() {
         assignments: mockAssignments,
       );
       expect(resultInvalid.isValid, isFalse);
-      expect(resultInvalid.reason, contains('scheduled after the related exam date'));
+      expect(
+        resultInvalid.reason,
+        contains('scheduled after the related exam date'),
+      );
     });
 
-    test('Offline fallback generates attendance forecast summaries without internet', () async {
-      final provider = OfflineFallbackProvider();
-      
-      final builderContext = AiContextBuilder.build(
-        profile: mockProfile,
-        semesters: mockSemesters,
-        subjects: mockSubjects,
-        attendance: mockAttendance,
-        tasks: mockTasks,
-        assignments: mockAssignments,
-        exams: mockExams,
-        timetable: const [],
-        consentFlags: {
-          'attendance': true,
-          'tasks': true,
-          'assignments': true,
-          'exams': true,
-        },
-      );
+    test(
+      'Offline fallback generates attendance forecast summaries without internet',
+      () async {
+        final provider = OfflineFallbackProvider();
 
-      final request = AiRequest(
-        id: 'req-1',
-        userId: 'u1',
-        featureType: AiFeatureType.attendanceExplanation,
-        userPrompt: 'Can I miss tomorrow?',
-        context: builderContext.toMap(),
-        modelId: 'offline',
-        createdAt: DateTime.now(),
-      );
+        final builderContext = AiContextBuilder.build(
+          profile: mockProfile,
+          semesters: mockSemesters,
+          subjects: mockSubjects,
+          attendance: mockAttendance,
+          tasks: mockTasks,
+          assignments: mockAssignments,
+          exams: mockExams,
+          timetable: const [],
+          consentFlags: {
+            'attendance': true,
+            'tasks': true,
+            'assignments': true,
+            'exams': true,
+          },
+        );
 
-      final response = await provider.generate(request);
+        final request = AiRequest(
+          id: 'req-1',
+          userId: 'u1',
+          featureType: AiFeatureType.attendanceExplanation,
+          userPrompt: 'Can I miss tomorrow?',
+          context: builderContext.toMap(),
+          modelId: 'offline',
+          createdAt: DateTime.now(),
+        );
 
-      expect(response.modelId, equals('offline-deterministic-fallback'));
-      expect(response.text, contains('Forecast'));
-      expect(response.text, contains('Database Management Systems'));
-      expect(response.sources.length, equals(2));
-    });
+        final response = await provider.generate(request);
+
+        expect(response.modelId, equals('offline-deterministic-fallback'));
+        expect(response.text, contains('Forecast'));
+        expect(response.text, contains('Database Management Systems'));
+        expect(response.sources.length, equals(2));
+      },
+    );
   });
 }

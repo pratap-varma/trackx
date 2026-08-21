@@ -1,34 +1,72 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/authentication/domain/auth_state.dart';
+import 'package:trackx/features/subjects/data/dependency_repository.dart';
+import 'package:trackx/features/subjects/data/topic_repository.dart';
 import 'package:trackx/features/subjects/domain/subject_model.dart';
+import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 
 class SubjectRepository extends StateNotifier<List<Subject>> {
   static const String _keySubjects = 'subjects_list';
   final SharedPreferences _prefs;
+  final Ref? _ref;
 
-  SubjectRepository(this._prefs) : super([]) {
+  SubjectRepository(this._prefs, [this._ref]) : super([]) {
+    _init();
+  }
+
+  String get _currentUserId =>
+      _ref?.read(authRepositoryProvider).userProfile?.id ?? '';
+
+  String _getKey([String? uid]) {
+    final effectiveUid = uid ?? _currentUserId;
+    if (effectiveUid.isEmpty) return _keySubjects;
+    return '${effectiveUid}_$_keySubjects';
+  }
+
+  void _init() {
     _load();
+    _ref?.listen<AuthState>(authRepositoryProvider, (previous, next) {
+      if (previous?.userProfile?.id != next.userProfile?.id ||
+          previous?.status != next.status) {
+        _load();
+      }
+    });
   }
 
   void _load() {
-    final jsonStr = _prefs.getString(_keySubjects);
+    final uid = _currentUserId;
+    if (uid.isEmpty) {
+      state = [];
+      return;
+    }
+    final key = _getKey(uid);
+    final jsonStr = _prefs.getString(key);
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
             .map((item) => Subject.fromMap(item as Map<String, dynamic>))
+            .where((s) => s.userId == uid || s.userId.isEmpty)
+            .map((s) => s.userId != uid ? s.copyWith(userId: uid) : s)
             .toList();
       } catch (_) {
         state = [];
       }
+    } else {
+      state = [];
     }
   }
 
   Future<void> _save() async {
+    final uid = _currentUserId;
+    if (uid.isEmpty) return;
+    final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((s) => s.toMap()).toList());
-    await _prefs.setString(_keySubjects, jsonStr);
+    await _prefs.setString(key, jsonStr);
   }
 
   Future<bool> addSubject(
@@ -54,9 +92,11 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
 
     if (isDuplicate) return false;
 
+    final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
+
     final sub = Subject(
       id: 'sub-${DateTime.now().millisecondsSinceEpoch}',
-      userId: 'user_1',
+      userId: uid,
       semesterId: semesterId,
       name: name,
       code: code,
@@ -120,6 +160,18 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
   Future<void> deleteSubject(String id) async {
     state = state.where((s) => s.id != id).toList();
     await _save();
+    try {
+      _ref
+          ?.read(timetableRepositoryProvider.notifier)
+          .deleteEntriesForSubject(id);
+      _ref
+          ?.read(attendanceRepositoryProvider.notifier)
+          .deleteRecordsForSubject(id);
+      _ref?.read(topicRepositoryProvider.notifier).deleteTopicsForSubject(id);
+      _ref
+          ?.read(dependencyRepositoryProvider.notifier)
+          .removeDependenciesForSubject(id);
+    } catch (_) {}
   }
 
   Future<void> archiveSubject(String id) async {
@@ -158,5 +210,5 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
 final subjectRepositoryProvider =
     StateNotifierProvider<SubjectRepository, List<Subject>>((ref) {
       final prefs = ref.watch(sharedPreferencesProvider);
-      return SubjectRepository(prefs);
+      return SubjectRepository(prefs, ref);
     });

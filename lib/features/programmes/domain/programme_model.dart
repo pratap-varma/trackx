@@ -54,7 +54,8 @@ class Programme {
       degreeType: degreeType ?? this.degreeType,
       branch: branch ?? this.branch,
       joiningYear: joiningYear ?? this.joiningYear,
-      expectedGraduationYear: expectedGraduationYear ?? this.expectedGraduationYear,
+      expectedGraduationYear:
+          expectedGraduationYear ?? this.expectedGraduationYear,
       totalSemesters: totalSemesters ?? this.totalSemesters,
       totalCredits: totalCredits ?? this.totalCredits,
       gradingSystemId: gradingSystemId ?? this.gradingSystemId,

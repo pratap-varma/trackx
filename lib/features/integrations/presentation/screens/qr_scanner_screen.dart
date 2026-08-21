@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_primary_button.dart';
@@ -26,7 +26,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
 
-      // Extract details from mock raw payload
+      // Extract details from raw payload parameters
       if (rawPayload.contains('EXPIRED')) {
         setState(() {
           _isValidating = false;
@@ -38,12 +38,22 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
           _error = 'Invalid token cryptographic signature.';
         });
       } else {
+        final parsedParams = Uri.splitQueryString(rawPayload);
+        final subName =
+            parsedParams['subject'] ?? parsedParams['sub'] ?? 'Class Session';
+        final session =
+            parsedParams['session'] ??
+            parsedParams['SESSION_ID'] ??
+            'Verified QR';
+        final instructor =
+            parsedParams['instructor'] ?? parsedParams['faculty'] ?? 'Faculty';
+
         setState(() {
           _isValidating = false;
           _validatedSession = {
-            'subject': 'Cryptography & Network Security',
-            'session': 'SEC-402',
-            'instructor': 'Dr. Alan Turing',
+            'subject': subName,
+            'session': session,
+            'instructor': instructor,
             'expiresAt': DateTime.now()
                 .add(const Duration(seconds: 45))
                 .toIso8601String(),

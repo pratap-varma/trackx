@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/semesters/data/scenario_repository.dart';
 import 'package:trackx/features/semesters/domain/semester_scenario_model.dart';
@@ -14,16 +14,21 @@ class ScenarioComparisonScreen extends ConsumerStatefulWidget {
   const ScenarioComparisonScreen({super.key});
 
   @override
-  ConsumerState<ScenarioComparisonScreen> createState() => _ScenarioComparisonScreenState();
+  ConsumerState<ScenarioComparisonScreen> createState() =>
+      _ScenarioComparisonScreenState();
 }
 
-class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScreen> {
+class _ScenarioComparisonScreenState
+    extends ConsumerState<ScenarioComparisonScreen> {
   String? _scenarioIdA;
   String? _scenarioIdB;
 
   @override
   Widget build(BuildContext context) {
-    final scenarios = ref.watch(scenarioRepositoryProvider).where((s) => s.status != 'Archived').toList();
+    final scenarios = ref
+        .watch(scenarioRepositoryProvider)
+        .where((s) => s.status != 'Archived')
+        .toList();
     final allSubjects = ref.watch(subjectRepositoryProvider);
     final dependencies = ref.watch(dependencyRepositoryProvider);
 
@@ -62,14 +67,23 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _scenarioIdA,
+                    initialValue: _scenarioIdA,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                     decoration: InputDecoration(
                       labelText: 'Scenario A',
                       labelStyle: const TextStyle(color: Colors.white60),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    items: scenarios.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                    items: scenarios
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s.id,
+                            child: Text(s.name),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (val) => setState(() => _scenarioIdA = val),
                   ),
                 ),
@@ -77,14 +91,23 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     dropdownColor: Colors.purple.shade900,
-                    value: _scenarioIdB,
+                    initialValue: _scenarioIdB,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                     decoration: InputDecoration(
                       labelText: 'Scenario B',
                       labelStyle: const TextStyle(color: Colors.white60),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    items: scenarios.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                    items: scenarios
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s.id,
+                            child: Text(s.name),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (val) => setState(() => _scenarioIdB = val),
                   ),
                 ),
@@ -107,13 +130,19 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
               // Comparison Table
               const Text(
                 'Comparison Details',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 12),
               GlassContainer(
                 padding: EdgeInsets.zero,
                 child: Table(
-                  border: TableBorder.symmetric(inside: const BorderSide(color: Colors.white10, width: 0.5)),
+                  border: TableBorder.symmetric(
+                    inside: const BorderSide(color: Colors.white10, width: 0.5),
+                  ),
                   columnWidths: const {
                     0: FlexColumnWidth(1.2),
                     1: FlexColumnWidth(1.0),
@@ -121,9 +150,21 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
                   },
                   children: [
                     _buildHeaderRow('Metrics', scenA.name, scenB.name),
-                    _buildRow('Subjects Count', '${scenA.plannedSubjectIds.length}', '${scenB.plannedSubjectIds.length}'),
-                    _buildRow('Total Credits', '${scenA.totalCredits}', '${scenB.totalCredits}'),
-                    _buildRow('Study Hours', '${scenA.estimatedWeeklyStudyHours}h', '${scenB.estimatedWeeklyStudyHours}h'),
+                    _buildRow(
+                      'Subjects Count',
+                      '${scenA.plannedSubjectIds.length}',
+                      '${scenB.plannedSubjectIds.length}',
+                    ),
+                    _buildRow(
+                      'Total Credits',
+                      '${scenA.totalCredits}',
+                      '${scenB.totalCredits}',
+                    ),
+                    _buildRow(
+                      'Study Hours',
+                      '${scenA.estimatedWeeklyStudyHours}h',
+                      '${scenB.estimatedWeeklyStudyHours}h',
+                    ),
                     _buildRow(
                       'Theory Count',
                       '${_countType(scenA, allSubjects, "Theory")}',
@@ -142,13 +183,22 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
               // Trade-off evaluation
               const Text(
                 'Deterministic Trade-offs',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 12),
               GlassContainer(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _evaluateTradeOffs(scenA, scenB, allSubjects, dependencies),
+                  children: _evaluateTradeOffs(
+                    scenA,
+                    scenB,
+                    allSubjects,
+                    dependencies,
+                  ),
                 ),
               ),
             ],
@@ -164,15 +214,36 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
       children: [
         Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70, fontSize: 12)),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Text(valA, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentPurple, fontSize: 12)),
+          child: Text(
+            valA,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppTheme.accentPurple,
+              fontSize: 12,
+            ),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Text(valB, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.tealAccent, fontSize: 12)),
+          child: Text(
+            valB,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.tealAccent,
+              fontSize: 12,
+            ),
+          ),
         ),
       ],
     );
@@ -183,22 +254,41 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
       children: [
         Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white60, fontSize: 12),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Text(valA, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+          child: Text(
+            valA,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Text(valB, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+          child: Text(
+            valB,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
         ),
       ],
     );
   }
 
   int _countType(SemesterScenario scen, List<Subject> all, String type) {
-    return all.where((s) => scen.plannedSubjectIds.contains(s.id) && s.type == type).length;
+    return all
+        .where((s) => scen.plannedSubjectIds.contains(s.id) && s.type == type)
+        .length;
   }
 
   List<Widget> _evaluateTradeOffs(
@@ -211,16 +301,32 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
 
     // Credits comparison
     if (a.totalCredits > b.totalCredits) {
-      widgets.add(_buildTradeOffItem('Scenario A has more credits (${a.totalCredits} vs ${b.totalCredits}) but a higher learning workload.'));
+      widgets.add(
+        _buildTradeOffItem(
+          'Scenario A has more credits (${a.totalCredits} vs ${b.totalCredits}) but a higher learning workload.',
+        ),
+      );
     } else if (b.totalCredits > a.totalCredits) {
-      widgets.add(_buildTradeOffItem('Scenario B has more credits (${b.totalCredits} vs ${a.totalCredits}) but a higher learning workload.'));
+      widgets.add(
+        _buildTradeOffItem(
+          'Scenario B has more credits (${b.totalCredits} vs ${a.totalCredits}) but a higher learning workload.',
+        ),
+      );
     }
 
     // Study hours / Available time
     if (a.estimatedWeeklyStudyHours < b.estimatedWeeklyStudyHours) {
-      widgets.add(_buildTradeOffItem('Scenario A has fewer study hours and more available free study time.'));
+      widgets.add(
+        _buildTradeOffItem(
+          'Scenario A has fewer study hours and more available free study time.',
+        ),
+      );
     } else if (b.estimatedWeeklyStudyHours < a.estimatedWeeklyStudyHours) {
-      widgets.add(_buildTradeOffItem('Scenario B has fewer study hours and more available free study time.'));
+      widgets.add(
+        _buildTradeOffItem(
+          'Scenario B has fewer study hours and more available free study time.',
+        ),
+      );
     }
 
     // Unresolved prerequisite checks
@@ -228,20 +334,39 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
     final missingB = _findMissingPrereqs(b, all, dependencies);
 
     if (missingA.isNotEmpty) {
-      widgets.add(_buildTradeOffItem('Scenario A contains subjects (${missingA.join(", ")}) with unresolved prerequisites.', isWarning: true));
+      widgets.add(
+        _buildTradeOffItem(
+          'Scenario A contains subjects (${missingA.join(", ")}) with unresolved prerequisites.',
+          isWarning: true,
+        ),
+      );
     }
     if (missingB.isNotEmpty) {
-      widgets.add(_buildTradeOffItem('Scenario B contains subjects (${missingB.join(", ")}) with unresolved prerequisites.', isWarning: true));
+      widgets.add(
+        _buildTradeOffItem(
+          'Scenario B contains subjects (${missingB.join(", ")}) with unresolved prerequisites.',
+          isWarning: true,
+        ),
+      );
     }
 
     if (widgets.isEmpty) {
-      widgets.add(const Text('Both scenarios have balanced credits and workloads.', style: TextStyle(color: Colors.white70, fontSize: 12)));
+      widgets.add(
+        const Text(
+          'Both scenarios have balanced credits and workloads.',
+          style: TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+      );
     }
 
     return widgets;
   }
 
-  List<String> _findMissingPrereqs(SemesterScenario scen, List<Subject> all, List<SubjectDependency> dependencies) {
+  List<String> _findMissingPrereqs(
+    SemesterScenario scen,
+    List<Subject> all,
+    List<SubjectDependency> dependencies,
+  ) {
     final subjectIds = scen.plannedSubjectIds.toSet();
     final missing = <String>[];
     for (final id in subjectIds) {
@@ -265,7 +390,9 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            isWarning ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+            isWarning
+                ? Icons.warning_amber_rounded
+                : Icons.info_outline_rounded,
             color: isWarning ? Colors.amber : Colors.purpleAccent,
             size: 16,
           ),
@@ -273,7 +400,10 @@ class _ScenarioComparisonScreenState extends ConsumerState<ScenarioComparisonScr
           Expanded(
             child: Text(
               text,
-              style: TextStyle(color: isWarning ? Colors.amber : Colors.white70, fontSize: 12),
+              style: TextStyle(
+                color: isWarning ? Colors.amber : Colors.white70,
+                fontSize: 12,
+              ),
             ),
           ),
         ],

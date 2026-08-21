@@ -8,9 +8,11 @@ class PersonalCourse {
   final String subjectType; // e.g. 'Theory', 'Laboratory', etc.
   final List<String> prerequisiteCourseIds;
   final List<int> usuallyOfferedSemesters; // e.g. [1, 3] for Odd Semesters
-  final String expectedDifficulty; // 'Easy', 'Moderate', 'Challenging', 'Very Challenging', 'Not Set'
+  final String
+  expectedDifficulty; // 'Easy', 'Moderate', 'Challenging', 'Very Challenging', 'Not Set'
   final String? notes;
-  final String status; // 'Interested', 'Planned', 'Active', 'Completed', 'Not Available', 'Archived'
+  final String
+  status; // 'Interested', 'Planned', 'Active', 'Completed', 'Not Available', 'Archived'
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -55,8 +57,10 @@ class PersonalCourse {
       description: description ?? this.description,
       credits: credits ?? this.credits,
       subjectType: subjectType ?? this.subjectType,
-      prerequisiteCourseIds: prerequisiteCourseIds ?? this.prerequisiteCourseIds,
-      usuallyOfferedSemesters: usuallyOfferedSemesters ?? this.usuallyOfferedSemesters,
+      prerequisiteCourseIds:
+          prerequisiteCourseIds ?? this.prerequisiteCourseIds,
+      usuallyOfferedSemesters:
+          usuallyOfferedSemesters ?? this.usuallyOfferedSemesters,
       expectedDifficulty: expectedDifficulty ?? this.expectedDifficulty,
       notes: notes ?? this.notes,
       status: status ?? this.status,
@@ -93,13 +97,21 @@ class PersonalCourse {
       description: map['description'],
       credits: (map['credits'] as num?)?.toDouble(),
       subjectType: map['subjectType'] ?? 'Theory',
-      prerequisiteCourseIds: List<String>.from(map['prerequisiteCourseIds'] ?? []),
-      usuallyOfferedSemesters: List<int>.from(map['usuallyOfferedSemesters'] ?? []),
+      prerequisiteCourseIds: List<String>.from(
+        map['prerequisiteCourseIds'] ?? [],
+      ),
+      usuallyOfferedSemesters: List<int>.from(
+        map['usuallyOfferedSemesters'] ?? [],
+      ),
       expectedDifficulty: map['expectedDifficulty'] ?? 'Not Set',
       notes: map['notes'],
       status: map['status'] ?? 'Interested',
-      createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now(),
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now(),
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'])
+          : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'])
+          : DateTime.now(),
     );
   }
 }

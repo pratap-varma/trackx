@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
-import 'package:trackx/features/attendance/data/attendance_repository.dart';
+import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
 import 'package:trackx/features/timetable_import/domain/models/timetable_import_models.dart';
 import 'package:trackx/features/timetable_import/domain/services/ocr_service.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
@@ -21,16 +24,14 @@ class TimetableImportScreen extends ConsumerStatefulWidget {
   const TimetableImportScreen({super.key});
 
   @override
-  ConsumerState<TimetableImportScreen> createState() => _TimetableImportScreenState();
+  ConsumerState<TimetableImportScreen> createState() =>
+      _TimetableImportScreenState();
 }
 
 class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
     with SingleTickerProviderStateMixin {
   final _ocrService = OcrService();
-  final _textController = TextEditingController(
-    text:
-        'Monday\n09:15-10:15 Math Room302 Prof.Rao\n10:15-11:15 Physics Room304 Prof.Sen\n\nWednesday\n11:15-12:15 Chemistry Room101 Prof.Das',
-  );
+  final _textController = TextEditingController();
 
   List<DetectedTimetableEntry> _entries = [];
   bool _isProcessing = false;
@@ -62,7 +63,7 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
 
   void _runParser() {
     setState(() => _isProcessing = true);
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       final parsed = _ocrService.parseTimetableText(_textController.text);
       setState(() {
         _entries = parsed;
@@ -79,7 +80,81 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
     });
   }
 
-  void _simulateImageUpload() {
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
+      );
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        await _processImageBytes(
+          bytes,
+          source == ImageSource.camera ? 'Camera Photo' : 'Gallery Image',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to access camera/gallery: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickDocument() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        withData: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.bytes != null) {
+          await _processImageBytes(file.bytes!, file.name);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick document: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _processImageBytes(Uint8List bytes, String sourceName) async {
+    setState(() {
+      _isScanningImage = true;
+      _scanningStatus = 'Scanning $sourceName with Vision AI...';
+    });
+
+    final settings = ref.read(aiSettingsProvider);
+    final detected = await _ocrService.scanTimetableImage(
+      imageBytes: bytes,
+      apiKey: settings.customApiKey,
+    );
+
+    if (mounted) {
+      setState(() {
+        _entries = detected;
+        _isScanningImage = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Recognized ${_entries.length} scheduled periods from timetable photo!',
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showMediaSourceSheet() {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
@@ -107,7 +182,7 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
               ),
               const SizedBox(height: 18),
               const Text(
-                'Import Timetable Image',
+                'Import Timetable Image / PDF',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -116,7 +191,7 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
               ),
               const SizedBox(height: 6),
               const Text(
-                'Choose how you would like to provide your timetable photo:',
+                'Choose how you would like to provide your timetable:',
                 style: TextStyle(color: Colors.white54, fontSize: 13),
               ),
               const SizedBox(height: 20),
@@ -125,17 +200,16 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
               GestureDetector(
                 onTap: () {
                   Navigator.pop(context);
-                  _startOCRScan(
-                    'Monday\n09:00-10:00 DataStructures LH-2 Prof.Aiyar\n10:00-11:00 Algorithms LH-3 Prof.Mathur\n\nWednesday\n11:00-12:00 SoftwareEng LH-1 Prof.Roy\n\nFriday\n09:00-10:00 DataStructures LH-2 Prof.Aiyar',
-                    sourceName: 'Camera Photo (Captured)',
-                  );
+                  _pickImage(ImageSource.camera);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF131A2B),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -145,7 +219,11 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                           color: Color(0xFF1B243B),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF7BD0FF), size: 22),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Color(0xFF7BD0FF),
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       const Expanded(
@@ -154,17 +232,27 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                           children: [
                             Text(
                               'Take Photo from Camera',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                             SizedBox(height: 2),
                             Text(
                               'Snap a clear picture of your printed timetable',
-                              style: TextStyle(color: Colors.white54, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white38,
+                      ),
                     ],
                   ),
                 ),
@@ -175,17 +263,16 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
               GestureDetector(
                 onTap: () {
                   Navigator.pop(context);
-                  _startOCRScan(
-                    'Tuesday\n09:15-10:15 Physics Room304 Prof.Sen\n10:15-11:15 Chemistry Room101 Prof.Das\n\nThursday\n09:15-10:15 Physics Room304 Prof.Sen\n10:15-11:15 Chemistry Room101 Prof.Das',
-                    sourceName: 'Gallery Image (Selected)',
-                  );
+                  _pickImage(ImageSource.gallery);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF131A2B),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -195,7 +282,11 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                           color: Color(0xFF1B243B),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.photo_library_rounded, color: Color(0xFFC0C1FF), size: 22),
+                        child: const Icon(
+                          Icons.photo_library_rounded,
+                          color: Color(0xFFC0C1FF),
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       const Expanded(
@@ -203,18 +294,91 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Choose from Gallery / Photos',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              'Choose from Photos / Gallery',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                             SizedBox(height: 2),
                             Text(
                               'Pick a screenshot or downloaded schedule image',
-                              style: TextStyle(color: Colors.white54, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white38,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Option 3: Document / PDF
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickDocument();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF131A2B),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1B243B),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          color: Color(0xFFFF8B94),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pick PDF / Document File',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Select official timetable PDF from files',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white38,
+                      ),
                     ],
                   ),
                 ),
@@ -226,31 +390,6 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
     );
   }
 
-  void _startOCRScan(String resultText, {String sourceName = 'Image'}) async {
-    setState(() {
-      _isScanningImage = true;
-      _scanningStatus = 'Scanning $sourceName with OCR engine...';
-    });
-
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    setState(() => _scanningStatus = 'Scanning image layout and grid cells...');
-
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _scanningStatus = 'Running text recognition on table rows...');
-
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-
-    setState(() {
-      _isScanningImage = false;
-      _textController.text = resultText;
-    });
-
-    _runParser();
-  }
-
   Future<void> _importTimetable() async {
     if (_entries.isEmpty) return;
 
@@ -258,7 +397,9 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
     if (activeSem == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select or create an active semester first inside Settings.'),
+          content: Text(
+            'Please select or create an active semester first inside Settings.',
+          ),
         ),
       );
       return;
@@ -267,17 +408,16 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
     final subjectsRepo = ref.read(subjectRepositoryProvider.notifier);
     final subjectsList = ref.read(subjectRepositoryProvider);
     final timetableRepo = ref.read(timetableRepositoryProvider.notifier);
-    final attendanceRepo = ref.read(attendanceRepositoryProvider.notifier);
 
     setState(() => _isProcessing = true);
 
     try {
       final colorPresets = [
-        AppTheme.accentPurple.value,
-        AppTheme.accentBlue.value,
-        AppTheme.accentGreen.value,
-        AppTheme.accentPink.value,
-        AppTheme.accentOrange.value,
+        AppTheme.accentPurple.toARGB32(),
+        AppTheme.accentBlue.toARGB32(),
+        AppTheme.accentGreen.toARGB32(),
+        AppTheme.accentPink.toARGB32(),
+        AppTheme.accentOrange.toARGB32(),
       ];
 
       int colorIdx = 0;
@@ -286,7 +426,9 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
         // 1. Resolve or Create Subject
         String subjectId = '';
         final existingSubject = subjectsList.cast<Subject?>().firstWhere(
-          (s) => s != null && s.name.toLowerCase() == entry.subjectName.trim().toLowerCase(),
+          (s) =>
+              s != null &&
+              s.name.toLowerCase() == entry.subjectName.trim().toLowerCase(),
           orElse: () => null,
         );
 
@@ -307,7 +449,9 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
           if (success) {
             final updatedList = ref.read(subjectRepositoryProvider);
             final newSub = updatedList.firstWhere(
-              (s) => s.name.toLowerCase() == entry.subjectName.trim().toLowerCase(),
+              (s) =>
+                  s.name.toLowerCase() ==
+                  entry.subjectName.trim().toLowerCase(),
             );
             subjectId = newSub.id;
           } else {
@@ -319,10 +463,11 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
         final dayOfWeek = _weekdayToInt(entry.weekday);
         final startMinutes = _timeToMinutes(entry.startTime);
         final endMinutes = _timeToMinutes(entry.endTime);
+        final uid = ref.read(authRepositoryProvider).userProfile?.id ?? 'user';
 
         final newTimetableEntry = TimetableEntry(
           id: 'entry-${DateTime.now().millisecondsSinceEpoch}-${entry.weekday}-${entry.period}-${math.Random().nextInt(100)}',
-          userId: 'user_1',
+          userId: uid,
           semesterId: activeSem.id,
           subjectId: subjectId,
           dayOfWeek: dayOfWeek,
@@ -336,44 +481,18 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
         );
 
         await timetableRepo.addEntry(newTimetableEntry);
-
-        // 3. Assign past attendance logs (historical back-population)
-        DateTime currentDate = activeSem.startDate;
-        final today = DateTime.now();
-
-        while (currentDate.isBefore(today)) {
-          if (currentDate.weekday == dayOfWeek) {
-            // ~85% attendance rate
-            final isPresent = (math.Random().nextDouble() < 0.85);
-            final status = isPresent ? 'Present' : 'Absent';
-
-            await attendanceRepo.markAttendance(
-              userId: 'user_1',
-              semesterId: activeSem.id,
-              subjectId: subjectId,
-              date: currentDate,
-              periodNumber: entry.period,
-              status: status,
-            );
-          }
-          currentDate = currentDate.add(const Duration(days: 1));
-        }
       }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Timetable imported and historical attendance automatically assigned!',
-          ),
-        ),
+        const SnackBar(content: Text('Timetable imported successfully!')),
       );
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to import timetable: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to import timetable: $e')));
     } finally {
       setState(() => _isProcessing = false);
     }
@@ -415,13 +534,18 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: _simulateImageUpload,
-                              icon: const Icon(Icons.photo_camera_back_rounded, size: 18),
-                              label: const Text('Upload Image'),
+                              onPressed: _showMediaSourceSheet,
+                              icon: const Icon(
+                                Icons.photo_camera_back_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('Upload Photo / PDF'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 side: const BorderSide(color: Colors.white30),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                             ),
                           ),
@@ -493,7 +617,9 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                                     ),
                                     decoration: const InputDecoration(
                                       labelText: 'Subject',
-                                      labelStyle: TextStyle(color: Colors.white70),
+                                      labelStyle: TextStyle(
+                                        color: Colors.white70,
+                                      ),
                                       enabledBorder: UnderlineInputBorder(
                                         borderSide: BorderSide(
                                           color: Colors.white38,
@@ -524,7 +650,9 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                                     ),
                                     decoration: const InputDecoration(
                                       labelText: 'Time Slot',
-                                      labelStyle: TextStyle(color: Colors.white70),
+                                      labelStyle: TextStyle(
+                                        color: Colors.white70,
+                                      ),
                                       enabledBorder: UnderlineInputBorder(
                                         borderSide: BorderSide(
                                           color: Colors.white38,
@@ -556,7 +684,11 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                   }),
                   const SizedBox(height: 16),
                   if (_isProcessing)
-                    const Center(child: CircularProgressIndicator(color: AppTheme.accentPurple))
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.accentPurple,
+                      ),
+                    )
                   else
                     GlassPrimaryButton(
                       text: 'Save & Auto-Assign Attendance',
@@ -580,7 +712,10 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                             width: 240,
                             height: 240,
                             decoration: BoxDecoration(
-                              border: Border.all(color: AppTheme.accentPurple, width: 2),
+                              border: Border.all(
+                                color: AppTheme.accentPurple,
+                                width: 2,
+                              ),
                               borderRadius: BorderRadius.circular(16),
                               color: Colors.white.withValues(alpha: 0.05),
                             ),
@@ -593,22 +728,32 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                           // Scanner line animation
                           Positioned(
                             top: 0,
-                            child: Container(
-                              width: 236,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentPurple,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.accentPurple.withValues(alpha: 0.8),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            )
-                                .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                                .moveY(begin: 10, end: 230, duration: 1.5.seconds, curve: Curves.easeInOut),
+                            child:
+                                Container(
+                                      width: 236,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentPurple,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppTheme.accentPurple
+                                                .withValues(alpha: 0.8),
+                                            blurRadius: 10,
+                                            spreadRadius: 2,
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                    .animate(
+                                      onPlay: (controller) =>
+                                          controller.repeat(reverse: true),
+                                    )
+                                    .moveY(
+                                      begin: 10,
+                                      end: 230,
+                                      duration: 1.5.seconds,
+                                      curve: Curves.easeInOut,
+                                    ),
                           ),
                         ],
                       ),

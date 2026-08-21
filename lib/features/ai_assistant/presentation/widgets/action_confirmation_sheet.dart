@@ -1,13 +1,14 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
+import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_response.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_action.dart';
 import 'package:trackx/features/ai_assistant/domain/validators/ai_action_validator.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/theme/app_theme.dart';
 
@@ -22,10 +23,12 @@ class ActionConfirmationSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ActionConfirmationSheet> createState() => _ActionConfirmationSheetState();
+  ConsumerState<ActionConfirmationSheet> createState() =>
+      _ActionConfirmationSheetState();
 }
 
-class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationSheet> {
+class _ActionConfirmationSheetState
+    extends ConsumerState<ActionConfirmationSheet> {
   late TextEditingController _titleController;
   late TextEditingController _descController;
   late String _priority;
@@ -38,14 +41,18 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
   void initState() {
     super.initState();
     final params = widget.action.parameters;
-    _titleController = TextEditingController(text: params['title'] ?? widget.action.title);
+    _titleController = TextEditingController(
+      text: params['title'] ?? widget.action.title,
+    );
     _descController = TextEditingController(text: params['description'] ?? '');
     _priority = params['priority'] ?? 'Medium';
     _category = params['category'] ?? 'Study';
 
     final dateStr = params['dueDate'] ?? params['date'];
     if (dateStr != null) {
-      _dueDate = DateTime.tryParse(dateStr) ?? DateTime.now().add(const Duration(days: 1));
+      _dueDate =
+          DateTime.tryParse(dateStr) ??
+          DateTime.now().add(const Duration(days: 1));
     } else {
       _dueDate = DateTime.now().add(const Duration(days: 1));
     }
@@ -54,7 +61,7 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
   }
 
   void _runValidation() {
-    final mockTask = Task(
+    final candidateTask = Task(
       id: 'temp',
       userId: 'user',
       semesterId: 'active',
@@ -70,7 +77,7 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
     );
 
     final validation = AiActionValidator.validatePlannerTask(
-      mockTask,
+      candidateTask,
       exams: ref.read(examsProvider),
       assignments: ref.read(assignmentsProvider),
     );
@@ -90,9 +97,7 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
-      ),
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: GlassContainer(
         borderRadius: 24,
         child: Padding(
@@ -107,7 +112,11 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                   children: [
                     Text(
                       'AI Action: ${widget.action.type}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.white60),
@@ -122,16 +131,25 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                     decoration: BoxDecoration(
                       color: Colors.redAccent.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.redAccent,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _validationError!,
-                            style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 11,
+                            ),
                           ),
                         ),
                       ],
@@ -155,8 +173,11 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         dropdownColor: Colors.purple.shade900,
-                        value: _priority,
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        initialValue: _priority,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
                         items: ['Low', 'Medium', 'High', 'Urgent'].map((p) {
                           return DropdownMenuItem(value: p, child: Text(p));
                         }).toList(),
@@ -169,7 +190,9 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                         decoration: InputDecoration(
                           labelText: 'Priority',
                           labelStyle: const TextStyle(color: Colors.white60),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
@@ -177,11 +200,21 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         dropdownColor: Colors.purple.shade900,
-                        value: _category,
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
-                        items: ['Study', 'Assignment', 'Exam', 'Project', 'Other'].map((c) {
-                          return DropdownMenuItem(value: c, child: Text(c));
-                        }).toList(),
+                        initialValue: _category,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                        items:
+                            [
+                              'Study',
+                              'Assignment',
+                              'Exam',
+                              'Project',
+                              'Other',
+                            ].map((c) {
+                              return DropdownMenuItem(value: c, child: Text(c));
+                            }).toList(),
                         onChanged: (val) {
                           if (val != null) {
                             setState(() => _category = val);
@@ -191,7 +224,9 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                         decoration: InputDecoration(
                           labelText: 'Category',
                           labelStyle: const TextStyle(color: Colors.white60),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ),
@@ -203,7 +238,9 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                     final picked = await showDatePicker(
                       context: context,
                       initialDate: _dueDate,
-                      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                      firstDate: DateTime.now().subtract(
+                        const Duration(days: 30),
+                      ),
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
                     if (picked != null) {
@@ -220,7 +257,10 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white10,
                       borderRadius: BorderRadius.circular(8),
@@ -235,7 +275,11 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                         ),
                         Text(
                           '${_dueDate.year}-${_dueDate.month.toString().padLeft(2, '0')}-${_dueDate.day.toString().padLeft(2, '0')}',
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -247,10 +291,13 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                   children: [
                     TextButton(
                       onPressed: () {
+                        final uid =
+                            ref.read(authRepositoryProvider).userProfile?.id ??
+                            'user';
                         // Log cancelled action
                         final record = AiActionRecord(
                           id: 'act-cancel-${DateTime.now().millisecondsSinceEpoch}',
-                          userId: 'user_1',
+                          userId: uid,
                           conversationId: widget.conversationId,
                           type: widget.action.type,
                           summary: _titleController.text,
@@ -258,19 +305,34 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                           createdAt: DateTime.now(),
                           parameters: widget.action.parameters,
                         );
-                        ref.read(aiActionHistoryRepositoryProvider).addActionRecord(record);
+                        ref
+                            .read(aiActionHistoryRepositoryProvider)
+                            .addActionRecord(record);
                         Navigator.pop(context);
                       },
-                      child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.white60),
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: _validationError != null
                           ? null
                           : () {
+                              final uid =
+                                  ref
+                                      .read(authRepositoryProvider)
+                                      .userProfile
+                                      ?.id ??
+                                  'user';
+                              final semId =
+                                  ref.read(activeSemesterProvider)?.id ??
+                                  'default';
+
                               final task = Task(
                                 id: 'task-ai-${DateTime.now().millisecondsSinceEpoch}',
-                                userId: 'user_1',
-                                semesterId: 'current',
+                                userId: uid,
+                                semesterId: semId,
                                 title: _titleController.text,
                                 description: _descController.text,
                                 category: _category,
@@ -278,8 +340,10 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                                 dueDate: _dueDate,
                                 isCompleted: false,
                                 recurrenceRule: 'None',
-                                createdAt: DateTime.now().millisecondsSinceEpoch,
-                                updatedAt: DateTime.now().millisecondsSinceEpoch,
+                                createdAt:
+                                    DateTime.now().millisecondsSinceEpoch,
+                                updatedAt:
+                                    DateTime.now().millisecondsSinceEpoch,
                               );
 
                               // Save via StateNotifier
@@ -288,7 +352,7 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                               // Log confirmed action
                               final record = AiActionRecord(
                                 id: 'act-confirm-${DateTime.now().millisecondsSinceEpoch}',
-                                userId: 'user_1',
+                                userId: uid,
                                 conversationId: widget.conversationId,
                                 type: widget.action.type,
                                 summary: _titleController.text,
@@ -297,11 +361,17 @@ class _ActionConfirmationSheetState extends ConsumerState<ActionConfirmationShee
                                 confirmedAt: DateTime.now(),
                                 parameters: widget.action.parameters,
                               );
-                              ref.read(aiActionHistoryRepositoryProvider).addActionRecord(record);
+                              ref
+                                  .read(aiActionHistoryRepositoryProvider)
+                                  .addActionRecord(record);
 
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Suggested AI action saved successfully.')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Suggested AI action saved successfully.',
+                                  ),
+                                ),
                               );
                             },
                       style: ElevatedButton.styleFrom(

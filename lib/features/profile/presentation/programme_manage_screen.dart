@@ -1,10 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/programmes/data/programme_repository.dart';
-import 'package:trackx/features/programmes/domain/programme_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
-import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/theme/app_theme.dart';
 
@@ -12,7 +10,8 @@ class ProgrammeManageScreen extends ConsumerStatefulWidget {
   const ProgrammeManageScreen({super.key});
 
   @override
-  ConsumerState<ProgrammeManageScreen> createState() => _ProgrammeManageScreenState();
+  ConsumerState<ProgrammeManageScreen> createState() =>
+      _ProgrammeManageScreenState();
 }
 
 class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
@@ -100,19 +99,29 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white60),
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () async {
                           final name = _nameController.text.trim();
                           final degree = _degreeController.text.trim();
                           final branch = _branchController.text.trim();
-                          final joiningYear = int.tryParse(_yearController.text.trim()) ?? DateTime.now().year;
-                          final totalSemesters = int.tryParse(_semsController.text.trim()) ?? 8;
-                          final totalCredits = double.tryParse(_creditsController.text.trim());
+                          final joiningYear =
+                              int.tryParse(_yearController.text.trim()) ??
+                              DateTime.now().year;
+                          final totalSemesters =
+                              int.tryParse(_semsController.text.trim()) ?? 8;
+                          final totalCredits = double.tryParse(
+                            _creditsController.text.trim(),
+                          );
 
                           if (name.isNotEmpty) {
-                            await ref.read(programmeRepositoryProvider.notifier).createProgramme(
+                            await ref
+                                .read(programmeRepositoryProvider.notifier)
+                                .createProgramme(
                                   name: name,
                                   degreeType: degree.isNotEmpty ? degree : null,
                                   branch: branch.isNotEmpty ? branch : null,
@@ -121,7 +130,7 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                                   totalCredits: totalCredits,
                                   gradingSystemId: 'GPA_10',
                                 );
-                            if (mounted) Navigator.pop(context);
+                            if (context.mounted) Navigator.of(context).pop();
                           }
                         },
                         child: const Text('Add'),
@@ -169,7 +178,10 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                       const SizedBox(height: 16),
                       const Text(
                         'No Programmes Registered',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -196,7 +208,9 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: GlassContainer(
-                      borderColor: isActive ? AppTheme.accentPurple : Colors.white10,
+                      borderColor: isActive
+                          ? AppTheme.accentPurple
+                          : Colors.white10,
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,54 +230,118 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                               ),
                               if (isActive)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentPurple.withValues(alpha: 0.2),
+                                    color: AppTheme.accentPurple.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppTheme.accentPurple, width: 0.5),
+                                    border: Border.all(
+                                      color: AppTheme.accentPurple,
+                                      width: 0.5,
+                                    ),
                                   ),
                                   child: const Text(
                                     'Active',
-                                    style: TextStyle(color: AppTheme.accentPurple, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      color: AppTheme.accentPurple,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           if (prog.branch != null)
-                            Text('Branch: ${prog.branch}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                          Text('Joining Year: ${prog.joiningYear} â€¢ Total Semesters: ${prog.totalSemesters}',
-                              style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                            Text(
+                              'Branch: ${prog.branch}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          Text(
+                            'Joining Year: ${prog.joiningYear} â€¢ Total Semesters: ${prog.totalSemesters}',
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                            ),
+                          ),
                           if (prog.totalCredits != null)
-                            Text('Total Credits Required: ${prog.totalCredits}',
-                                style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                          Text('Status: ${prog.status}',
-                              style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                            Text(
+                              'Total Credits Required: ${prog.totalCredits}',
+                              style: const TextStyle(
+                                color: Colors.white60,
+                                fontSize: 11,
+                              ),
+                            ),
+                          Text(
+                            'Status: ${prog.status}',
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                            ),
+                          ),
                           const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               if (!isActive && prog.status != 'Archived') ...[
                                 TextButton(
-                                  onPressed: () => ref.read(programmeRepositoryProvider.notifier).setActiveProgramme(prog.id),
-                                  child: const Text('Set Active', style: TextStyle(fontSize: 12)),
+                                  onPressed: () => ref
+                                      .read(
+                                        programmeRepositoryProvider.notifier,
+                                      )
+                                      .setActiveProgramme(prog.id),
+                                  child: const Text(
+                                    'Set Active',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                               ],
                               if (prog.status != 'Archived') ...[
                                 TextButton(
-                                  onPressed: () => ref.read(programmeRepositoryProvider.notifier).archiveProgramme(prog.id),
-                                  child: const Text('Archive', style: TextStyle(color: Colors.amber, fontSize: 12)),
+                                  onPressed: () => ref
+                                      .read(
+                                        programmeRepositoryProvider.notifier,
+                                      )
+                                      .archiveProgramme(prog.id),
+                                  child: const Text(
+                                    'Archive',
+                                    style: TextStyle(
+                                      color: Colors.amber,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
                               ] else ...[
                                 TextButton(
-                                  onPressed: () => ref.read(programmeRepositoryProvider.notifier).restoreProgramme(prog.id),
-                                  child: const Text('Restore', style: TextStyle(color: Colors.green, fontSize: 12)),
+                                  onPressed: () => ref
+                                      .read(
+                                        programmeRepositoryProvider.notifier,
+                                      )
+                                      .restoreProgramme(prog.id),
+                                  child: const Text(
+                                    'Restore',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
                               ],
                               const SizedBox(width: 8),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.redAccent, size: 18),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.redAccent,
+                                  size: 18,
+                                ),
                                 onPressed: () {
                                   showDialog(
                                     context: context,
@@ -274,24 +352,54 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Text('Delete Programme?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                              const Text(
+                                                'Delete Programme?',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                               const SizedBox(height: 12),
-                                              const Text('Are you sure you want to delete this programme? Previous records linked to other modules will not be erased, but the configuration maps will be deleted.',
-                                                  style: TextStyle(color: Colors.white60, fontSize: 11)),
+                                              const Text(
+                                                'Are you sure you want to delete this programme? Previous records linked to other modules will not be erased, but the configuration maps will be deleted.',
+                                                style: TextStyle(
+                                                  color: Colors.white60,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
                                               const SizedBox(height: 20),
                                               Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
                                                 children: [
                                                   TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
+                                                    child: const Text(
+                                                      'Cancel',
+                                                      style: TextStyle(
+                                                        color: Colors.white60,
+                                                      ),
+                                                    ),
                                                   ),
                                                   ElevatedButton(
                                                     onPressed: () {
-                                                      ref.read(programmeRepositoryProvider.notifier).deleteProgramme(prog.id);
+                                                      ref
+                                                          .read(
+                                                            programmeRepositoryProvider
+                                                                .notifier,
+                                                          )
+                                                          .deleteProgramme(
+                                                            prog.id,
+                                                          );
                                                       Navigator.pop(context);
                                                     },
-                                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                                    style:
+                                                        ElevatedButton.styleFrom(
+                                                          backgroundColor:
+                                                              Colors.redAccent,
+                                                        ),
                                                     child: const Text('Delete'),
                                                   ),
                                                 ],

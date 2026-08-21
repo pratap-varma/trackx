@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
@@ -94,7 +94,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
 
                   // Subject Select
                   DropdownButtonFormField<String>(
-                    value: selectedSubId,
+                    initialValue: selectedSubId,
                     dropdownColor: AppTheme.darkBgBase,
                     decoration: const InputDecoration(
                       labelText: 'Select Subject',
@@ -245,7 +245,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<int>(
-                              value: destDay,
+                              initialValue: destDay,
                               dropdownColor: AppTheme.darkBgBase,
                               decoration: const InputDecoration(
                                 labelText: 'Copy To Day',
@@ -399,7 +399,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                               ),
                               if (entry != null)
                                 Text(
-                                  '${entry.startTimeDisplay} - ${entry.endTimeDisplay} ${entry.room != null ? "â€¢ Rm " + entry.room! : ""}',
+                                  '${entry.startTimeDisplay} - ${entry.endTimeDisplay} ${entry.room != null ? "• Rm ${entry.room}" : ""}',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Colors.white54,
@@ -419,7 +419,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                                         )
                                         .setEnabled(entry.id, val);
                                   },
-                                  activeColor: AppTheme.accentPurple,
+                                  activeThumbColor: AppTheme.accentPurple,
                                 ),
                                 IconButton(
                                   icon: const Icon(

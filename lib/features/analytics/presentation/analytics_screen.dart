@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
