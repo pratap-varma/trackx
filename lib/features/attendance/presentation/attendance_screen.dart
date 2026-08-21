@@ -28,6 +28,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   final _facultyController = TextEditingController();
   final _overrideController = TextEditingController();
   int _selectedColor = 0xFF5B5FEF; // Luminous Indigo base
+  final Map<String, int> _subjectHours = {};
 
   @override
   void dispose() {
@@ -370,29 +371,49 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     String activeSemId,
     String subjectId,
     String status,
-    int? period,
-  ) async {
+    int? period, {
+    int durationHours = 1,
+  }) async {
     HapticFeedback.mediumImpact();
     final authState = ref.read(authRepositoryProvider);
     final userId = authState.userProfile?.id ?? 'guest';
 
-    final error = await ref
-        .read(attendanceRepositoryProvider.notifier)
-        .markAttendance(
-          userId: userId,
-          semesterId: activeSemId,
-          subjectId: subjectId,
-          date: _selectedDate,
-          periodNumber: period,
-          status: status,
-        );
+    // Clear existing for this subject/date first to avoid partial duplicates
+    final existingOnDate = ref
+        .read(attendanceRepositoryProvider)
+        .where(
+          (r) => r.subjectId == subjectId && _isSameDay(r.date, _selectedDate),
+        )
+        .toList();
+    for (final r in existingOnDate) {
+      await ref
+          .read(attendanceRepositoryProvider.notifier)
+          .deleteAttendance(r.id);
+    }
+
+    String? lastError;
+    for (int i = 0; i < durationHours; i++) {
+      final curPeriod =
+          period != null ? (period + i) : (i == 0 ? null : (i + 1));
+      final error = await ref
+          .read(attendanceRepositoryProvider.notifier)
+          .markAttendance(
+            userId: userId,
+            semesterId: activeSemId,
+            subjectId: subjectId,
+            date: _selectedDate,
+            periodNumber: curPeriod,
+            status: status,
+          );
+      if (error != null) lastError = error;
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).clearSnackBars();
-      if (error != null) {
+      if (lastError != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error),
+            content: Text(lastError),
             duration: const Duration(milliseconds: 2000),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.only(bottom: 90, left: 16, right: 16),
@@ -405,9 +426,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         final dateLabel = _isSameDay(_selectedDate, DateTime.now())
             ? 'Today'
             : DateFormat('MMM dd').format(_selectedDate);
+        final hoursSuffix =
+            durationHours > 1 ? ' ($durationHours Hours / Double Class)' : '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Marked as ${status.toUpperCase()} for $dateLabel'),
+            content: Text(
+              'Marked as ${status.toUpperCase()}$hoursSuffix for $dateLabel',
+            ),
             duration: const Duration(milliseconds: 1500),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.only(bottom: 90, left: 16, right: 16),
@@ -420,11 +445,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     }
   }
 
-  void _unmarkAttendance(String recordId, String subjectName) async {
+  void _unmarkAttendance(String subjectId, String subjectName) async {
     HapticFeedback.mediumImpact();
-    await ref
-        .read(attendanceRepositoryProvider.notifier)
-        .deleteAttendance(recordId);
+    final recordsToDelete = ref
+        .read(attendanceRepositoryProvider)
+        .where(
+          (r) => r.subjectId == subjectId && _isSameDay(r.date, _selectedDate),
+        )
+        .toList();
+
+    for (final r in recordsToDelete) {
+      await ref
+          .read(attendanceRepositoryProvider.notifier)
+          .deleteAttendance(r.id);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).clearSnackBars();
@@ -1487,6 +1521,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final lastRecord = hasRecord ? subjectRecords.first : null;
     final isPresent = lastRecord?.status == 'present';
     final isAbsent = lastRecord?.status == 'absent';
+    final loggedHours = subjectRecords.length;
+    final selectedHours = _subjectHours[sub.id] ?? (loggedHours > 1 ? loggedHours : 1);
 
     final pct = item.percentage;
     final pctColor = pct >= item.target
@@ -1536,7 +1572,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         ),
                       ),
                       child: Text(
-                        'PERIOD ${scheduledEntry.periodNumber} • ${scheduledEntry.startTimeDisplay} - ${scheduledEntry.endTimeDisplay}',
+                        selectedHours > 1
+                            ? 'PERIOD ${scheduledEntry.periodNumber}-${scheduledEntry.periodNumber + selectedHours - 1} • $selectedHours HOURS CONTINUOUS CLASS'
+                            : 'PERIOD ${scheduledEntry.periodNumber} • ${scheduledEntry.startTimeDisplay} - ${scheduledEntry.endTimeDisplay}',
                         style: const TextStyle(
                           color: Color(0xFFC0C1FF),
                           fontSize: 10,
@@ -1636,7 +1674,78 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
+
+              // Timing / Class Duration Selector (1 Hour, 2 Hours, 3 Hours)
+              Row(
+                children: [
+                  const Icon(
+                    Icons.schedule_rounded,
+                    color: Color(0xFF7BD0FF),
+                    size: 13,
+                  ),
+                  const SizedBox(width: 5),
+                  const Text(
+                    'Class Duration:',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ...[1, 2, 3].map((hrs) {
+                    final isSel = selectedHours == hrs;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _subjectHours[sub.id] = hrs);
+                        if (hasRecord) {
+                          _mark(
+                            semesterId,
+                            sub.id,
+                            isPresent ? 'present' : 'absent',
+                            scheduledEntry?.periodNumber,
+                            durationHours: hrs,
+                          );
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSel
+                              ? const Color(0xFF5B5FEF)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isSel
+                                ? const Color(0xFF7BD0FF)
+                                : Colors.white12,
+                          ),
+                        ),
+                        child: Text(
+                          hrs == 1
+                              ? '1 hr'
+                              : hrs == 2
+                              ? '2 hrs (Double)'
+                              : '3 hrs (Lab)',
+                          style: TextStyle(
+                            color: isSel ? Colors.white : Colors.white60,
+                            fontSize: 9.5,
+                            fontWeight: isSel
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              const SizedBox(height: 12),
               Container(
                 height: 1,
                 color: Colors.white.withValues(alpha: 0.06),
@@ -1666,7 +1775,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                             Row(
                               children: [
                                 Text(
-                                  isPresent ? 'Logged: Present' : 'Logged: Absent',
+                                  isPresent
+                                      ? (loggedHours > 1
+                                            ? 'Logged: Present ($loggedHours hrs)'
+                                            : 'Logged: Present')
+                                      : (loggedHours > 1
+                                            ? 'Logged: Absent ($loggedHours hrs)'
+                                            : 'Logged: Absent'),
                                   style: TextStyle(
                                     color: isPresent
                                         ? const Color(0xFF10B981)
@@ -1675,27 +1790,27 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                if (lastRecord != null) ...[
-                                  const SizedBox(width: 6),
-                                  GestureDetector(
-                                    onTap: () => _unmarkAttendance(
-                                      lastRecord.id,
-                                      sub.name,
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: () => _unmarkAttendance(
+                                    sub.id,
+                                    sub.name,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.08),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Icon(
-                                        Icons.delete_outline_rounded,
-                                        color: Colors.white60,
-                                        size: 13,
-                                      ),
+                                    child: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.white60,
+                                      size: 13,
                                     ),
                                   ),
-                                ],
+                                ),
                               ],
                             ),
                             if (lastRecord != null)
@@ -1731,14 +1846,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       // Present Button (Taps toggle off if already marked)
                       GestureDetector(
                         onTap: () {
-                          if (isPresent && lastRecord != null) {
-                            _unmarkAttendance(lastRecord.id, sub.name);
+                          if (isPresent) {
+                            _unmarkAttendance(sub.id, sub.name);
                           } else {
                             _mark(
                               semesterId,
                               sub.id,
                               'present',
                               scheduledEntry?.periodNumber,
+                              durationHours: selectedHours,
                             );
                           }
                         },
@@ -1773,7 +1889,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Present',
+                                selectedHours > 1
+                                    ? 'Present (${selectedHours}h)'
+                                    : 'Present',
                                 style: TextStyle(
                                   color: isPresent
                                       ? Colors.black
@@ -1791,14 +1909,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       // Absent Button (Taps toggle off if already marked)
                       GestureDetector(
                         onTap: () {
-                          if (isAbsent && lastRecord != null) {
-                            _unmarkAttendance(lastRecord.id, sub.name);
+                          if (isAbsent) {
+                            _unmarkAttendance(sub.id, sub.name);
                           } else {
                             _mark(
                               semesterId,
                               sub.id,
                               'absent',
                               scheduledEntry?.periodNumber,
+                              durationHours: selectedHours,
                             );
                           }
                         },
@@ -1833,7 +1952,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Absent',
+                                selectedHours > 1
+                                    ? 'Absent (${selectedHours}h)'
+                                    : 'Absent',
                                 style: TextStyle(
                                   color: isAbsent
                                       ? Colors.white
