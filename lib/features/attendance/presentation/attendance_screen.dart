@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
+import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
@@ -29,6 +30,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   final _overrideController = TextEditingController();
   int _selectedColor = 0xFF5B5FEF; // Luminous Indigo base
   final Map<String, int> _subjectHours = {};
+  final Map<String, String> _dailySubstitutes = {};
 
   @override
   void dispose() {
@@ -474,6 +476,264 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         ),
       );
     }
+  }
+
+  void _showSwapSubjectSheet(
+    TimetableEntry entry,
+    Subject originalSubject,
+    List<SubjectStats> allSubjectStats,
+    String swapKey,
+  ) {
+    HapticFeedback.lightImpact();
+    final currentSubId = _dailySubstitutes[swapKey] ?? originalSubject.id;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF0E1628),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Swap Subject / Proxy Class',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Period ${entry.periodNumber} (${entry.startTimeDisplay} - ${entry.endTimeDisplay})',
+                            style: const TextStyle(
+                              color: Color(0xFF7BD0FF),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_dailySubstitutes.containsKey(swapKey))
+                        GestureDetector(
+                          onTap: () {
+                            setState(() => _dailySubstitutes.remove(swapKey));
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Restored ${originalSubject.name} for Period ${entry.periodNumber}',
+                                ),
+                                duration: const Duration(milliseconds: 1500),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.only(
+                                  bottom: 90,
+                                  left: 16,
+                                  right: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.restart_alt_rounded,
+                                  color: Colors.white70,
+                                  size: 14,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Reset',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Teacher absent? Select which substitute subject was conducted during this period:',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.45,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: allSubjectStats.length,
+                      itemBuilder: (context, idx) {
+                        final stat = allSubjectStats[idx];
+                        final sub = stat.subject;
+                        final isCurrent = sub.id == currentSubId;
+                        final isOriginal = sub.id == originalSubject.id;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isCurrent
+                                ? const Color(
+                                    0xFF5B5FEF,
+                                  ).withValues(alpha: 0.2)
+                                : const Color(0xFF131A2B),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isCurrent
+                                  ? const Color(0xFF5B5FEF)
+                                  : Colors.white.withValues(alpha: 0.06),
+                              width: isCurrent ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: ListTile(
+                            onTap: () {
+                              setState(() {
+                                if (sub.id == originalSubject.id) {
+                                  _dailySubstitutes.remove(swapKey);
+                                } else {
+                                  _dailySubstitutes[swapKey] = sub.id;
+                                }
+                              });
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    sub.id == originalSubject.id
+                                        ? 'Restored ${originalSubject.name}'
+                                        : 'Swapped Period ${entry.periodNumber} to ${sub.name} (Substitute / Proxy)',
+                                  ),
+                                  duration: const Duration(milliseconds: 1500),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.only(
+                                    bottom: 90,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            },
+                            leading: Container(
+                              width: 10,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Color(sub.colorValue),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    sub.name,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                if (isOriginal)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white10,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'TIMETABLE DEFAULT',
+                                      style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            subtitle: Text(
+                              sub.facultyName.isNotEmpty
+                                  ? 'Prof. ${sub.facultyName}'
+                                  : 'Instructor not set',
+                              style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11,
+                              ),
+                            ),
+                            trailing: isCurrent
+                                ? const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Color(0xFF7BD0FF),
+                                    size: 20,
+                                  )
+                                : const Icon(
+                                    Icons.swap_horiz_rounded,
+                                    color: Colors.white38,
+                                    size: 20,
+                                  ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _toggleHolidayStatus() async {
@@ -1396,18 +1656,36 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           ],
                         ),
                       ),
-                      // Scheduled classes
+                      // Scheduled classes (with daily proxy / substitute support)
                       ...scheduledEntries.map((entry) {
-                        final stat = stats.allSubjectStats.cast<SubjectStats?>().firstWhere(
-                          (s) => s != null && s.subject.id == entry.subjectId,
-                          orElse: () => null,
-                        );
-                        if (stat != null) {
+                        final swapKey =
+                            "${DateFormat('yyyyMMdd').format(_selectedDate)}_${entry.id}";
+                        final originalStat = stats.allSubjectStats
+                            .cast<SubjectStats?>()
+                            .firstWhere(
+                              (s) =>
+                                  s != null && s.subject.id == entry.subjectId,
+                              orElse: () => null,
+                            );
+                        final effectiveSubId =
+                            _dailySubstitutes[swapKey] ?? entry.subjectId;
+                        final effectiveStat = stats.allSubjectStats
+                            .cast<SubjectStats?>()
+                            .firstWhere(
+                              (s) =>
+                                  s != null && s.subject.id == effectiveSubId,
+                              orElse: () => null,
+                            );
+
+                        if (effectiveStat != null) {
                           return _buildSubjectCard(
-                            stat,
+                            effectiveStat,
                             dateRecords,
                             activeSem.id,
                             scheduledEntry: entry,
+                            originalSubject: originalStat?.subject,
+                            allSubjectStats: stats.allSubjectStats,
+                            swapKey: swapKey,
                           );
                         }
                         return const SizedBox.shrink();
@@ -1512,6 +1790,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     List<AttendanceRecord> dateRecords,
     String semesterId, {
     TimetableEntry? scheduledEntry,
+    Subject? originalSubject,
+    List<SubjectStats>? allSubjectStats,
+    String? swapKey,
   }) {
     final sub = item.subject;
     final subjectRecords = dateRecords
@@ -1523,6 +1804,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final isAbsent = lastRecord?.status == 'absent';
     final loggedHours = subjectRecords.length;
     final selectedHours = _subjectHours[sub.id] ?? (loggedHours > 1 ? loggedHours : 1);
+    final isSubstituted = originalSubject != null && originalSubject.id != sub.id;
 
     final pct = item.percentage;
     final pctColor = pct >= item.target
@@ -1546,6 +1828,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                             ? const Color(0xFF10B981)
                             : const Color(0xFFEF4444))
                         .withValues(alpha: 0.4)
+                  : isSubstituted
+                  ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
                   : scheduledEntry != null
                   ? const Color(0xFF5B5FEF).withValues(alpha: 0.3)
                   : Colors.white.withValues(alpha: 0.06),
@@ -1583,38 +1867,143 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         ),
                       ),
                     ),
-                    if (scheduledEntry.room != null &&
-                        scheduledEntry.room!.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on_outlined,
-                              color: Colors.white60,
-                              size: 11,
+                    Row(
+                      children: [
+                        if (allSubjectStats != null && swapKey != null && originalSubject != null)
+                          GestureDetector(
+                            onTap: () => _showSwapSubjectSheet(
+                              scheduledEntry,
+                              originalSubject,
+                              allSubjectStats,
+                              swapKey,
                             ),
-                            const SizedBox(width: 3),
-                            Text(
-                              scheduledEntry.room!,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 10,
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSubstituted
+                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
+                                    : const Color(0xFF7BD0FF).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isSubstituted
+                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
+                                      : const Color(0xFF7BD0FF).withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.swap_horiz_rounded,
+                                    color: isSubstituted
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFF7BD0FF),
+                                    size: 12,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    isSubstituted ? 'Proxy Active' : 'Swap Subject',
+                                    style: TextStyle(
+                                      color: isSubstituted
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFF7BD0FF),
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        if (scheduledEntry.room != null &&
+                            scheduledEntry.room!.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  color: Colors.white60,
+                                  size: 11,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  scheduledEntry.room!,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
+              ],
+              if (isSubstituted) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.swap_horiz_rounded,
+                            color: Color(0xFFF59E0B),
+                            size: 13,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Proxy / Substitute for ${originalSubject.name}',
+                            style: const TextStyle(
+                              color: Color(0xFFF59E0B),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          if (swapKey != null) {
+                            setState(() => _dailySubstitutes.remove(swapKey));
+                          }
+                        },
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white60,
+                          size: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
               Row(
                 children: [
