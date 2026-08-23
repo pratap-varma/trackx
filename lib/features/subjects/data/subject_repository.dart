@@ -95,7 +95,7 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
     final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
 
     final sub = Subject(
-      id: 'sub-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'sub-${DateTime.now().microsecondsSinceEpoch}-${DateTime.now().microsecond}',
       userId: uid,
       semesterId: semesterId,
       name: name,

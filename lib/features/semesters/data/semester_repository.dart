@@ -85,7 +85,7 @@ class SemesterRepository extends StateNotifier<List<Semester>> {
     final uid = _currentUserId.isNotEmpty ? _currentUserId : 'user';
 
     final newSem = Semester(
-      id: 'sem-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'sem-${DateTime.now().microsecondsSinceEpoch}-${DateTime.now().microsecond}',
       userId: uid,
       programmeId: progId,
       name: name,

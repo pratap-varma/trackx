@@ -115,7 +115,7 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
     }
 
     final record = AttendanceRecord(
-      id: 'att-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'att-${DateTime.now().microsecondsSinceEpoch}-${DateTime.now().microsecond}',
       userId: effectiveUserId,
       semesterId: semesterId,
       subjectId: subjectId,

@@ -63,122 +63,241 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        final subjects = ref
-            .watch(subjectRepositoryProvider)
-            .where((s) => s.semesterId == activeSemId && !s.isArchived)
-            .toList();
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final subjects = ref
+                .watch(subjectRepositoryProvider)
+                .where((s) => s.semesterId == activeSemId && !s.isArchived)
+                .toList();
 
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: GlassContainer(
-            borderRadius: 32.0,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    existing == null
-                        ? 'Schedule Period $period'
-                        : 'Edit Period $period',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+            final startFormatted =
+                '${_startHour.toString().padLeft(2, '0')}:${_startMin.toString().padLeft(2, '0')}';
+            final endFormatted =
+                '${_endHour.toString().padLeft(2, '0')}:${_endMin.toString().padLeft(2, '0')}';
 
-                  // Subject Select
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedSubId,
-                    dropdownColor: AppTheme.darkBgBase,
-                    decoration: const InputDecoration(
-                      labelText: 'Select Subject',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      border: InputBorder.none,
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    items: subjects.map((sub) {
-                      return DropdownMenuItem<String>(
-                        value: sub.id,
-                        child: Text(sub.name),
-                      );
-                    }).toList(),
-                    onChanged: (val) => selectedSubId = val,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Room Input
-                  GlassTextField(
-                    controller: _roomController,
-                    labelText: 'Classroom / Lab Room',
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Notes Input
-                  GlassTextField(
-                    controller: _notesController,
-                    labelText: 'Short notes (e.g. Odd weeks only)',
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Save Action
-                  GlassPrimaryButton(
-                    text: 'Save Schedule',
-                    onPressed: () async {
-                      if (selectedSubId == null) return;
-
-                      final entry = TimetableEntry(
-                        id:
-                            existing?.id ??
-                            'entry-${DateTime.now().millisecondsSinceEpoch}',
-                        userId: existing?.userId ?? 'guest',
-                        semesterId: activeSemId,
-                        subjectId: selectedSubId!,
-                        dayOfWeek: day,
-                        periodNumber: period,
-                        startTime: _startHour * 60 + _startMin,
-                        endTime: _endHour * 60 + _endMin,
-                        room: _roomController.text.trim().isNotEmpty
-                            ? _roomController.text.trim()
-                            : null,
-                        notes: _notesController.text.trim().isNotEmpty
-                            ? _notesController.text.trim()
-                            : null,
-                        isEnabled: existing?.isEnabled ?? true,
-                        createdAt:
-                            existing?.createdAt ??
-                            DateTime.now().millisecondsSinceEpoch,
-                        updatedAt: DateTime.now().millisecondsSinceEpoch,
-                      );
-
-                      final error = existing == null
-                          ? await ref
-                                .read(timetableRepositoryProvider.notifier)
-                                .addEntry(entry)
-                          : await ref
-                                .read(timetableRepositoryProvider.notifier)
-                                .updateEntry(entry);
-
-                      if (error != null) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text(error)));
-                        }
-                      } else {
-                        if (context.mounted) Navigator.pop(context);
-                      }
-                    },
-                  ),
-                ],
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-            ),
-          ),
+              child: GlassContainer(
+                borderRadius: 32.0,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        existing == null
+                            ? 'Schedule Period $period'
+                            : 'Edit Period $period',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Subject Select
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedSubId,
+                        dropdownColor: AppTheme.darkBgBase,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Subject',
+                          labelStyle: TextStyle(color: Colors.white70),
+                          border: InputBorder.none,
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                        items: subjects.map((sub) {
+                          return DropdownMenuItem<String>(
+                            value: sub.id,
+                            child: Text(sub.name),
+                          );
+                        }).toList(),
+                        onChanged: (val) => selectedSubId = val,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Time Pickers Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(
+                                    hour: _startHour,
+                                    minute: _startMin,
+                                  ),
+                                );
+                                if (picked != null) {
+                                  setSheetState(() {
+                                    _startHour = picked.hour;
+                                    _startMin = picked.minute;
+                                    if (_endHour < _startHour ||
+                                        (_endHour == _startHour &&
+                                            _endMin <= _startMin)) {
+                                      _endHour = (_startHour + 1) % 24;
+                                      _endMin = _startMin;
+                                    }
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Start Time',
+                                      style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      startFormatted,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(
+                                    hour: _endHour,
+                                    minute: _endMin,
+                                  ),
+                                );
+                                if (picked != null) {
+                                  setSheetState(() {
+                                    _endHour = picked.hour;
+                                    _endMin = picked.minute;
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'End Time',
+                                      style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      endFormatted,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Room Input
+                      GlassTextField(
+                        controller: _roomController,
+                        labelText: 'Classroom / Lab Room',
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notes Input
+                      GlassTextField(
+                        controller: _notesController,
+                        labelText: 'Short notes (e.g. Odd weeks only)',
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Save Action
+                      GlassPrimaryButton(
+                        text: 'Save Schedule',
+                        onPressed: () async {
+                          if (selectedSubId == null) return;
+
+                          final entry = TimetableEntry(
+                            id:
+                                existing?.id ??
+                                'entry-${DateTime.now().microsecondsSinceEpoch}',
+                            userId: existing?.userId ?? 'guest',
+                            semesterId: activeSemId,
+                            subjectId: selectedSubId!,
+                            dayOfWeek: day,
+                            periodNumber: period,
+                            startTime: _startHour * 60 + _startMin,
+                            endTime: _endHour * 60 + _endMin,
+                            room: _roomController.text.trim().isNotEmpty
+                                ? _roomController.text.trim()
+                                : null,
+                            notes: _notesController.text.trim().isNotEmpty
+                                ? _notesController.text.trim()
+                                : null,
+                            isEnabled: existing?.isEnabled ?? true,
+                            createdAt:
+                                existing?.createdAt ??
+                                DateTime.now().millisecondsSinceEpoch,
+                            updatedAt: DateTime.now().millisecondsSinceEpoch,
+                          );
+
+                          final error = existing == null
+                              ? await ref
+                                    .read(timetableRepositoryProvider.notifier)
+                                    .addEntry(entry)
+                              : await ref
+                                    .read(timetableRepositoryProvider.notifier)
+                                    .updateEntry(entry);
+
+                          if (error != null) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(error)));
+                            }
+                          } else {
+                            if (context.mounted) Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -378,35 +497,42 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Period $period',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white60,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                sub?.name ?? 'Free Period',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              if (entry != null)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  '${entry.startTimeDisplay} - ${entry.endTimeDisplay} ${entry.room != null ? "• Rm ${entry.room}" : ""}',
+                                  'Period $period',
                                   style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white54,
+                                    fontSize: 12,
+                                    color: Colors.white60,
                                   ),
                                 ),
-                            ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  sub?.name ?? 'Free Period',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (entry != null)
+                                  Text(
+                                    '${entry.startTimeDisplay} - ${entry.endTimeDisplay} ${entry.room != null ? "• Rm ${entry.room}" : ""}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white54,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           if (entry != null)
                             Row(
                               children: [

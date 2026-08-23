@@ -28,6 +28,13 @@ class ProductivityRepository {
     return '${uid}_$baseKey';
   }
 
+  bool _isPastDay(DateTime date) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final itemDayStart = DateTime(date.year, date.month, date.day);
+    return itemDayStart.isBefore(todayStart);
+  }
+
   // --- Tasks ---
   List<Task> getTasks([String? uidOverride]) {
     final uid = uidOverride ?? _currentUserId;
@@ -36,12 +43,18 @@ class ProductivityRepository {
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded
+      final allTasks = decoded
           .map((e) => Task.fromMap(e))
           .where(
             (t) => t.userId == uid || t.userId.isEmpty || t.userId == 'user',
           )
           .toList();
+      // Automatically clean up / delete tasks after the scheduled day has completed
+      final activeTasks = allTasks.where((t) => !_isPastDay(t.dueDate)).toList();
+      if (activeTasks.length != allTasks.length) {
+        saveTasks(activeTasks, uid);
+      }
+      return activeTasks;
     } catch (_) {
       return [];
     }
@@ -62,12 +75,19 @@ class ProductivityRepository {
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded
+      final allAssignments = decoded
           .map((e) => Assignment.fromMap(e))
           .where(
             (a) => a.userId == uid || a.userId.isEmpty || a.userId == 'user',
           )
           .toList();
+      // Automatically delete assignments after the scheduled due date has passed
+      final activeAssignments =
+          allAssignments.where((a) => !_isPastDay(a.dueDate)).toList();
+      if (activeAssignments.length != allAssignments.length) {
+        saveAssignments(activeAssignments, uid);
+      }
+      return activeAssignments;
     } catch (_) {
       return [];
     }
@@ -91,13 +111,20 @@ class ProductivityRepository {
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded
+      final allExams = decoded
           .map((e) => Exam.fromMap(e))
           .where(
             (ex) =>
                 ex.userId == uid || ex.userId.isEmpty || ex.userId == 'user',
           )
           .toList();
+      // Automatically delete exams after the scheduled exam date has completed
+      final activeExams =
+          allExams.where((ex) => !_isPastDay(ex.examDate)).toList();
+      if (activeExams.length != allExams.length) {
+        saveExams(activeExams, uid);
+      }
+      return activeExams;
     } catch (_) {
       return [];
     }
@@ -160,12 +187,19 @@ class ProductivityRepository {
     if (raw == null) return [];
     try {
       final List decoded = jsonDecode(raw);
-      return decoded
+      final allSessions = decoded
           .map((e) => StudySession.fromMap(e))
           .where(
             (s) => s.userId == uid || s.userId.isEmpty || s.userId == 'user',
           )
           .toList();
+      // Automatically delete study sessions after the scheduled date has passed
+      final activeSessions =
+          allSessions.where((s) => !_isPastDay(s.plannedDate)).toList();
+      if (activeSessions.length != allSessions.length) {
+        saveStudySessions(activeSessions);
+      }
+      return activeSessions;
     } catch (_) {
       return [];
     }

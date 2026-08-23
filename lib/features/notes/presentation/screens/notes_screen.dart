@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
@@ -603,7 +604,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               color: Colors.white,
               size: 18,
             ),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                context.go('/dashboard');
+              }
+            },
           ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -394,38 +394,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Color(0xFFC0C1FF),
-                            size: 14,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'AI SCORE',
-                            style: TextStyle(
-                              color: Color(0xFF908FA0),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              color: Color(0xFFC0C1FF),
+                              size: 14,
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        aiScoreRating,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                            SizedBox(width: 6),
+                            Text(
+                              'AI SCORE',
+                              style: TextStyle(
+                                color: Color(0xFF908FA0),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Text(
+                          aiScoreRating,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   Row(
                     children: [
@@ -539,7 +543,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   r.subjectId == subId &&
                                   r.date.year == now.year &&
                                   r.date.month == now.month &&
-                                  r.date.day == now.day,
+                                  r.date.day == now.day &&
+                                  (currentClass != null
+                                      ? (r.periodNumber == currentClass.periodNumber ||
+                                          (r.periodNumber == null &&
+                                              allRecords
+                                                      .where(
+                                                        (x) =>
+                                                            x.subjectId == subId &&
+                                                            x.date.year == now.year &&
+                                                            x.date.month == now.month &&
+                                                            x.date.day == now.day,
+                                                      )
+                                                      .length ==
+                                                  1))
+                                      : true),
                             )
                             .toList();
                     final todayRecord = matchingRecords.isNotEmpty ? matchingRecords.first : null;
@@ -582,6 +600,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     semesterId: activeSem.id,
                                     subjectId: subId,
                                     date: DateTime.now(),
+                                    periodNumber: currentClass?.periodNumber,
                                     status: 'present',
                                   );
                               ScaffoldMessenger.of(context).clearSnackBars();

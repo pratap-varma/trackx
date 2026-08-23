@@ -3,11 +3,27 @@ import 'package:trackx/features/planner/data/repositories/productivity_repositor
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 
+bool _isPastDay(DateTime date) {
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final itemDayStart = DateTime(date.year, date.month, date.day);
+  return itemDayStart.isBefore(todayStart);
+}
+
 // --- Tasks State Notifier ---
 class TasksNotifier extends StateNotifier<List<Task>> {
   final ProductivityRepository _repo;
   TasksNotifier(this._repo) : super([]) {
     state = _repo.getTasks();
+    cleanupExpired();
+  }
+
+  void cleanupExpired() {
+    final active = state.where((t) => !_isPastDay(t.dueDate)).toList();
+    if (active.length != state.length) {
+      state = active;
+      _repo.saveTasks(state);
+    }
   }
 
   void addTask(Task item) {
@@ -41,7 +57,7 @@ class TasksNotifier extends StateNotifier<List<Task>> {
   }
 
   void restore(List<Task> list) {
-    state = list;
+    state = list.where((t) => !_isPastDay(t.dueDate)).toList();
     _repo.saveTasks(state);
   }
 }
@@ -56,6 +72,15 @@ class AssignmentsNotifier extends StateNotifier<List<Assignment>> {
   final ProductivityRepository _repo;
   AssignmentsNotifier(this._repo) : super([]) {
     state = _repo.getAssignments();
+    cleanupExpired();
+  }
+
+  void cleanupExpired() {
+    final active = state.where((a) => !_isPastDay(a.dueDate)).toList();
+    if (active.length != state.length) {
+      state = active;
+      _repo.saveAssignments(state);
+    }
   }
 
   void addAssignment(Assignment item) {
@@ -93,7 +118,7 @@ class AssignmentsNotifier extends StateNotifier<List<Assignment>> {
   }
 
   void restore(List<Assignment> list) {
-    state = list;
+    state = list.where((a) => !_isPastDay(a.dueDate)).toList();
     _repo.saveAssignments(state);
   }
 }
@@ -109,6 +134,15 @@ class ExamsNotifier extends StateNotifier<List<Exam>> {
   final ProductivityRepository _repo;
   ExamsNotifier(this._repo) : super([]) {
     state = _repo.getExams();
+    cleanupExpired();
+  }
+
+  void cleanupExpired() {
+    final active = state.where((ex) => !_isPastDay(ex.examDate)).toList();
+    if (active.length != state.length) {
+      state = active;
+      _repo.saveExams(state);
+    }
   }
 
   void addExam(Exam item) {
@@ -136,7 +170,7 @@ class ExamsNotifier extends StateNotifier<List<Exam>> {
   }
 
   void restore(List<Exam> list) {
-    state = list;
+    state = list.where((ex) => !_isPastDay(ex.examDate)).toList();
     _repo.saveExams(state);
   }
 }
@@ -236,6 +270,15 @@ class StudySessionsNotifier extends StateNotifier<List<StudySession>> {
   final ProductivityRepository _repo;
   StudySessionsNotifier(this._repo) : super([]) {
     state = _repo.getStudySessions();
+    cleanupExpired();
+  }
+
+  void cleanupExpired() {
+    final active = state.where((s) => !_isPastDay(s.plannedDate)).toList();
+    if (active.length != state.length) {
+      state = active;
+      _repo.saveStudySessions(state);
+    }
   }
 
   void addSession(StudySession item) {

@@ -380,7 +380,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final authState = ref.read(authRepositoryProvider);
     final userId = authState.userProfile?.id ?? 'guest';
 
-    // Clear existing for this subject/date first to avoid partial duplicates
+    // Clear existing for this subject/date and period to avoid partial duplicates or wiping out other periods of the day
     final existingOnDate = ref
         .read(attendanceRepositoryProvider)
         .where(
@@ -388,9 +388,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         )
         .toList();
     for (final r in existingOnDate) {
-      await ref
-          .read(attendanceRepositoryProvider.notifier)
-          .deleteAttendance(r.id);
+      if (period != null) {
+        final isOverlappingPeriod = r.periodNumber != null &&
+            r.periodNumber! >= period &&
+            r.periodNumber! < (period + durationHours);
+        if (isOverlappingPeriod || (r.periodNumber == null && existingOnDate.length == 1)) {
+          await ref
+              .read(attendanceRepositoryProvider.notifier)
+              .deleteAttendance(r.id);
+        }
+      } else {
+        await ref
+            .read(attendanceRepositoryProvider.notifier)
+            .deleteAttendance(r.id);
+      }
     }
 
     String? lastError;
@@ -447,13 +458,27 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     }
   }
 
-  void _unmarkAttendance(String subjectId, String subjectName) async {
+  void _unmarkAttendance(
+    String subjectId,
+    String subjectName, [
+    int? period,
+    int durationHours = 1,
+  ]) async {
     HapticFeedback.mediumImpact();
     final recordsToDelete = ref
         .read(attendanceRepositoryProvider)
         .where(
           (r) => r.subjectId == subjectId && _isSameDay(r.date, _selectedDate),
         )
+        .where((r) {
+          if (period != null) {
+            return r.periodNumber != null
+                ? (r.periodNumber! >= period &&
+                    r.periodNumber! < (period + durationHours))
+                : true;
+          }
+          return true;
+        })
         .toList();
 
     for (final r in recordsToDelete) {
@@ -1614,13 +1639,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
                 if (scheduledEntries.isNotEmpty) {
-                  final scheduledSubjectIds = scheduledEntries
-                      .map((e) => e.subjectId)
-                      .toSet();
-                  final otherStats = stats.allSubjectStats
-                      .where((s) => !scheduledSubjectIds.contains(s.subject.id))
-                      .toList();
-
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1643,9 +1661,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => context.push('/import-timetable'),
+                              onTap: () => context.push('/timetable'),
                               child: const Text(
-                                'Edit Schedule',
+                                'Edit Timetable',
                                 style: TextStyle(
                                   color: Color(0xFF7BD0FF),
                                   fontSize: 11,
@@ -1656,7 +1674,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           ],
                         ),
                       ),
-                      // Scheduled classes (with daily proxy / substitute support)
+                      // Scheduled classes assigned to this particular day
                       ...scheduledEntries.map((entry) {
                         final swapKey =
                             "${DateFormat('yyyyMMdd').format(_selectedDate)}_${entry.id}";
@@ -1691,90 +1709,128 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         return const SizedBox.shrink();
                       }),
 
-                      // Other subjects not scheduled today
-                      if (otherStats.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 10.0,
-                            left: 4,
-                            right: 4,
+                      const SizedBox(height: 12),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () => _showAddSubjectDialog(activeSem.id),
+                          icon: const Icon(
+                            Icons.add_circle_outline_rounded,
+                            size: 16,
+                            color: Color(0xFF7BD0FF),
                           ),
-                          child: Text(
-                            'OTHER SEMESTER COURSES (${otherStats.length})',
-                            style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.8,
+                          label: const Text(
+                            '+ Log Extra / Unscheduled Class',
+                            style: TextStyle(
+                              color: Color(0xFF7BD0FF),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                        ...otherStats.map(
-                          (stat) => _buildSubjectCard(
-                            stat,
-                            dateRecords,
-                            activeSem.id,
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
                   );
                 } else {
-                  // No specific timetable schedule for this day
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          bottom: 10.0,
-                          left: 4,
-                          right: 4,
+                  // No periods assigned to this day in the timetable
+                  final dayName = DateFormat('EEEE').format(_selectedDate);
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 36,
+                      horizontal: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A2B),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5B5FEF).withValues(
+                              alpha: 0.15,
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.event_busy_rounded,
+                            color: Color(0xFF7BD0FF),
+                            size: 32,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        const SizedBox(height: 14),
+                        Text(
+                          'No Classes Scheduled on $dayName',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Only periods assigned to this day appear here. You can configure your timetable or log a special extra class.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'ALL SUBJECTS (${stats.allSubjectStats.length})',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
+                            ElevatedButton.icon(
+                              onPressed: () => context.push('/timetable'),
+                              icon: const Icon(
+                                Icons.calendar_month_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('Open Timetable'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF5B5FEF),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () => context.push('/import-timetable'),
-                              child: const Row(
-                                children: [
-                                  Icon(
-                                    Icons.add_photo_alternate_outlined,
-                                    color: Color(0xFF7BD0FF),
-                                    size: 14,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Scan Schedule',
-                                    style: TextStyle(
-                                      color: Color(0xFF7BD0FF),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(width: 10),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  _showAddSubjectDialog(activeSem.id),
+                              icon: const Icon(
+                                Icons.add_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('Log Extra Class'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white70,
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      ...stats.allSubjectStats.map(
-                        (stat) => _buildSubjectCard(
-                          stat,
-                          dateRecords,
-                          activeSem.id,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 }
               },
@@ -1796,7 +1852,14 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   }) {
     final sub = item.subject;
     final subjectRecords = dateRecords
-        .where((r) => r.subjectId == sub.id)
+        .where((r) {
+          if (r.subjectId != sub.id) return false;
+          if (scheduledEntry != null && scheduledEntry.periodNumber > 0) {
+            return r.periodNumber == scheduledEntry.periodNumber ||
+                (r.periodNumber == null && dateRecords.where((x) => x.subjectId == sub.id).length == 1);
+          }
+          return true;
+        })
         .toList();
     final hasRecord = subjectRecords.isNotEmpty;
     final lastRecord = hasRecord ? subjectRecords.first : null;
@@ -2184,6 +2247,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                   onTap: () => _unmarkAttendance(
                                     sub.id,
                                     sub.name,
+                                    scheduledEntry?.periodNumber,
+                                    selectedHours,
                                   ),
                                   child: Container(
                                     padding: const EdgeInsets.all(2),
@@ -2236,7 +2301,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       GestureDetector(
                         onTap: () {
                           if (isPresent) {
-                            _unmarkAttendance(sub.id, sub.name);
+                            _unmarkAttendance(
+                              sub.id,
+                              sub.name,
+                              scheduledEntry?.periodNumber,
+                              selectedHours,
+                            );
                           } else {
                             _mark(
                               semesterId,
@@ -2299,7 +2369,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       GestureDetector(
                         onTap: () {
                           if (isAbsent) {
-                            _unmarkAttendance(sub.id, sub.name);
+                            _unmarkAttendance(
+                              sub.id,
+                              sub.name,
+                              scheduledEntry?.periodNumber,
+                              selectedHours,
+                            );
                           } else {
                             _mark(
                               semesterId,

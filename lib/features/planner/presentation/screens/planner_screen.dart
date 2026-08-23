@@ -142,7 +142,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 const SizedBox(height: 20),
 
                 SizedBox(
-                  height: 380,
+                  height: 480,
                   child: TabBarView(
                     children: [_buildTaskForm(ctx), _buildExamForm(ctx)],
                   ),
@@ -331,6 +331,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   );
 
                   ref.read(tasksProvider.notifier).addTask(newTask);
+                  _taskNameController.clear();
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Added "$title" to Planner!')),
@@ -521,6 +522,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             ),
             const SizedBox(height: 14),
 
+            // Syllabus input
+            GlassTextField(
+              controller: _examSyllabusController,
+              labelText: 'Syllabus / Key Topics',
+              hintText: 'e.g. Chapters 1-5, Formulas & Definitions',
+            ),
+            const SizedBox(height: 14),
+
             // Exam Type (Midterm, Final, Quiz)
             const Text(
               'Exam Type',
@@ -572,6 +581,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             GestureDetector(
               onTap: () {
                 final title = _examTitleController.text.trim();
+                final syllabus = _examSyllabusController.text.trim().isNotEmpty
+                    ? _examSyllabusController.text.trim()
+                    : 'Chapters 1-5';
                 if (title.isNotEmpty) {
                   final activeSem = ref.read(activeSemesterProvider);
                   final newExam = Exam(
@@ -583,13 +595,15 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                     examType: _examType,
                     examDate: _examDate,
                     startTime: _examTime.format(context),
-                    syllabus: 'Chapters 1-5',
+                    syllabus: syllabus,
                     preparationProgress: 10.0,
                     createdAt: DateTime.now().millisecondsSinceEpoch,
                     updatedAt: DateTime.now().millisecondsSinceEpoch,
                   );
 
                   ref.read(examsProvider.notifier).addExam(newExam);
+                  _examTitleController.clear();
+                  _examSyllabusController.clear();
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Scheduled "$title" in Exams!')),
