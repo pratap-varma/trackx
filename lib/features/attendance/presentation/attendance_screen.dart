@@ -1627,7 +1627,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             Builder(
               builder: (context) {
                 final timetableEntries = ref.watch(timetableRepositoryProvider);
-                final dayOfWeek = _selectedDate.weekday;
+                final overrideDay = ref.watch(dayOfWeekOverrideProvider(_selectedDate));
+                final dayOfWeek = overrideDay ?? _selectedDate.weekday;
+                
                 final scheduledEntries = timetableEntries
                     .where(
                       (e) =>
@@ -1729,6 +1731,64 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         ),
                       ),
                     ],
+                  );
+                } else if (!isEffectiveHoliday) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A2B),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF5B5FEF).withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.sync_alt_rounded, color: Color(0xFF7BD0FF), size: 32),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No timetable scheduled today.',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Since this is a working day, which day\'s timetable is scheduled on this day?',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            {'name': 'Mon', 'val': 1},
+                            {'name': 'Tue', 'val': 2},
+                            {'name': 'Wed', 'val': 3},
+                            {'name': 'Thu', 'val': 4},
+                            {'name': 'Fri', 'val': 5},
+                          ].map((day) {
+                            return GestureDetector(
+                              onTap: () {
+                                ref.read(calendarRepositoryProvider.notifier).setDayOfWeekOverride(_selectedDate, day['val'] as int);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF5B5FEF).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFF5B5FEF).withValues(alpha: 0.4)),
+                                ),
+                                child: Text(
+                                  day['name'] as String,
+                                  style: const TextStyle(color: Color(0xFFC0C1FF), fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
                   );
                 } else {
                   // No periods assigned to this day in the timetable
@@ -1866,7 +1926,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final isPresent = lastRecord?.status == 'present';
     final isAbsent = lastRecord?.status == 'absent';
     final loggedHours = subjectRecords.length;
-    final selectedHours = _subjectHours[sub.id] ?? (loggedHours > 1 ? loggedHours : 1);
+    int selectedHours = 1;
+    if (scheduledEntry != null) {
+      selectedHours = ((scheduledEntry.endTime - scheduledEntry.startTime) / 60.0).round();
+      if (selectedHours < 1) selectedHours = 1;
+    } else {
+      selectedHours = loggedHours > 1 ? loggedHours : 1;
+    }
     final isSubstituted = originalSubject != null && originalSubject.id != sub.id;
 
     final pct = item.percentage;
@@ -1901,8 +1967,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           child: Column(
             children: [
               if (scheduledEntry != null) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1930,8 +1998,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         ),
                       ),
                     ),
-                    Row(
-                      children: [
                         if (allSubjectStats != null && swapKey != null && originalSubject != null)
                           GestureDetector(
                             onTap: () => _showSwapSubjectSheet(
@@ -2011,8 +2077,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                               ],
                             ),
                           ),
-                      ],
-                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -2128,76 +2192,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Timing / Class Duration Selector (1 Hour, 2 Hours, 3 Hours)
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_rounded,
-                    color: Color(0xFF7BD0FF),
-                    size: 13,
-                  ),
-                  const SizedBox(width: 5),
-                  const Text(
-                    'Class Duration:',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ...[1, 2, 3].map((hrs) {
-                    final isSel = selectedHours == hrs;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => _subjectHours[sub.id] = hrs);
-                        if (hasRecord) {
-                          _mark(
-                            semesterId,
-                            sub.id,
-                            isPresent ? 'present' : 'absent',
-                            scheduledEntry?.periodNumber,
-                            durationHours: hrs,
-                          );
-                        }
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 5),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSel
-                              ? const Color(0xFF5B5FEF)
-                              : Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: isSel
-                                ? const Color(0xFF7BD0FF)
-                                : Colors.white12,
-                          ),
-                        ),
-                        child: Text(
-                          hrs == 1
-                              ? '1 hr'
-                              : hrs == 2
-                              ? '2 hrs (Double)'
-                              : '3 hrs (Lab)',
-                          style: TextStyle(
-                            color: isSel ? Colors.white : Colors.white60,
-                            fontSize: 9.5,
-                            fontWeight: isSel
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-              const SizedBox(height: 12),
+
               Container(
                 height: 1,
                 color: Colors.white.withValues(alpha: 0.06),
@@ -2205,8 +2200,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               const SizedBox(height: 12),
 
               // Action Buttons for this date
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 12,
                 children: [
                   if (hasRecord)
                     Row(
@@ -2296,6 +2294,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       style: TextStyle(color: Colors.white38, fontSize: 12),
                     ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Present Button (Taps toggle off if already marked)
                       GestureDetector(

@@ -11,12 +11,32 @@ import 'package:trackx/features/planner/presentation/screens/planner_screen.dart
 import 'package:trackx/features/ai_assistant/presentation/screens/ai_chat_screen.dart';
 import 'package:trackx/features/profile/presentation/profile_screen.dart';
 
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: ref.read(navIndexProvider));
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(navIndexProvider);
+
 
     final dockItems = const [
       DockItem(icon: Icons.home_rounded, label: 'Home'),
@@ -41,7 +61,13 @@ class MainShell extends ConsumerWidget {
           children: [
             // Screen Contents
             Positioned.fill(
-              child: IndexedStack(index: currentIndex, children: screens),
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  ref.read(navIndexProvider.notifier).state = index;
+                },
+                children: screens,
+              ),
             ),
 
             // Bottom Navigation Dock
@@ -54,6 +80,11 @@ class MainShell extends ConsumerWidget {
                 items: dockItems,
                 onTabSelected: (index) {
                   ref.read(navIndexProvider.notifier).state = index;
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
                 },
               ),
             ),

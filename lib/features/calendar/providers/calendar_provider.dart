@@ -1,17 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:trackx/core/services/google_calendar_service.dart';
+import 'package:trackx/core/services/device_calendar_service.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/calendar/data/repositories/calendar_repository.dart';
 import 'package:trackx/features/calendar/domain/models/calendar_event_model.dart';
 
-final googleCalendarServiceProvider = Provider<GoogleCalendarService>((ref) {
-  return GoogleCalendarService();
+final deviceCalendarServiceProvider = Provider<DeviceCalendarService>((ref) {
+  return DeviceCalendarService();
 });
 
 final calendarRepositoryProvider =
     StateNotifierProvider<CalendarRepository, List<CalendarEvent>>((ref) {
       final prefs = ref.watch(sharedPreferencesProvider);
-      final service = ref.watch(googleCalendarServiceProvider);
+      final service = ref.watch(deviceCalendarServiceProvider);
       return CalendarRepository(prefs, service, ref);
     });
 
@@ -78,3 +78,10 @@ final personalEventsForSelectedDateProvider =
           .where((h) => h.occursOn(date) && !h.isHolidayOrFestival)
           .toList();
     });
+
+/// Provider for day of week override (e.g., Saturday acting as a Monday)
+final dayOfWeekOverrideProvider = Provider.family<int?, DateTime>((ref, date) {
+  ref.watch(calendarRepositoryProvider);
+  final repo = ref.read(calendarRepositoryProvider.notifier);
+  return repo.getDayOfWeekOverride(date);
+});

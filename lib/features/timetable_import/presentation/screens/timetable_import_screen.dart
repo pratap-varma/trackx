@@ -144,13 +144,6 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
         _entries = detected;
         _isScanningImage = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Recognized ${_entries.length} scheduled periods from timetable photo!',
-          ),
-        ),
-      );
     }
   }
 
@@ -406,7 +399,6 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
     }
 
     final subjectsRepo = ref.read(subjectRepositoryProvider.notifier);
-    final subjectsList = ref.read(subjectRepositoryProvider);
     final timetableRepo = ref.read(timetableRepositoryProvider.notifier);
 
     setState(() => _isProcessing = true);
@@ -425,7 +417,8 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
       for (final entry in _entries) {
         // 1. Resolve or Create Subject
         String subjectId = '';
-        final existingSubject = subjectsList.cast<Subject?>().firstWhere(
+        final currentSubjectsList = ref.read(subjectRepositoryProvider);
+        final existingSubject = currentSubjectsList.cast<Subject?>().firstWhere(
           (s) =>
               s != null &&
               s.name.toLowerCase() == entry.subjectName.trim().toLowerCase(),

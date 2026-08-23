@@ -48,10 +48,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         .login(_emailController.text.trim(), _passwordController.text.trim());
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    FocusScope.of(context).unfocus();
-    await ref.read(authRepositoryProvider.notifier).signInWithGoogle();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -296,63 +292,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // Divider
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Divider(
-                              color: Colors.white.withValues(alpha: 0.08),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              'or',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.3),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(
-                              color: Colors.white.withValues(alpha: 0.08),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
 
-                      // Google Sign In
-                      GestureDetector(
-                        onTap: isLoading ? null : _handleGoogleSignIn,
-                        child: GlassContainer(
-                          borderRadius: 16.0,
-                          padding: const EdgeInsets.symmetric(vertical: 14.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.g_mobiledata,
-                                color: Colors.white,
-                                size: 26,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Continue with Google',
-                                style: TextStyle(
-                                  color: isLoading
-                                      ? Colors.white38
-                                      : Colors.white.withValues(alpha: 0.85),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
 
                       // Register link
                       Row(

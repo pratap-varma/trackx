@@ -400,13 +400,6 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
         _isScanning = false;
       });
       HapticFeedback.mediumImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Found ${_detectedExams.length} examinations in date-sheet!',
-          ),
-        ),
-      );
     }
   }
 
@@ -490,14 +483,6 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
     if (mounted) {
       Navigator.pop(context);
       HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Scheduled $importedCount exams with revision countdowns in Planner!',
-          ),
-          backgroundColor: const Color(0xFF10B981),
-        ),
-      );
     }
   }
 

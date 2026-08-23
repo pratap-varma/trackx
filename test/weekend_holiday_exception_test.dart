@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trackx/core/services/google_calendar_service.dart';
+import 'package:trackx/core/services/device_calendar_service.dart';
 import 'package:trackx/features/calendar/data/repositories/calendar_repository.dart';
+import 'package:mockito/mockito.dart';
+
+class MockDeviceCalendarService extends Mock implements DeviceCalendarService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +16,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
-      repo = CalendarRepository(prefs, GoogleCalendarService());
+      repo = CalendarRepository(prefs, MockDeviceCalendarService());
     });
 
     test('1. Every Sunday is marked as a college holiday by default', () {

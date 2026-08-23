@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trackx/core/services/google_calendar_service.dart';
+import 'package:trackx/core/services/device_calendar_service.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/calendar/domain/models/calendar_event_model.dart';
 import 'package:trackx/features/calendar/domain/models/calendar_holiday_model.dart';
@@ -14,14 +14,16 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
   static const String _keyLastSync = 'google_calendar_last_sync_timestamp';
   static const String _keyIgnoredHolidays = 'google_calendar_ignored_holiday_dates';
   static const String _keyCustomHolidays = 'google_calendar_custom_holiday_dates';
+  static const String _keyDayOfWeekOverrides = 'google_calendar_day_of_week_overrides';
 
   final SharedPreferences _prefs;
-  final GoogleCalendarService _calendarService;
+  final DeviceCalendarService _calendarService;
   final Ref? _ref;
 
   List<UserCalendarInfo> _availableCalendars = [];
   Set<String> _ignoredHolidays = {};
   Set<String> _customHolidays = {};
+  Map<String, int> _dayOfWeekOverrides = {};
   DateTime? _lastSyncTime;
   bool _isRefreshing = false;
 
@@ -94,6 +96,18 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
     final customList = _prefs.getStringList(_getKey(_keyCustomHolidays));
     _customHolidays = (customList ?? []).toSet();
 
+    final overridesStr = _prefs.getString(_getKey(_keyDayOfWeekOverrides));
+    if (overridesStr != null) {
+      try {
+        final decoded = jsonDecode(overridesStr) as Map<String, dynamic>;
+        _dayOfWeekOverrides = decoded.map((k, v) => MapEntry(k, v as int));
+      } catch (_) {
+        _dayOfWeekOverrides = {};
+      }
+    } else {
+      _dayOfWeekOverrides = {};
+    }
+
     final syncKey = _getKey(_keyLastSync);
     final syncMillis = _prefs.getInt(syncKey);
     if (syncMillis != null) {
@@ -119,6 +133,10 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
     await _prefs.setStringList(
       _getKey(_keyCustomHolidays),
       _customHolidays.toList(),
+    );
+    await _prefs.setString(
+      _getKey(_keyDayOfWeekOverrides),
+      jsonEncode(_dayOfWeekOverrides),
     );
 
     if (_lastSyncTime != null) {
@@ -160,12 +178,12 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
     }
   }
 
-  /// Connect Google Calendar and fetch real public holidays & personal events
+  /// Connect Device Calendar and fetch real public holidays & personal events
   Future<bool> connectAndSync({String? countryCode}) async {
     try {
       final region = countryCode ?? getRegion();
-      final account = await _calendarService.requestCalendarAccess();
-      if (account == null) {
+      final granted = await _calendarService.requestCalendarAccess();
+      if (!granted) {
         return false;
       }
 
@@ -218,7 +236,7 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
     }
   }
 
-  /// Disconnect Google Calendar and clear local cached events & settings
+  /// Disconnect Device Calendar and clear local cached events & settings
   Future<void> disconnect() async {
     try {
       await _calendarService.disconnect();
@@ -434,5 +452,16 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
   void setHolidays(List<CalendarHoliday> holidays) {
     state = holidays.map((h) => h.toCalendarEvent()).toList();
     _save();
+  }
+
+  int? getDayOfWeekOverride(DateTime date) {
+    return _dayOfWeekOverrides[_dateKey(date)];
+  }
+
+  Future<void> setDayOfWeekOverride(DateTime date, int dayOfWeek) async {
+    _dayOfWeekOverrides[_dateKey(date)] = dayOfWeek;
+    await _save();
+    // Trigger state change so listeners update
+    state = List<CalendarEvent>.from(state);
   }
 }

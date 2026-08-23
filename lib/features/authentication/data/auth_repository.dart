@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/core/models/user_profile.dart';
@@ -250,51 +250,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signInWithGoogle() async {
-    state = AuthState.loading();
-    try {
-      final googleSignIn = GoogleSignIn();
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
-        // User closed/cancelled Google sign-in
-        final currentProfile = _persistence.getUserProfile();
-        if (currentProfile != null) {
-          state = AuthState.authenticated(currentProfile);
-        } else {
-          state = AuthState.unauthenticated();
-        }
-        return;
-      }
-      final googleAuth = await googleUser.authentication;
-      final cred = fb.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      if (_firebaseAuth != null) {
-        final userCred = await _firebaseAuth!.signInWithCredential(cred);
-        final fbUser = userCred.user;
-        if (fbUser != null) {
-          await _loadUserProfileFromFirestoreOrCache(fbUser);
-          return;
-        }
-      }
-      state = AuthState.error('Authentication service is not available.');
-    } on fb.FirebaseAuthException catch (e) {
-      String msg = e.message ?? 'Google Sign-In failed (${e.code}).';
-      if (e.code == 'account-exists-with-different-credential') {
-        msg = 'An account already exists with this email using a different sign-in method.';
-      }
-      state = AuthState.error(msg);
-    } catch (e) {
-      String msg = e.toString();
-      if (msg.contains('ApiException: 10') || msg.contains('DEVELOPER_ERROR')) {
-        msg = 'Google Sign-In requires SHA-1 fingerprint added to Firebase Console project settings.';
-      } else if (msg.contains('network_error') || msg.contains('Network error')) {
-        msg = 'Network error during Google Sign-In. Please check your connection.';
-      }
-      state = AuthState.error('Google Sign In failed: $msg');
-    }
-  }
+
 
   Future<bool> sendPasswordResetEmail(String email) async {
     try {
@@ -353,7 +309,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     // Save permanently to Firestore users/{uid}
     try {
       if (_firestore != null) {
-        await _firestore!.collection('users').doc(uid).set({
+        _firestore!.collection('users').doc(uid).set({
           'id': uid,
           'name': name,
           'department': branch,
@@ -366,7 +322,11 @@ class AuthRepository extends StateNotifier<AuthState> {
           'onboardingCompleted': true,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        }, SetOptions(merge: true)).catchError((_) {
+          _ref
+              ?.read(syncServiceProvider)
+              .addToQueue('profile', uid, 'update', updated.toMap());
+        });
       }
     } catch (_) {
       // Enqueue to sync service if offline
@@ -421,7 +381,7 @@ class AuthRepository extends StateNotifier<AuthState> {
 
     try {
       if (_firestore != null) {
-        await _firestore!.collection('users').doc(uid).set({
+        _firestore!.collection('users').doc(uid).set({
           'name': name,
           'department': branch,
           'branch': branch,
@@ -439,7 +399,11 @@ class AuthRepository extends StateNotifier<AuthState> {
           'preferredStudySessionMinutes': preferredStudySessionMinutes,
           'cloudSyncEnabled': cloudSyncEnabled,
           'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        }, SetOptions(merge: true)).catchError((_) {
+          _ref
+              ?.read(syncServiceProvider)
+              .addToQueue('profile', updated.id, 'update', updated.toMap());
+        });
       }
     } catch (_) {
       _ref

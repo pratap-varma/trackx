@@ -58,7 +58,7 @@ class _CalendarIntegrationSheetState
     if (mounted) {
       setState(() {
         _isLoading = false;
-        _statusMessage = 'Google Calendar disconnected.';
+        _statusMessage = 'Device Calendar disconnected.';
       });
     }
   }
@@ -150,7 +150,7 @@ class _CalendarIntegrationSheetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Google Calendar Integration',
+                          'Device Calendar Integration',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 17,
@@ -201,7 +201,7 @@ class _CalendarIntegrationSheetState
                   ),
                 ),
                 child: const Text(
-                  'TrackX requests read-only access to display your personal calendar events, public holidays, and festivals in your Planner. TrackX will never create, modify, or delete your events.',
+                  'TrackX requests read-only access to display your device\'s calendar events, public holidays, and festivals in your Planner. TrackX will never create, modify, or delete your events.',
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
@@ -291,7 +291,7 @@ class _CalendarIntegrationSheetState
                                 ),
                                 if (cal.isPrimary)
                                   const Text(
-                                    'Primary Google Account',
+                                    'Default Calendar',
                                     style: TextStyle(
                                       color: Colors.white38,
                                       fontSize: 10,
@@ -357,7 +357,7 @@ class _CalendarIntegrationSheetState
                     onPressed: _handleConnect,
                     icon: const Icon(Icons.sync_rounded, size: 20),
                     label: const Text(
-                      'Connect Google Calendar',
+                      'Connect Device Calendar',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),

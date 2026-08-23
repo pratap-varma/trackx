@@ -58,13 +58,14 @@ dependencies:
   firebase_messaging: ^14.7.19
   firebase_analytics: ^10.8.9
   firebase_crashlytics: ^3.4.18
-  google_sign_in: ^6.2.1
   hive_flutter: ^1.1.0
   google_generative_ai: ^0.2.0
   http: ^1.2.0
   local_auth: ^2.2.0
   image_picker: ^1.1.2
   file_picker: ^8.0.7
+  device_calendar: ^4.3.3
+  permission_handler: ^13.0.1
 
 dev_dependencies:
   flutter_test:
