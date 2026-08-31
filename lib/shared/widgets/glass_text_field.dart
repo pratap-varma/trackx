@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 
 class GlassTextField extends StatelessWidget {
@@ -27,8 +27,13 @@ class GlassTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GlassContainer(
+      tier: GlassTier.subtle,
       borderRadius: 16.0,
+      showLightRim: true,
+      showSheen: false,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: TextFormField(
         controller: controller,
@@ -37,16 +42,20 @@ class GlassTextField extends StatelessWidget {
         validator: validator,
         maxLines: maxLines,
         onChanged: onChanged,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
+        style: TextStyle(
+          color: isDark ? Colors.white : const Color(0xFF0F172A),
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
           labelText: labelText,
           labelStyle: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: isDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B),
             fontSize: 13,
           ),
           hintText: hintText,
           hintStyle: TextStyle(
-            color: Colors.white.withValues(alpha: 0.3),
+            color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFF94A3B8),
             fontSize: 13,
           ),
           border: InputBorder.none,

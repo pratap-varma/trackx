@@ -1,9 +1,10 @@
-# Miscellaneous
+# Miscellaneous & OS
 *.class
 *.log
 *.pyc
 *.swp
 .DS_Store
+Thumbs.db
 .atom/
 .build/
 .buildlog/
@@ -11,44 +12,56 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+temp_old.dart
+*.patch
+*.diff
 
-# IntelliJ related
+# Cloud Storage Sync artifacts (OneDrive, Dropbox, Google Drive)
+*-Prataps-Omen*
+*.tmp
+*.crswap
+
+# IDE & Editor files
 *.iml
 *.ipr
 *.iws
 .idea/
+.vscode/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# Flutter & Dart build outputs & caches
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
 /coverage/
 
-# Symbolication related
-app.*.symbols
+# Application binaries & release bundles
+*.apk
+*.aab
+*.ipa
+*.app
+*.dmg
+*.exe
+*.msix
 
-# Obfuscation related
+# Symbolication & Obfuscation maps
+app.*.symbols
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android Studio & Gradle build artifacts
 /android/app/debug
 /android/app/profile
 /android/app/release
+.gradle/
+android/local.properties
+android/.gradle/
 
-# Binaries & local sync files
-*.apk
-*-Prataps-Omen*
-
-# Secrets & Credentials
+# Secrets, API Keys & Credentials
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 firebase.json
@@ -63,3 +76,9 @@ lib/firebase_options.dart
 *.pem
 secrets.*
 local.properties
+
+# Firebase Admin SDK — Backend scripts credentials (NEVER commit these)
+backend/serviceAccountKey.json
+backend/*.service-account.json
+serviceAccountKey.json
+*.service-account.json

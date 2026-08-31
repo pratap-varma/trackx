@@ -14,6 +14,8 @@ import 'package:trackx/features/timetable/data/repositories/timetable_repository
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Production Data Flow Audit Tests', () {
     late SharedPreferences prefs;
     late PersistenceService persistence;

@@ -58,8 +58,10 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
     });
   }
 
-  void _verifyPin() {
-    final success = ref.read(appLockProvider.notifier).verifyPin(_enteredPin);
+  Future<void> _verifyPin() async {
+    final success =
+        await ref.read(appLockProvider.notifier).verifyPin(_enteredPin);
+    if (!mounted) return;
     if (success) {
       HapticFeedback.mediumImpact();
       widget.onUnlocked?.call();
@@ -115,9 +117,19 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Enter your 4-digit PIN or use Biometrics to unlock',
-                  style: TextStyle(color: Colors.white60, fontSize: 12),
+                Text(
+                  lockState.isTemporarilyLockedOut
+                      ? 'Too many failed attempts. Try again in ${lockState.remainingLockoutSeconds}s'
+                      : 'Enter your 4-digit PIN or use Biometrics to unlock',
+                  style: TextStyle(
+                    color: lockState.isTemporarilyLockedOut
+                        ? const Color(0xFFEF4444)
+                        : Colors.white60,
+                    fontSize: 12,
+                    fontWeight: lockState.isTemporarilyLockedOut
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
@@ -143,7 +155,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                   }),
                 ),
 
-                if (_errorMessage != null) ...[
+                if (_errorMessage != null && !lockState.isTemporarilyLockedOut) ...[
                   const SizedBox(height: 14),
                   Text(
                     _errorMessage!,
@@ -158,7 +170,13 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                 const SizedBox(height: 36),
 
                 // Keypad
-                _buildKeypad(lockState),
+                Opacity(
+                  opacity: lockState.isTemporarilyLockedOut ? 0.35 : 1.0,
+                  child: IgnorePointer(
+                    ignoring: lockState.isTemporarilyLockedOut,
+                    child: _buildKeypad(lockState),
+                  ),
+                ),
                 const Spacer(),
               ],
             ),

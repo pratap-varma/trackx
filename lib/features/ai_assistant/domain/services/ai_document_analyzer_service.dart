@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/timetable_import/domain/models/timetable_import_models.dart';
 import 'package:trackx/features/timetable_import/domain/services/ocr_service.dart';
@@ -40,6 +41,10 @@ class AiDocumentAnalyzerService {
     required String fileName,
     String? apiKey,
   }) async {
+    ActivityLogger().logEvent('ai_feature_used', parameters: {
+      'feature': 'document_analyzer',
+      'document_name': fileName,
+    });
     final lowerName = fileName.toLowerCase();
 
     // 1. Try Gemini Multimodal analysis if API key is provided

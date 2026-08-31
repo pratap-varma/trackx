@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:trackx/features/ai_assistant/data/services/ai_provider.dart';
 import 'package:trackx/features/ai_assistant/data/services/offline_fallback_provider.dart';
@@ -12,18 +11,14 @@ class GeminiAiProvider implements AiProvider {
   GeminiAiProvider({this.overrideApiKey});
 
   String _getApiKey() {
-    if (overrideApiKey != null && overrideApiKey!.isNotEmpty) {
-      return overrideApiKey!;
+    // 1. User-configured override key (e.g. from Settings screen)
+    if (overrideApiKey != null && overrideApiKey!.trim().isNotEmpty) {
+      return overrideApiKey!.trim();
     }
-    // Read from environment compilation variables
-    const envKey = String.fromEnvironment('GEMINI_API_KEY');
-    if (envKey.isNotEmpty) return envKey;
 
-    // Read from OS environment variables
-    try {
-      final osKey = Platform.environment['GEMINI_API_KEY'];
-      if (osKey != null && osKey.isNotEmpty) return osKey;
-    } catch (_) {}
+    // 2. Compile-time constant passed via `--dart-define=GEMINI_API_KEY=your_key`
+    const envKey = String.fromEnvironment('GEMINI_API_KEY');
+    if (envKey.isNotEmpty) return envKey.trim();
 
     return '';
   }
@@ -32,8 +27,14 @@ class GeminiAiProvider implements AiProvider {
   Future<AiResponse> generate(AiRequest request) async {
     final apiKey = _getApiKey();
     if (apiKey.isEmpty) {
-      // Seamlessly fallback to offline intelligence engine if no API key is set
-      return OfflineFallbackProvider().generate(request);
+      // Fallback to offline rule engine with diagnostic notice
+      final fallbackResponse = await OfflineFallbackProvider().generate(request);
+      return fallbackResponse.copyWith(
+        limitations: [
+          ...fallbackResponse.limitations,
+          'Notice: No Gemini API Key configured. Add your API key in AI Settings or build with --dart-define=GEMINI_API_KEY=...',
+        ],
+      );
     }
 
     try {

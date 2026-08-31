@@ -20,41 +20,44 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
+
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Send Feedback',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
         ),
         body: ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
-            const Text(
+            Text(
               'Have an issue or a feature request? Let us know! Your academic notes and credentials are never shared.',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: context.subtextColor, fontSize: 12),
             ),
             const SizedBox(height: 20),
             GlassContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Category',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: context.subtextColor,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
                   DropdownButton<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     value: _category,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: context.textColor, fontSize: 14),
                     isExpanded: true,
                     items:
                         [
@@ -86,17 +89,17 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                   const SizedBox(height: 16),
                   CheckboxListTile(
-                    title: const Text(
+                    title: Text(
                       'Include Diagnostics',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: context.textColor,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    subtitle: const Text(
+                    subtitle: Text(
                       'Includes non-sensitive metadata (app version 1.0.0, schema version 1). No passwords, location, or notes are shared.',
-                      style: TextStyle(color: Colors.white60, fontSize: 10),
+                      style: TextStyle(color: context.mutedTextColor, fontSize: 10),
                     ),
                     value: _shareDiagnostics,
                     activeColor: AppTheme.accentPurple,

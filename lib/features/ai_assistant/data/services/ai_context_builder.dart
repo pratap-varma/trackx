@@ -23,9 +23,14 @@ class AiContextBuilder {
     List<AiSubjectContext> subjectsContext = [];
     if (consentFlags['attendance'] ?? true) {
       subjectsContext = subjects.map((s) {
-        final currentAtt = s.presentClasses + s.absentClasses == 0
-            ? 0.0
-            : (s.presentClasses / (s.presentClasses + s.absentClasses)) * 100;
+        final subRecords = attendance.where((a) => a.subjectId == s.id).toList();
+        final present = subRecords.isNotEmpty
+            ? subRecords.where((a) => a.status == 'present').length
+            : s.presentClasses;
+        final total = subRecords.isNotEmpty
+            ? subRecords.length
+            : (s.presentClasses + s.absentClasses);
+        final currentAtt = total == 0 ? 0.0 : (present / total) * 100;
         return AiSubjectContext(
           id: s.id,
           name: s.name,

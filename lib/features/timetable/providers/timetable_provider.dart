@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackx/features/calendar/providers/calendar_provider.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
@@ -28,10 +29,15 @@ final todayTimetableProvider = Provider<List<TimetableEntry>>((ref) {
   final entries = ref.watch(activeSemesterTimetableProvider);
   final now = ref.watch(currentTimeProvider);
 
-  if (now.weekday == 7) return []; // Sunday is empty by default
+  // If today is an effective holiday (Sunday, Saturday, public holiday, college holiday)
+  final isHoliday = ref.watch(isHolidayDateProvider(now));
+  if (isHoliday) return [];
+
+  final overrideDay = ref.watch(dayOfWeekOverrideProvider(now));
+  final effectiveDayOfWeek = overrideDay ?? now.weekday;
 
   final today = entries
-      .where((e) => e.dayOfWeek == now.weekday && e.isEnabled)
+      .where((e) => e.dayOfWeek == effectiveDayOfWeek && e.isEnabled)
       .toList();
   today.sort((a, b) => a.startTime.compareTo(b.startTime));
   return today;

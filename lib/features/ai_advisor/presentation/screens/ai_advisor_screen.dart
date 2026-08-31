@@ -5,6 +5,7 @@ import 'package:trackx/features/ai_advisor/presentation/screens/ai_privacy_scree
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
@@ -180,13 +181,14 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'AI Advisor',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
           actions: [
             IconButton(
-              icon: const Icon(Icons.privacy_tip_outlined, color: Colors.white),
+              icon: Icon(Icons.privacy_tip_outlined, color: context.textColor),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -195,9 +197,9 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
               },
             ),
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.delete_sweep_outlined,
-                color: Colors.white,
+                color: context.textColor,
               ),
               onPressed: () {
                 ref.read(chatMessagesProvider.notifier).clearHistory();
@@ -217,14 +219,14 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'AI Provider:',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: context.subtextColor, fontSize: 12),
                     ),
                     DropdownButton<String>(
-                      dropdownColor: Colors.purple.shade900,
+                      dropdownColor: context.isDark ? const Color(0xFF131A2B) : Colors.white,
                       value: selectedProvider,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(color: context.textColor, fontSize: 12),
                       items: ['Auto', 'Gemini', 'OpenAI', 'Offline only'].map((
                         provider,
                       ) {
@@ -271,8 +273,8 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
                           children: [
                             Text(
                               msg.content,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: context.textColor,
                                 fontSize: 13,
                               ),
                             ),
@@ -283,7 +285,9 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
                                 children: msg.actions.map((act) {
                                   return ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white10,
+                                      backgroundColor: context.isDark
+                                          ? Colors.white10
+                                          : Colors.black.withValues(alpha: 0.06),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
                                         vertical: 4,
@@ -302,9 +306,9 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
                                     },
                                     child: Text(
                                       act.type,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 10,
-                                        color: Colors.white,
+                                        color: context.textColor,
                                       ),
                                     ),
                                   );
@@ -330,11 +334,13 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ActionChip(
-                      backgroundColor: Colors.white10,
+                      backgroundColor: context.isDark
+                          ? Colors.white10
+                          : Colors.black.withValues(alpha: 0.05),
                       label: Text(
                         prompt,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textColor,
                           fontSize: 11,
                         ),
                       ),
@@ -363,7 +369,7 @@ class _AiAdvisorScreenState extends ConsumerState<AiAdvisorScreen> {
                   ),
                   const SizedBox(width: 12),
                   IconButton(
-                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    icon: Icon(Icons.send_rounded, color: context.textColor),
                     onPressed: () {
                       final txt = _msgController.text.trim();
                       if (txt.isNotEmpty) {

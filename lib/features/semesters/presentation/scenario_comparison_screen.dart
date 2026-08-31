@@ -47,17 +47,18 @@ class _ScenarioComparisonScreenState
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Scenario Comparison',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
         ),
         body: ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
-            const Text(
+            Text(
               'Compare custom planning scenarios side-by-side to review trade-offs.',
-              style: TextStyle(color: Colors.white60, fontSize: 11),
+              style: TextStyle(color: context.subtextColor, fontSize: 11),
             ),
             const SizedBox(height: 20),
 
@@ -66,12 +67,12 @@ class _ScenarioComparisonScreenState
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: context.isDark ? const Color(0xFF131A2B) : Colors.white,
                     initialValue: _scenarioIdA,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(color: context.textColor, fontSize: 12),
                     decoration: InputDecoration(
                       labelText: 'Scenario A',
-                      labelStyle: const TextStyle(color: Colors.white60),
+                      labelStyle: TextStyle(color: context.mutedTextColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -90,12 +91,12 @@ class _ScenarioComparisonScreenState
                 const SizedBox(width: 16),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: context.isDark ? const Color(0xFF131A2B) : Colors.white,
                     initialValue: _scenarioIdB,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(color: context.textColor, fontSize: 12),
                     decoration: InputDecoration(
                       labelText: 'Scenario B',
-                      labelStyle: const TextStyle(color: Colors.white60),
+                      labelStyle: TextStyle(color: context.mutedTextColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -119,20 +120,20 @@ class _ScenarioComparisonScreenState
               Center(
                 child: GlassContainer(
                   padding: const EdgeInsets.all(24),
-                  child: const Text(
+                  child: Text(
                     'Create at least two scenarios under the Academics Hub to start comparing them.',
-                    style: TextStyle(color: Colors.white60),
+                    style: TextStyle(color: context.subtextColor),
                     textAlign: TextAlign.center,
                   ),
                 ),
               ),
             ] else ...[
               // Comparison Table
-              const Text(
+              Text(
                 'Comparison Details',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: context.textColor,
                   fontSize: 14,
                 ),
               ),
@@ -141,7 +142,7 @@ class _ScenarioComparisonScreenState
                 padding: EdgeInsets.zero,
                 child: Table(
                   border: TableBorder.symmetric(
-                    inside: const BorderSide(color: Colors.white10, width: 0.5),
+                    inside: BorderSide(color: context.subtleBorderColor, width: 0.5),
                   ),
                   columnWidths: const {
                     0: FlexColumnWidth(1.2),
@@ -149,28 +150,33 @@ class _ScenarioComparisonScreenState
                     2: FlexColumnWidth(1.0),
                   },
                   children: [
-                    _buildHeaderRow('Metrics', scenA.name, scenB.name),
+                    _buildHeaderRow(context, 'Metrics', scenA.name, scenB.name),
                     _buildRow(
+                      context,
                       'Subjects Count',
                       '${scenA.plannedSubjectIds.length}',
                       '${scenB.plannedSubjectIds.length}',
                     ),
                     _buildRow(
+                      context,
                       'Total Credits',
                       '${scenA.totalCredits}',
                       '${scenB.totalCredits}',
                     ),
                     _buildRow(
+                      context,
                       'Study Hours',
                       '${scenA.estimatedWeeklyStudyHours}h',
                       '${scenB.estimatedWeeklyStudyHours}h',
                     ),
                     _buildRow(
+                      context,
                       'Theory Count',
                       '${_countType(scenA, allSubjects, "Theory")}',
                       '${_countType(scenB, allSubjects, "Theory")}',
                     ),
                     _buildRow(
+                      context,
                       'Laboratory Count',
                       '${_countType(scenA, allSubjects, "Laboratory")}',
                       '${_countType(scenB, allSubjects, "Laboratory")}',
@@ -181,11 +187,11 @@ class _ScenarioComparisonScreenState
               const SizedBox(height: 24),
 
               // Trade-off evaluation
-              const Text(
+              Text(
                 'Deterministic Trade-offs',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: context.textColor,
                   fontSize: 14,
                 ),
               ),
@@ -194,6 +200,7 @@ class _ScenarioComparisonScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _evaluateTradeOffs(
+                    context,
                     scenA,
                     scenB,
                     allSubjects,
@@ -208,17 +215,21 @@ class _ScenarioComparisonScreenState
     );
   }
 
-  TableRow _buildHeaderRow(String title, String valA, String valB) {
+  TableRow _buildHeaderRow(BuildContext context, String title, String valA, String valB) {
     return TableRow(
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05)),
+      decoration: BoxDecoration(
+        color: context.isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.04),
+      ),
       children: [
         Padding(
           padding: const EdgeInsets.all(12.0),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white70,
+              color: context.subtextColor,
               fontSize: 12,
             ),
           ),
@@ -238,9 +249,9 @@ class _ScenarioComparisonScreenState
           padding: const EdgeInsets.all(12.0),
           child: Text(
             valB,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.tealAccent,
+              color: context.isDark ? Colors.tealAccent : Colors.teal.shade700,
               fontSize: 12,
             ),
           ),
@@ -249,22 +260,22 @@ class _ScenarioComparisonScreenState
     );
   }
 
-  TableRow _buildRow(String label, String valA, String valB) {
+  TableRow _buildRow(BuildContext context, String label, String valA, String valB) {
     return TableRow(
       children: [
         Padding(
           padding: const EdgeInsets.all(12.0),
           child: Text(
             label,
-            style: const TextStyle(color: Colors.white60, fontSize: 12),
+            style: TextStyle(color: context.mutedTextColor, fontSize: 12),
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(12.0),
           child: Text(
             valA,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.textColor,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -274,8 +285,8 @@ class _ScenarioComparisonScreenState
           padding: const EdgeInsets.all(12.0),
           child: Text(
             valB,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.textColor,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -292,6 +303,7 @@ class _ScenarioComparisonScreenState
   }
 
   List<Widget> _evaluateTradeOffs(
+    BuildContext context,
     SemesterScenario a,
     SemesterScenario b,
     List<Subject> all,
@@ -303,12 +315,14 @@ class _ScenarioComparisonScreenState
     if (a.totalCredits > b.totalCredits) {
       widgets.add(
         _buildTradeOffItem(
+          context,
           'Scenario A has more credits (${a.totalCredits} vs ${b.totalCredits}) but a higher learning workload.',
         ),
       );
     } else if (b.totalCredits > a.totalCredits) {
       widgets.add(
         _buildTradeOffItem(
+          context,
           'Scenario B has more credits (${b.totalCredits} vs ${a.totalCredits}) but a higher learning workload.',
         ),
       );
@@ -318,12 +332,14 @@ class _ScenarioComparisonScreenState
     if (a.estimatedWeeklyStudyHours < b.estimatedWeeklyStudyHours) {
       widgets.add(
         _buildTradeOffItem(
+          context,
           'Scenario A has fewer study hours and more available free study time.',
         ),
       );
     } else if (b.estimatedWeeklyStudyHours < a.estimatedWeeklyStudyHours) {
       widgets.add(
         _buildTradeOffItem(
+          context,
           'Scenario B has fewer study hours and more available free study time.',
         ),
       );
@@ -336,6 +352,7 @@ class _ScenarioComparisonScreenState
     if (missingA.isNotEmpty) {
       widgets.add(
         _buildTradeOffItem(
+          context,
           'Scenario A contains subjects (${missingA.join(", ")}) with unresolved prerequisites.',
           isWarning: true,
         ),
@@ -344,6 +361,7 @@ class _ScenarioComparisonScreenState
     if (missingB.isNotEmpty) {
       widgets.add(
         _buildTradeOffItem(
+          context,
           'Scenario B contains subjects (${missingB.join(", ")}) with unresolved prerequisites.',
           isWarning: true,
         ),
@@ -352,9 +370,9 @@ class _ScenarioComparisonScreenState
 
     if (widgets.isEmpty) {
       widgets.add(
-        const Text(
+        Text(
           'Both scenarios have balanced credits and workloads.',
-          style: TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: context.subtextColor, fontSize: 12),
         ),
       );
     }
@@ -383,7 +401,7 @@ class _ScenarioComparisonScreenState
     return missing;
   }
 
-  Widget _buildTradeOffItem(String text, {bool isWarning = false}) {
+  Widget _buildTradeOffItem(BuildContext context, String text, {bool isWarning = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
@@ -393,7 +411,7 @@ class _ScenarioComparisonScreenState
             isWarning
                 ? Icons.warning_amber_rounded
                 : Icons.info_outline_rounded,
-            color: isWarning ? Colors.amber : Colors.purpleAccent,
+            color: isWarning ? Colors.amber : (context.isDark ? Colors.purpleAccent : AppTheme.accentPurple),
             size: 16,
           ),
           const SizedBox(width: 8),
@@ -401,7 +419,7 @@ class _ScenarioComparisonScreenState
             child: Text(
               text,
               style: TextStyle(
-                color: isWarning ? Colors.amber : Colors.white70,
+                color: isWarning ? Colors.amber : context.subtextColor,
                 fontSize: 12,
               ),
             ),

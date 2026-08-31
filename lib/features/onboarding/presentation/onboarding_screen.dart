@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/semesters/data/semester_repository.dart';
+import 'package:trackx/features/calendar/providers/calendar_provider.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_primary_button.dart';
@@ -44,12 +46,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         .read(authRepositoryProvider.notifier)
         .completeOnboarding(name, branch, _selectedSemester, _selectedTarget);
 
+    final existingSemesters = ref.read(semesterRepositoryProvider);
+    if (existingSemesters.isEmpty) {
+      await ref.read(semesterRepositoryProvider.notifier).createSemester(
+        'Semester $_selectedSemester',
+        _selectedSemester,
+        DateTime.now(),
+        DateTime.now().add(const Duration(days: 180)),
+        attendanceTarget: _selectedTarget,
+      );
+    }
+
     setState(() {
       _isLoading = false;
     });
 
     if (!mounted) return;
     context.go('/');
+
+    // Request calendar permission and fetch holidays in background
+    Future.microtask(() async {
+      try {
+        await ref.read(calendarRepositoryProvider.notifier).connectAndSync();
+      } catch (_) {}
+    });
   }
 
   @override

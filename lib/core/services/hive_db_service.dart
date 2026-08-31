@@ -22,6 +22,7 @@ class HiveDbService {
   static const String boxCourses = 'px_hive_courses';
   static const String boxTopics = 'px_hive_topics';
   static const String boxResources = 'px_hive_resources';
+  static const String boxFlashcards = 'px_hive_flashcards';
 
   bool _initialized = false;
 
@@ -50,9 +51,21 @@ class HiveDbService {
       Hive.openBox(boxCourses),
       Hive.openBox(boxTopics),
       Hive.openBox(boxResources),
+      Hive.openBox(boxFlashcards),
     ]);
 
     _initialized = true;
+  }
+
+  bool isBoxOpen(String boxName) {
+    return Hive.isBoxOpen(boxName);
+  }
+
+  Box? getBoxOrNull(String boxName) {
+    if (Hive.isBoxOpen(boxName)) {
+      return Hive.box(boxName);
+    }
+    return null;
   }
 
   Box getBox(String boxName) {
@@ -80,6 +93,7 @@ class HiveDbService {
       Hive.box(boxCourses).clear(),
       Hive.box(boxTopics).clear(),
       Hive.box(boxResources).clear(),
+      Hive.box(boxFlashcards).clear(),
     ]);
   }
 }

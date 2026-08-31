@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trackx/core/services/hive_db_service.dart';
+import 'package:trackx/core/services/sync_service.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/features/timetable/data/services/notification_service.dart';
@@ -36,34 +38,92 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
 
   void _load() {
     final uid = _currentUserId;
-    if (uid.isEmpty) {
-      state = [];
-      return;
-    }
     final key = _getKey(uid);
-    final jsonStr = _prefs.getString(key);
+    var jsonStr = _prefs.getString(key);
+    if (jsonStr == null && uid.isNotEmpty) {
+      jsonStr = _prefs.getString(_keyTimetable);
+    }
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
             .map((item) => TimetableEntry.fromMap(item as Map<String, dynamic>))
-            .where((e) => e.userId == uid || e.userId.isEmpty)
-            .map((e) => e.userId != uid ? e.copyWith(userId: uid) : e)
+            .where(
+              (e) =>
+                  uid.isEmpty ||
+                  e.userId == uid ||
+                  e.userId.isEmpty ||
+                  e.userId == 'guest' ||
+                  e.userId == 'user' ||
+                  e.userId == 'u1',
+            )
+            .map(
+              (e) => (uid.isNotEmpty && e.userId != uid)
+                  ? e.copyWith(userId: uid)
+                  : e,
+            )
             .toList();
       } catch (_) {
         state = [];
       }
     } else {
-      state = [];
+      // Fallback: check Hive Box if SharedPreferences is empty (e.g. fresh install after cloud pull)
+      try {
+        final db = _ref?.read(hiveDbServiceProvider);
+        if (db != null) {
+          final box = db.getBoxOrNull(HiveDbService.boxTimetable);
+          if (box != null && box.isNotEmpty) {
+            final hiveEntries = box.values
+                .map(
+                  (e) => TimetableEntry.fromMap(
+                    Map<String, dynamic>.from(e as Map),
+                  ),
+                )
+                .where(
+                  (e) =>
+                      uid.isEmpty ||
+                      e.userId == uid ||
+                      e.userId.isEmpty ||
+                      e.userId == 'guest' ||
+                      e.userId == 'user' ||
+                      e.userId == 'u1',
+                )
+                .toList();
+            if (hiveEntries.isNotEmpty) {
+              state = hiveEntries;
+            }
+          }
+        }
+      } catch (_) {}
     }
+  }
+
+  void reloadFromStorage() {
+    _load();
   }
 
   Future<void> _save() async {
     final uid = _currentUserId;
-    if (uid.isEmpty) return;
     final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((e) => e.toMap()).toList());
     await _prefs.setString(key, jsonStr);
+    if (uid.isNotEmpty) {
+      await _prefs.setString(_keyTimetable, jsonStr);
+    }
+
+    // Save to Hive Database
+    try {
+      final db = _ref?.read(hiveDbServiceProvider);
+      if (db != null) {
+        final box = db.getBoxOrNull(HiveDbService.boxTimetable);
+        if (box != null) {
+          for (final entry in state) {
+            await box.put(entry.id, entry.toMap());
+          }
+        }
+      }
+    } catch (_) {}
+
     _syncNotifications();
   }
 
@@ -120,6 +180,12 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
 
     state = [...state, userScopedEntry];
     await _save();
+
+    try {
+      final syncService = _ref?.read(syncServiceProvider);
+      syncService?.addToQueue('timetable', userScopedEntry.id, 'create', userScopedEntry.toMap());
+    } catch (_) {}
+
     return null;
   }
 
@@ -127,14 +193,30 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
     final conflictMsg = verifyConflict(entry);
     if (conflictMsg != null) return conflictMsg;
 
-    state = state.map((e) => e.id == entry.id ? entry : e).toList();
+    final updatedEntry = entry.copyWith(
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+    state = state.map((e) => e.id == entry.id ? updatedEntry : e).toList();
     await _save();
+
+    try {
+      final syncService = _ref?.read(syncServiceProvider);
+      syncService?.addToQueue('timetable', updatedEntry.id, 'update', updatedEntry.toMap());
+    } catch (_) {}
+
     return null;
   }
 
   Future<void> deleteEntry(String id) async {
     state = state.where((e) => e.id != id).toList();
     await _save();
+
+    try {
+      final db = _ref?.read(hiveDbServiceProvider);
+      db?.getBoxOrNull(HiveDbService.boxTimetable)?.delete(id);
+      final syncService = _ref?.read(syncServiceProvider);
+      syncService?.addToQueue('timetable', id, 'delete', {'id': id});
+    } catch (_) {}
   }
 
   Future<void> setEnabled(String id, bool enabled) async {

@@ -292,13 +292,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                         });
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).clearSnackBars();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Exam details updated!'),
-                            duration: Duration(milliseconds: 1500),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        // Success SnackBar removed as requested
                       }
                     },
                     child: Container(
@@ -483,6 +477,16 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
     if (mounted) {
       Navigator.pop(context);
       HapticFeedback.heavyImpact();
+      if (importedCount > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF10B981),
+            content: Text(
+              'Successfully imported $importedCount exam(s) into your schedule!',
+            ),
+          ),
+        );
+      }
     }
   }
 

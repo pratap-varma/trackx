@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackx/core/services/activity_logger.dart';
+import 'package:trackx/features/notifications/services/exam_notification_service.dart';
 import 'package:trackx/features/planner/data/repositories/productivity_repository.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
@@ -13,7 +15,8 @@ bool _isPastDay(DateTime date) {
 // --- Tasks State Notifier ---
 class TasksNotifier extends StateNotifier<List<Task>> {
   final ProductivityRepository _repo;
-  TasksNotifier(this._repo) : super([]) {
+  final Ref? _ref;
+  TasksNotifier(this._repo, [this._ref]) : super([]) {
     state = _repo.getTasks();
     cleanupExpired();
   }
@@ -29,6 +32,12 @@ class TasksNotifier extends StateNotifier<List<Task>> {
   void addTask(Task item) {
     state = [...state, item];
     _repo.saveTasks(state);
+    _ref?.read(activityLoggerProvider).logEvent('task_created', parameters: {
+      'taskId': item.id,
+      'title': item.title,
+      'category': item.category,
+      'priority': item.priority,
+    });
   }
 
   void editTask(Task item) {
@@ -45,6 +54,14 @@ class TasksNotifier extends StateNotifier<List<Task>> {
     state = state.map((e) {
       if (e.id == id) {
         final nextVal = !e.isCompleted;
+        _ref?.read(activityLoggerProvider).logEvent(
+          nextVal ? 'task_completed' : 'task_reopened',
+          parameters: {
+            'taskId': id,
+            'title': e.title,
+            'category': e.category,
+          },
+        );
         return e.copyWith(
           isCompleted: nextVal,
           completedAt: nextVal ? DateTime.now().millisecondsSinceEpoch : null,
@@ -64,13 +81,14 @@ class TasksNotifier extends StateNotifier<List<Task>> {
 
 final tasksProvider = StateNotifierProvider<TasksNotifier, List<Task>>((ref) {
   final repo = ref.watch(productivityRepositoryProvider);
-  return TasksNotifier(repo);
+  return TasksNotifier(repo, ref);
 });
 
 // --- Assignments State Notifier ---
 class AssignmentsNotifier extends StateNotifier<List<Assignment>> {
   final ProductivityRepository _repo;
-  AssignmentsNotifier(this._repo) : super([]) {
+  final Ref? _ref;
+  AssignmentsNotifier(this._repo, [this._ref]) : super([]) {
     state = _repo.getAssignments();
     cleanupExpired();
   }
@@ -86,6 +104,11 @@ class AssignmentsNotifier extends StateNotifier<List<Assignment>> {
   void addAssignment(Assignment item) {
     state = [...state, item];
     _repo.saveAssignments(state);
+    _ref?.read(activityLoggerProvider).logEvent('assignment_created', parameters: {
+      'assignmentId': item.id,
+      'title': item.title,
+      'subjectId': item.subjectId,
+    });
   }
 
   void editAssignment(Assignment item) {
@@ -104,6 +127,10 @@ class AssignmentsNotifier extends StateNotifier<List<Assignment>> {
         final nextStatus = e.status == 'Completed'
             ? 'In progress'
             : 'Completed';
+        _ref?.read(activityLoggerProvider).logEvent(
+          nextStatus == 'Completed' ? 'assignment_completed' : 'assignment_reopened',
+          parameters: {'assignmentId': id, 'title': e.title},
+        );
         return e.copyWith(
           status: nextStatus,
           completedAt: nextStatus == 'Completed'
@@ -126,15 +153,18 @@ class AssignmentsNotifier extends StateNotifier<List<Assignment>> {
 final assignmentsProvider =
     StateNotifierProvider<AssignmentsNotifier, List<Assignment>>((ref) {
       final repo = ref.watch(productivityRepositoryProvider);
-      return AssignmentsNotifier(repo);
+      return AssignmentsNotifier(repo, ref);
     });
 
 // --- Exams State Notifier ---
 class ExamsNotifier extends StateNotifier<List<Exam>> {
   final ProductivityRepository _repo;
-  ExamsNotifier(this._repo) : super([]) {
+  final ExamNotificationService? _notificationService;
+
+  ExamsNotifier(this._repo, [this._notificationService]) : super([]) {
     state = _repo.getExams();
     cleanupExpired();
+    _notificationService?.scheduleExamReminders(state);
   }
 
   void cleanupExpired() {
@@ -142,20 +172,24 @@ class ExamsNotifier extends StateNotifier<List<Exam>> {
     if (active.length != state.length) {
       state = active;
       _repo.saveExams(state);
+      _notificationService?.scheduleExamReminders(state);
     }
   }
 
   void addExam(Exam item) {
     state = [...state, item];
     _repo.saveExams(state);
+    _notificationService?.scheduleExamReminders(state);
   }
 
   void editExam(Exam item) {
     state = state.map((e) => e.id == item.id ? item : e).toList();
     _repo.saveExams(state);
+    _notificationService?.scheduleExamReminders(state);
   }
 
   void deleteExam(String id) {
+    _notificationService?.cancelExamReminders(id);
     state = state.where((e) => e.id != id).toList();
     _repo.saveExams(state);
   }
@@ -172,12 +206,14 @@ class ExamsNotifier extends StateNotifier<List<Exam>> {
   void restore(List<Exam> list) {
     state = list.where((ex) => !_isPastDay(ex.examDate)).toList();
     _repo.saveExams(state);
+    _notificationService?.scheduleExamReminders(state);
   }
 }
 
 final examsProvider = StateNotifierProvider<ExamsNotifier, List<Exam>>((ref) {
   final repo = ref.watch(productivityRepositoryProvider);
-  return ExamsNotifier(repo);
+  final notificationService = ref.watch(examNotificationServiceProvider);
+  return ExamsNotifier(repo, notificationService);
 });
 
 // --- Revision Topics State Notifier ---

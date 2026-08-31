@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trackx/core/services/hive_db_service.dart';
+import 'package:trackx/core/services/sync_service.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/features/semesters/domain/semester_model.dart';
@@ -35,34 +37,87 @@ class SemesterRepository extends StateNotifier<List<Semester>> {
 
   void _load() {
     final uid = _currentUserId;
-    if (uid.isEmpty) {
-      state = [];
-      return;
-    }
     final key = _getKey(uid);
-    final jsonStr = _prefs.getString(key);
+    var jsonStr = _prefs.getString(key);
+    if (jsonStr == null && uid.isNotEmpty) {
+      jsonStr = _prefs.getString(_keySemesters);
+    }
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
             .map((item) => Semester.fromMap(item as Map<String, dynamic>))
-            .where((s) => s.userId == uid || s.userId.isEmpty)
-            .map((s) => s.userId != uid ? s.copyWith(userId: uid) : s)
+            .where(
+              (s) =>
+                  uid.isEmpty ||
+                  s.userId == uid ||
+                  s.userId.isEmpty ||
+                  s.userId == 'guest' ||
+                  s.userId == 'user' ||
+                  s.userId == 'u1',
+            )
+            .map(
+              (s) => (uid.isNotEmpty && s.userId != uid)
+                  ? s.copyWith(userId: uid)
+                  : s,
+            )
             .toList();
       } catch (_) {
         state = [];
       }
     } else {
-      state = [];
+      // Fallback: check Hive Box if SharedPreferences is empty (e.g. fresh install after cloud pull)
+      try {
+        final db = _ref?.read(hiveDbServiceProvider);
+        if (db != null) {
+          final box = db.getBoxOrNull(HiveDbService.boxSemesters);
+          if (box != null && box.isNotEmpty) {
+            final hiveSemesters = box.values
+                .map((e) => Semester.fromMap(Map<String, dynamic>.from(e as Map)))
+                .where(
+                  (s) =>
+                      uid.isEmpty ||
+                      s.userId == uid ||
+                      s.userId.isEmpty ||
+                      s.userId == 'guest' ||
+                      s.userId == 'user' ||
+                      s.userId == 'u1',
+                )
+                .toList();
+            if (hiveSemesters.isNotEmpty) {
+              state = hiveSemesters;
+            }
+          }
+        }
+      } catch (_) {}
     }
+  }
+
+  void reloadFromStorage() {
+    _load();
   }
 
   Future<void> _save() async {
     final uid = _currentUserId;
-    if (uid.isEmpty) return;
     final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((s) => s.toMap()).toList());
     await _prefs.setString(key, jsonStr);
+    if (uid.isNotEmpty) {
+      await _prefs.setString(_keySemesters, jsonStr);
+    }
+
+    // Save to Hive Database
+    try {
+      final db = _ref?.read(hiveDbServiceProvider);
+      if (db != null) {
+        final box = db.getBoxOrNull(HiveDbService.boxSemesters);
+        if (box != null) {
+          for (final sem in state) {
+            await box.put(sem.id, sem.toMap());
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> createSemester(
@@ -104,19 +159,31 @@ class SemesterRepository extends StateNotifier<List<Semester>> {
 
     state = [...state, newSem];
     await _save();
+
+    // Push to cloud sync queue
+    try {
+      _ref
+          ?.read(syncServiceProvider)
+          .addToQueue('semester', newSem.id, 'create', newSem.toMap());
+    } catch (_) {}
   }
 
   Future<void> updateSemester(Semester updated) async {
+    final semWithUpdatedTime = updated.copyWith(
+      updatedAt: DateTime.now().millisecondsSinceEpoch,
+    );
     state = state
         .map(
-          (sem) => sem.id == updated.id
-              ? updated.copyWith(
-                  updatedAt: DateTime.now().millisecondsSinceEpoch,
-                )
-              : sem,
+          (sem) => sem.id == updated.id ? semWithUpdatedTime : sem,
         )
         .toList();
     await _save();
+
+    try {
+      _ref
+          ?.read(syncServiceProvider)
+          .addToQueue('semester', semWithUpdatedTime.id, 'update', semWithUpdatedTime.toMap());
+    } catch (_) {}
   }
 
   Future<void> setActiveSemester(String id) async {
@@ -185,6 +252,12 @@ class SemesterRepository extends StateNotifier<List<Semester>> {
       state = [state.first.copyWith(status: 'Active'), ...state.sublist(1)];
     }
     await _save();
+
+    try {
+      final db = _ref?.read(hiveDbServiceProvider);
+      db?.getBoxOrNull(HiveDbService.boxSemesters)?.delete(id);
+      _ref?.read(syncServiceProvider).addToQueue('semester', id, 'delete', {'id': id});
+    } catch (_) {}
   }
 
   Future<void> restore(List<Semester> list) async {

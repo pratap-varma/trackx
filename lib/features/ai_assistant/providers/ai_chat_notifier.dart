@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/ai_advisor/domain/models/ai_models.dart'
     hide AiRequest;
 import 'package:trackx/features/authentication/data/auth_repository.dart';
@@ -53,6 +54,11 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
     );
 
     state = [...state, userMsg];
+
+    _ref.read(activityLoggerProvider).logEvent('ai_feature_used', parameters: {
+      'feature': 'assistant_chat',
+      'length': userMessage.length,
+    });
 
     final settings = _ref.read(aiSettingsProvider);
     final usageNotifier = _ref.read(aiUsageProvider.notifier);

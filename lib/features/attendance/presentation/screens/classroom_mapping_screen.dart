@@ -5,6 +5,7 @@ import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 final classroomLocationsProvider =
     StateNotifierProvider<ClassroomLocationsNotifier, List<ClassroomLocation>>((
@@ -50,17 +51,18 @@ class _ClassroomMappingScreenState
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Classroom Geofences',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
         ),
         body: ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
-            const Text(
+            Text(
               'Add classrooms geofences. During class timings, you will receive intelligent attendance reminders when you enter the boundary.',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: context.subtextColor, fontSize: 12),
             ),
             const SizedBox(height: 20),
             GlassContainer(
@@ -138,11 +140,11 @@ class _ClassroomMappingScreenState
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Active Classroom Locations',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.textColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -151,10 +153,10 @@ class _ClassroomMappingScreenState
                 padding: const EdgeInsets.only(top: 8.0),
                 child: GlassContainer(
                   padding: const EdgeInsets.all(20),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'No classroom locations mapped yet.\nAdd a geofence above to verify attendance locations.',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                      style: TextStyle(color: context.mutedTextColor, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -168,15 +170,15 @@ class _ClassroomMappingScreenState
                     child: ListTile(
                       title: Text(
                         loc.name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       subtitle: Text(
                         'Lat: ${loc.latitude}, Lon: ${loc.longitude} | Radius: ${loc.radiusMeters}m',
-                        style: const TextStyle(
-                          color: Colors.white60,
+                        style: TextStyle(
+                          color: context.subtextColor,
                           fontSize: 11,
                         ),
                       ),

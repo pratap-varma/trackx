@@ -5,6 +5,7 @@ import 'package:trackx/features/subjects/data/dependency_repository.dart';
 import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class DependencyManageScreen extends ConsumerStatefulWidget {
   const DependencyManageScreen({super.key});
@@ -55,16 +56,18 @@ class _DependencyManageScreenState
         .where((s) => s.status != 'Archived')
         .toList();
     final dependencies = ref.watch(dependencyRepositoryProvider);
+    final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
 
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Subject Dependencies',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
         ),
         body: ListView(
           padding: const EdgeInsets.all(24.0),
@@ -100,11 +103,11 @@ class _DependencyManageScreenState
             const SizedBox(height: 20),
 
             // Form to Add Dependency
-            const Text(
+            Text(
               'Add Subject Dependency Link',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.textColor,
                 fontSize: 14,
               ),
             ),
@@ -113,19 +116,19 @@ class _DependencyManageScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Subject Name',
-                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                    style: TextStyle(color: context.subtextColor, fontSize: 11),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedSubjectId,
-                    hint: const Text(
+                    hint: Text(
                       'Select target subject',
-                      style: TextStyle(color: Colors.white38, fontSize: 13),
+                      style: TextStyle(color: context.mutedTextColor, fontSize: 13),
                     ),
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: subjects.map((sub) {
                       return DropdownMenuItem(
                         value: sub.id,
@@ -152,19 +155,19 @@ class _DependencyManageScreenState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Requires/Depends On',
-                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                    style: TextStyle(color: context.subtextColor, fontSize: 11),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedReqSubjectId,
-                    hint: const Text(
+                    hint: Text(
                       'Select prerequisite subject',
-                      style: TextStyle(color: Colors.white38, fontSize: 13),
+                      style: TextStyle(color: context.mutedTextColor, fontSize: 13),
                     ),
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: subjects
                         .where((sub) => sub.id != _selectedSubjectId)
                         .map((sub) {
@@ -190,15 +193,15 @@ class _DependencyManageScreenState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Dependency Type',
-                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                    style: TextStyle(color: context.subtextColor, fontSize: 11),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedType,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: const [
                       DropdownMenuItem(
                         value: 'Prerequisite',
@@ -242,20 +245,20 @@ class _DependencyManageScreenState
             const SizedBox(height: 24),
 
             // Active Dependencies List
-            const Text(
+            Text(
               'Active Mapped Dependencies',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.textColor,
                 fontSize: 14,
               ),
             ),
             const SizedBox(height: 12),
             dependencies.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No dependencies configured yet.',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                      style: TextStyle(color: context.mutedTextColor, fontSize: 12),
                     ),
                   )
                 : ListView.builder(
@@ -316,17 +319,17 @@ class _DependencyManageScreenState
                                   children: [
                                     Text(
                                       '${sourceSub.name} (${sourceSub.code ?? "No Code"})',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: context.textColor,
                                         fontSize: 13,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Requires: ${reqSub.name} [${dep.type}]',
-                                      style: const TextStyle(
-                                        color: Colors.white60,
+                                      style: TextStyle(
+                                        color: context.subtextColor,
                                         fontSize: 11,
                                       ),
                                     ),

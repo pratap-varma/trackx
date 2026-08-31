@@ -8,6 +8,14 @@ import 'package:trackx/routing/app_router.dart';
 import 'package:trackx/theme/app_theme.dart';
 import 'package:trackx/core/services/app_lock_service.dart';
 import 'package:trackx/core/presentation/widgets/app_lock_screen.dart';
+import 'package:trackx/features/notifications/services/daily_digest_service.dart';
+import 'package:trackx/features/notifications/services/exam_notification_service.dart';
+import 'package:trackx/features/planner/providers/productivity_provider.dart';
+import 'package:trackx/features/timetable/data/services/notification_service.dart';
+import 'package:trackx/core/services/db_migration_service.dart';
+import 'package:trackx/core/services/hive_db_service.dart';
+import 'package:trackx/core/services/sync_service.dart';
+import 'package:trackx/core/services/widget_data_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -17,9 +25,19 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
+  final hiveDb = HiveDbService();
+  try {
+    await hiveDb.init();
+    final migration = DbMigrationService(prefs, hiveDb);
+    await migration.migrate();
+  } catch (_) {}
+
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        hiveDbServiceProvider.overrideWithValue(hiveDb),
+      ],
       child: const TrackXApp(),
     ),
   );
@@ -38,6 +56,20 @@ class _TrackXAppState extends ConsumerState<TrackXApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Initialize Daily Morning Digest, Class reminders & Exam Notifications with fresh local data
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await ref.read(notificationServiceProvider).requestPermissions();
+      } catch (_) {}
+      try {
+        await ref.read(examNotificationServiceProvider).initialize();
+      } catch (_) {}
+      ref.read(dailyDigestSettingsProvider);
+      ref.read(examsProvider);
+      try {
+        await ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+      } catch (_) {}
+    });
   }
 
   @override
@@ -50,6 +82,13 @@ class _TrackXAppState extends ConsumerState<TrackXApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
       ref.read(appLockProvider.notifier).lock();
+      try {
+        ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+      } catch (_) {}
+    } else if (state == AppLifecycleState.resumed) {
+      try {
+        ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+      } catch (_) {}
     }
   }
 
@@ -57,6 +96,7 @@ class _TrackXAppState extends ConsumerState<TrackXApp>
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final accentColor = ref.watch(accentColorProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final lockState = ref.watch(appLockProvider);
 
     return MaterialApp.router(
@@ -64,7 +104,7 @@ class _TrackXAppState extends ConsumerState<TrackXApp>
       debugShowCheckedModeBanner: false,
       theme: AppTheme.buildTheme(Brightness.light, accentColor),
       darkTheme: AppTheme.buildTheme(Brightness.dark, accentColor),
-      themeMode: ThemeMode.dark,
+      themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) {
         if (lockState.isLocked) {

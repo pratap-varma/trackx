@@ -1,14 +1,22 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
+import 'package:trackx/features/planner/domain/models/productivity_models.dart';
+import 'package:trackx/features/planner/providers/productivity_provider.dart';
+import 'package:trackx/features/notes/providers/flashcard_provider.dart';
+import 'package:trackx/features/notes/presentation/widgets/flashcard_preview_editor_sheet.dart';
+import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
+import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/shared/widgets/ai_thinking_indicator.dart';
 
 class SubjectDetailScreen extends ConsumerStatefulWidget {
   final String subjectId;
@@ -23,11 +31,402 @@ class SubjectDetailScreen extends ConsumerStatefulWidget {
 class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
   String _filter = 'all';
   final _overrideController = TextEditingController();
+  final _noteTitleController = TextEditingController();
+  final _noteContentController = TextEditingController();
+  final _noteTagsController = TextEditingController();
 
   @override
   void dispose() {
     _overrideController.dispose();
+    _noteTitleController.dispose();
+    _noteContentController.dispose();
+    _noteTagsController.dispose();
     super.dispose();
+  }
+
+  Future<void> _generateFlashcardsForNote(Note note, String subjectName) async {
+    HapticFeedback.mediumImpact();
+    final aiSettings = ref.read(aiSettingsProvider);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: AiThinkingIndicator(
+          label: 'Crafting AI Flashcards...',
+        ),
+      ),
+    );
+
+    try {
+      final deck = await ref.read(flashcardsProvider.notifier).generateFromNote(
+            note: note,
+            apiKey: aiSettings.customApiKey,
+            subjectName: subjectName,
+          );
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        final savedDeck = await FlashcardPreviewEditorSheet.show(
+          context,
+          deck: deck,
+        );
+        if (savedDeck != null && mounted) {
+          context.push('/flashcards/${savedDeck.id}');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate flashcards: $e')),
+        );
+      }
+    }
+  }
+
+  void _showAddNoteSheet({
+    Note? existing,
+    required String semesterId,
+    required String subjectName,
+  }) {
+    HapticFeedback.lightImpact();
+    if (existing != null) {
+      _noteTitleController.text = existing.title;
+      _noteContentController.text = existing.content;
+      _noteTagsController.text = existing.tags.join(', ');
+    } else {
+      _noteTitleController.clear();
+      _noteContentController.clear();
+      _noteTagsController.clear();
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0E1628),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.edit_note_rounded,
+                              color: Color(0xFFC0C1FF),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  existing == null
+                                      ? 'Take Subject Note'
+                                      : 'Edit Note',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Linked to $subjectName',
+                                  style: const TextStyle(
+                                    color: Color(0xFF7BD0FF),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      GlassTextField(
+                        controller: _noteTitleController,
+                        labelText: 'Title (e.g., Unit 2 Important Theorems)',
+                      ),
+                      const SizedBox(height: 12),
+                      GlassTextField(
+                        controller: _noteContentController,
+                        labelText: 'Write your notes or key points...',
+                        maxLines: 5,
+                      ),
+                      const SizedBox(height: 12),
+                      GlassTextField(
+                        controller: _noteTagsController,
+                        labelText: 'Tags (comma separated, e.g. Exam, Formula)',
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white60,
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                final title = _noteTitleController.text.trim();
+                                final content = _noteContentController.text.trim();
+                                if (title.isEmpty && content.isEmpty) return;
+
+                                final rawTags = _noteTagsController.text
+                                    .split(',')
+                                    .map((t) => t.trim())
+                                    .where((t) => t.isNotEmpty)
+                                    .toList();
+
+                                final authState = ref.read(authRepositoryProvider);
+                                final userId = authState.userProfile?.id ?? 'guest';
+                                final now = DateTime.now().millisecondsSinceEpoch;
+
+                                if (existing != null) {
+                                  ref.read(notesProvider.notifier).editNote(
+                                        existing.copyWith(
+                                          title: title.isEmpty ? 'Untitled Note' : title,
+                                          content: content,
+                                          tags: rawTags,
+                                          updatedAt: now,
+                                        ),
+                                      );
+                                } else {
+                                  final note = Note(
+                                    id: 'note_${DateTime.now().millisecondsSinceEpoch}',
+                                    userId: userId,
+                                    semesterId: semesterId,
+                                    title: title.isEmpty ? 'Untitled Note' : title,
+                                    content: content,
+                                    subjectId: widget.subjectId,
+                                    tags: rawTags,
+                                    isFavorite: false,
+                                    localAttachmentPaths: const [],
+                                    createdAt: now,
+                                    updatedAt: now,
+                                  );
+                                  ref.read(notesProvider.notifier).addNote(note);
+                                }
+
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).clearSnackBars();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      existing != null
+                                          ? 'Note updated successfully!'
+                                          : 'Note added for $subjectName!',
+                                    ),
+                                    duration: const Duration(milliseconds: 1800),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.only(
+                                      bottom: 24,
+                                      left: 16,
+                                      right: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.35),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    existing != null ? 'Update Note' : 'Save Note',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteNote(BuildContext context, Note note) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0E1628),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Delete Note?',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Are you sure you want to remove "${note.title}"?',
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white60,
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final backup = note;
+                      ref.read(notesProvider.notifier).deleteNote(note.id);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Note deleted.'),
+                          duration: const Duration(milliseconds: 2500),
+                          behavior: SnackBarBehavior.floating,
+                          margin: const EdgeInsets.only(
+                            bottom: 24,
+                            left: 16,
+                            right: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          action: SnackBarAction(
+                            label: 'UNDO',
+                            textColor: const Color(0xFF7BD0FF),
+                            onPressed: () {
+                              ref.read(notesProvider.notifier).addNote(backup);
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showOverrideDialog(double currentTarget) {
@@ -299,6 +698,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       return true;
     }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
+    final allNotes = ref.watch(notesProvider);
+    final subjectNotes = allNotes
+        .where((n) => n.subjectId == widget.subjectId)
+        .toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
     final subjectColor = Color(sub.colorValue);
     final pct = subStats.percentage;
     final pctColor = pct >= subStats.target
@@ -338,6 +743,18 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           ),
           centerTitle: true,
           actions: [
+            IconButton(
+              icon: const Icon(
+                Icons.edit_note_rounded,
+                color: Color(0xFFC0C1FF),
+                size: 24,
+              ),
+              onPressed: () => _showAddNoteSheet(
+                semesterId: sub.semesterId,
+                subjectName: sub.name,
+              ),
+              tooltip: 'Take Subject Note',
+            ),
             IconButton(
               icon: Icon(
                 Icons.tune_rounded,
@@ -389,8 +806,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           children: [
                             Text(
                               sub.facultyName.isNotEmpty
-                                  ? sub.facultyName
-                                  : 'Instructor Not Set',
+                                    ? sub.facultyName
+                                    : 'Instructor Not Set',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -507,6 +924,592 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Quick Mark Attendance Card for Today
+            Builder(
+              builder: (context) {
+                final now = DateTime.now();
+                final todayRecs = records.where((r) =>
+                    r.date.year == now.year &&
+                    r.date.month == now.month &&
+                    r.date.day == now.day).toList();
+                final todayRecord = todayRecs.firstOrNull;
+                final isMarkedToday = todayRecord != null;
+                final isPresentToday = todayRecord?.status == 'present';
+
+                final authState = ref.watch(authRepositoryProvider);
+                final userId = authState.userProfile?.id ?? 'user';
+
+                return GlassContainer(
+                  borderRadius: 16,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  borderColor: isMarkedToday
+                      ? (isPresentToday
+                          ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.4))
+                      : Colors.white.withValues(alpha: 0.08),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            isMarkedToday
+                                ? (isPresentToday
+                                    ? Icons.check_circle_rounded
+                                    : Icons.cancel_rounded)
+                                : Icons.today_rounded,
+                            size: 20,
+                            color: isMarkedToday
+                                ? (isPresentToday
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFEF4444))
+                                : const Color(0xFF7BD0FF),
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Today's Attendance",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                isMarkedToday
+                                    ? (isPresentToday
+                                        ? 'Logged as Present'
+                                        : 'Logged as Absent')
+                                    : 'Not logged yet today',
+                                style: TextStyle(
+                                  color: isMarkedToday
+                                      ? (isPresentToday
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFEF4444))
+                                      : Colors.white54,
+                                  fontSize: 11,
+                                  fontWeight: isMarkedToday
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      if (isMarkedToday)
+                        GestureDetector(
+                          onTap: () async {
+                            HapticFeedback.mediumImpact();
+                            await ref
+                                .read(attendanceRepositoryProvider.notifier)
+                                .deleteAttendance(todayRecord.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text("Cleared today's attendance record."),
+                                  duration: const Duration(milliseconds: 1500),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: const Text(
+                              'Undo',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                HapticFeedback.mediumImpact();
+                                await ref
+                                    .read(attendanceRepositoryProvider.notifier)
+                                    .markAttendance(
+                                      userId: userId,
+                                      semesterId: sub.semesterId,
+                                      subjectId: sub.id,
+                                      date: DateTime.now(),
+                                      status: 'absent',
+                                    );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).clearSnackBars();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Marked Absent for ${sub.name} today'),
+                                      duration: const Duration(milliseconds: 1500),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Absent',
+                                  style: TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () async {
+                                HapticFeedback.mediumImpact();
+                                await ref
+                                    .read(attendanceRepositoryProvider.notifier)
+                                    .markAttendance(
+                                      userId: userId,
+                                      semesterId: sub.semesterId,
+                                      subjectId: sub.id,
+                                      date: DateTime.now(),
+                                      status: 'present',
+                                    );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).clearSnackBars();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Marked Present for ${sub.name} today!'),
+                                      duration: const Duration(milliseconds: 1500),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: const Color(0xFF10B981),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Present',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // Subject Heatmap Quick Action Button
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/attendance/heatmap?subjectId=${sub.id}');
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: GlassContainer(
+                borderRadius: 14,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                borderColor: const Color(0xFF10B981).withValues(alpha: 0.3),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_view_month_rounded,
+                            size: 16, color: Color(0xFF10B981)),
+                        SizedBox(width: 10),
+                        Text(
+                          'View Subject Heatmap Activity',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(Icons.chevron_right_rounded,
+                        size: 18, color: Colors.white54),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Subject Notes Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.sticky_note_2_rounded,
+                        color: Color(0xFFC0C1FF),
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Subject Notes (${subjectNotes.length})',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () => _showAddNoteSheet(
+                    semesterId: sub.semesterId,
+                    subjectName: sub.name,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'Take Note',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            if (subjectNotes.isEmpty)
+              GlassContainer(
+                borderRadius: 16,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.note_add_outlined,
+                        color: Color(0xFF7BD0FF),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'No notes for this subject yet',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Tap "Take Note" to write lecture summaries or key formulas.',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...subjectNotes.map((note) {
+                final noteDt = DateTime.fromMillisecondsSinceEpoch(
+                  note.updatedAt > 0 ? note.updatedAt : note.createdAt,
+                );
+                final formattedDate =
+                    DateFormat('MMM d • hh:mm a').format(noteDt);
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: GlassContainer(
+                    borderRadius: 16,
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  if (note.isFavorite)
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 6),
+                                      child: Icon(
+                                        Icons.star_rounded,
+                                        color: Color(0xFFF59E0B),
+                                        size: 15,
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      note.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    ref
+                                        .read(notesProvider.notifier)
+                                        .toggleFavorite(note.id);
+                                  },
+                                  child: Icon(
+                                    note.isFavorite
+                                        ? Icons.star_rounded
+                                        : Icons.star_border_rounded,
+                                    color: note.isFavorite
+                                        ? const Color(0xFFF59E0B)
+                                        : Colors.white30,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                GestureDetector(
+                                  onTap: () => _showAddNoteSheet(
+                                    existing: note,
+                                    semesterId: sub.semesterId,
+                                    subjectName: sub.name,
+                                  ),
+                                  child: const Icon(
+                                    Icons.edit_outlined,
+                                    color: Color(0xFF7BD0FF),
+                                    size: 17,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                GestureDetector(
+                                  onTap: () =>
+                                      _confirmDeleteNote(context, note),
+                                  child: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: Colors.white30,
+                                    size: 17,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        if (note.content.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            note.content,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12.5,
+                              height: 1.35,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (note.tags.isNotEmpty)
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 4,
+                                  runSpacing: 4,
+                                  children: note.tags.take(3).map((tag) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF5B5FEF)
+                                            .withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: const Color(0xFF5B5FEF)
+                                              .withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '#$tag',
+                                        style: const TextStyle(
+                                          color: Color(0xFFC0C1FF),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            Text(
+                              formattedDate,
+                              style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 10.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Divider(color: Colors.white10, height: 1),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: InkWell(
+                            onTap: () =>
+                                _generateFlashcardsForNote(note, sub.name),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF5B5FEF)
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFF5B5FEF)
+                                      .withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 12,
+                                    color: Color(0xFFC0C1FF),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Study Flashcards',
+                                    style: TextStyle(
+                                      color: Color(0xFFC0C1FF),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             const SizedBox(height: 24),
 
             // Filter + Log header

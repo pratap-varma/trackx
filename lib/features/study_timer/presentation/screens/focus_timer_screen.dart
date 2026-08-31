@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class FocusTimerScreen extends StatefulWidget {
   const FocusTimerScreen({super.key});
@@ -143,18 +144,18 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.white,
+              color: context.textColor,
               size: 18,
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: const Text(
+          title: Text(
             'Focus Timer',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: context.textColor,
               fontSize: 18,
             ),
           ),
@@ -163,7 +164,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
             IconButton(
               icon: Icon(
                 Icons.skip_next_rounded,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: context.mutedTextColor,
                 size: 22,
               ),
               onPressed: _skipMode,
@@ -202,19 +203,21 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                       decoration: BoxDecoration(
                         color: isActive
                             ? _modeColor.withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.04),
+                            : (context.isDark
+                                ? Colors.white.withValues(alpha: 0.04)
+                                : Colors.black.withValues(alpha: 0.04)),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isActive
                               ? _modeColor.withValues(alpha: 0.5)
-                              : Colors.white.withValues(alpha: 0.06),
+                              : context.subtleBorderColor,
                           width: isActive ? 1.5 : 1,
                         ),
                       ),
                       child: Text(
                         _modes[i],
                         style: TextStyle(
-                          color: isActive ? _modeColor : Colors.white38,
+                          color: isActive ? _modeColor : context.mutedTextColor,
                           fontSize: 11,
                           fontWeight: isActive
                               ? FontWeight.bold
@@ -243,6 +246,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                         progress: _progress,
                         color: _modeColor,
                         isBreak: !_isFocusMode,
+                        isDark: context.isDark,
                       ),
                       child: Center(
                         child: Column(
@@ -250,8 +254,8 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                           children: [
                             Text(
                               _formatTime(_secondsRemaining),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: context.textColor,
                                 fontSize: 46,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -2,
@@ -289,7 +293,9 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                   decoration: BoxDecoration(
                     color: done
                         ? _modeColor
-                        : Colors.white.withValues(alpha: 0.12),
+                        : (context.isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.12)),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 );
@@ -299,7 +305,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
             Text(
               '$_completedCycles cycle${_completedCycles != 1 ? 's' : ''} completed',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: context.mutedTextColor,
                 fontSize: 11,
               ),
             ),
@@ -316,9 +322,9 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                     padding: const EdgeInsets.all(16),
                     child: GestureDetector(
                       onTap: _resetTimer,
-                      child: const Icon(
+                      child: Icon(
                         Icons.refresh_rounded,
-                        color: Colors.white54,
+                        color: context.subtextColor,
                         size: 24,
                       ),
                     ),
@@ -383,9 +389,9 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                     padding: const EdgeInsets.all(16),
                     child: GestureDetector(
                       onTap: _skipMode,
-                      child: const Icon(
+                      child: Icon(
                         Icons.skip_next_rounded,
-                        color: Colors.white54,
+                        color: context.subtextColor,
                         size: 24,
                       ),
                     ),
@@ -414,16 +420,16 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                           const SizedBox(height: 6),
                           Text(
                             '$_completedCycles',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
                           ),
-                          const Text(
+                          Text(
                             'Sessions',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: context.mutedTextColor,
                               fontSize: 10,
                             ),
                           ),
@@ -446,16 +452,16 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                           const SizedBox(height: 6),
                           Text(
                             '${(_completedCycles * 25)} min',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
                           ),
-                          const Text(
+                          Text(
                             'Focus Time',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: context.mutedTextColor,
                               fontSize: 10,
                             ),
                           ),
@@ -478,16 +484,16 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                           const SizedBox(height: 6),
                           Text(
                             '${(_completedCycles ~/ 4)} long',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
                           ),
-                          const Text(
+                          Text(
                             'Long Breaks',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: context.mutedTextColor,
                               fontSize: 10,
                             ),
                           ),
@@ -510,11 +516,13 @@ class _FocusRingPainter extends CustomPainter {
   final double progress;
   final Color color;
   final bool isBreak;
+  final bool isDark;
 
   _FocusRingPainter({
     required this.progress,
     required this.color,
     required this.isBreak,
+    required this.isDark,
   });
 
   @override
@@ -524,7 +532,7 @@ class _FocusRingPainter extends CustomPainter {
 
     // Background track
     final bgPaint = Paint()
-      ..color = const Color(0xFF1F2A3C)
+      ..color = isDark ? const Color(0xFF1F2A3C) : const Color(0xFFE2E8F0)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12;
     canvas.drawCircle(center, radius, bgPaint);
@@ -572,12 +580,12 @@ class _FocusRingPainter extends CustomPainter {
       final angle = -math.pi / 2 + 2 * math.pi * (1 - progress);
       final tipX = center.dx + radius * math.cos(angle);
       final tipY = center.dy + radius * math.sin(angle);
-      final dotPaint = Paint()..color = Colors.white;
+      final dotPaint = Paint()..color = isDark ? Colors.white : const Color(0xFF1E293B);
       canvas.drawCircle(Offset(tipX, tipY), 6, dotPaint);
     }
   }
 
   @override
   bool shouldRepaint(_FocusRingPainter old) =>
-      old.progress != progress || old.color != color;
+      old.progress != progress || old.color != color || old.isDark != isDark;
 }

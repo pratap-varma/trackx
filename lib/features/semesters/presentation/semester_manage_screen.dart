@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
+import 'package:trackx/features/subjects/data/subject_repository.dart';
+import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class SemesterManageScreen extends ConsumerStatefulWidget {
   const SemesterManageScreen({super.key});
@@ -32,9 +35,10 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0E1628),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: ctx.subtleBorderColor),
           ),
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
           child: Column(
@@ -46,16 +50,18 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: ctx.isDark
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'New Semester',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: ctx.textColor,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -64,7 +70,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
               Text(
                 'Enter a name for your new semester.',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: ctx.subtextColor,
                   fontSize: 13,
                 ),
               ),
@@ -125,102 +131,223 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
     );
   }
 
-  void _confirmDelete(BuildContext context, String semId, String semName) {
+  void _confirmDeleteSemester(BuildContext context, String semId, String semName) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.delete_outline_rounded,
-                color: Color(0xFFEF4444),
-                size: 26,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Delete Semester',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Are you sure you want to delete "$semName"? This cannot be undone.',
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Row(
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: ctx.subtleBorderColor),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white60,
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text('Cancel'),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: ctx.isDark
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await ref
-                          .read(semesterRepositoryProvider.notifier)
-                          .deleteSemester(semId);
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEF4444),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Delete',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                const SizedBox(height: 20),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Delete Semester',
+                  style: TextStyle(
+                    color: ctx.textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Are you sure you want to delete "$semName"? This will remove all associated subjects and attendance data. This action cannot be undone.',
+                  style: TextStyle(color: ctx.subtextColor, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ctx.textColor,
+                          side: BorderSide(color: ctx.subtleBorderColor),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await ref
+                              .read(semesterRepositoryProvider.notifier)
+                              .deleteSemester(semId);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteSubject(BuildContext context, Subject subject, String semName) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: ctx.subtleBorderColor),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: ctx.isDark
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Delete Subject',
+                  style: TextStyle(
+                    color: ctx.textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Are you sure you want to delete "${subject.name}" from $semName?\n\nAll attendance records, timetable slots, topics, and study logs for this subject will be permanently removed.',
+                  style: TextStyle(color: ctx.subtextColor, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ctx.textColor,
+                          side: BorderSide(color: ctx.subtleBorderColor),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await ref
+                              .read(subjectRepositoryProvider.notifier)
+                              .deleteSubject(subject.id);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Subject "${subject.name}" deleted.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -229,6 +356,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
   @override
   Widget build(BuildContext context) {
     final list = ref.watch(semesterRepositoryProvider);
+    final allSubjects = ref.watch(subjectRepositoryProvider);
 
     return AppBackground(
       child: Scaffold(
@@ -237,17 +365,17 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.white,
+              color: context.textColor,
               size: 18,
             ),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
-            'Semesters',
+          title: Text(
+            'Semesters & Subjects',
             style: TextStyle(
-              color: Colors.white,
+              color: context.textColor,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -261,9 +389,10 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                 child: GlassContainer(
                   borderRadius: 12,
                   padding: const EdgeInsets.all(8),
-                  child: const Icon(
+                  borderColor: context.subtleBorderColor,
+                  child: Icon(
                     Icons.add_rounded,
-                    color: Colors.white,
+                    color: context.textColor,
                     size: 20,
                   ),
                 ),
@@ -279,13 +408,13 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                     Icon(
                       Icons.calendar_month_outlined,
                       size: 56,
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: context.mutedTextColor,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'No Semesters Yet',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: context.textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -294,7 +423,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                     Text(
                       'Tap + to create your first semester.',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: context.mutedTextColor,
                         fontSize: 13,
                       ),
                     ),
@@ -337,128 +466,290 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 itemCount: list.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   final sem = list[index];
+                  final semSubjects =
+                      allSubjects.where((s) => s.semesterId == sem.id).toList();
                   return GlassContainer(
-                    borderRadius: 18,
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
+                    borderRadius: 20,
+                    padding: const EdgeInsets.all(18),
+                    borderColor: sem.isActive
+                        ? const Color(0xFF5B5FEF).withValues(alpha: 0.4)
+                        : context.subtleBorderColor,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Status indicator
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: sem.isActive
-                                ? const Color(
-                                    0xFF5B5FEF,
-                                  ).withValues(alpha: 0.15)
-                                : Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: sem.isActive
-                                  ? const Color(
-                                      0xFF5B5FEF,
-                                    ).withValues(alpha: 0.4)
-                                  : Colors.white.withValues(alpha: 0.06),
-                            ),
-                          ),
-                          child: Icon(
-                            sem.isActive
-                                ? Icons.radio_button_checked_rounded
-                                : Icons.calendar_today_outlined,
-                            color: sem.isActive
-                                ? const Color(0xFF5B5FEF)
-                                : Colors.white38,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                sem.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: sem.isActive
-                                      ? const Color(
-                                          0xFF10B981,
-                                        ).withValues(alpha: 0.12)
-                                      : Colors.white.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: Text(
-                                  sem.isActive ? 'ACTIVE' : 'ARCHIVED',
-                                  style: TextStyle(
-                                    color: sem.isActive
-                                        ? const Color(0xFF10B981)
-                                        : Colors.white30,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        // Semester Header Row
                         Row(
                           children: [
-                            if (!sem.isActive)
-                              GestureDetector(
-                                onTap: () => ref
-                                    .read(semesterRepositoryProvider.notifier)
-                                    .setActiveSemester(sem.id),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF10B981,
-                                    ).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.check_rounded,
-                                    color: Color(0xFF10B981),
-                                    size: 18,
-                                  ),
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: sem.isActive
+                                    ? const Color(
+                                        0xFF5B5FEF,
+                                      ).withValues(alpha: 0.15)
+                                    : (context.isDark
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : Colors.black.withValues(alpha: 0.05)),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: sem.isActive
+                                      ? const Color(
+                                          0xFF5B5FEF,
+                                        ).withValues(alpha: 0.4)
+                                      : context.subtleBorderColor,
                                 ),
                               ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () =>
-                                  _confirmDelete(context, sem.id, sem.name),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFEF4444,
-                                  ).withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: Color(0xFFEF4444),
-                                  size: 18,
-                                ),
+                              child: Icon(
+                                sem.isActive
+                                    ? Icons.radio_button_checked_rounded
+                                    : Icons.calendar_today_outlined,
+                                color: sem.isActive
+                                    ? const Color(0xFF5B5FEF)
+                                    : context.mutedTextColor,
+                                size: 20,
                               ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    sem.name,
+                                    style: TextStyle(
+                                      color: context.textColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: sem.isActive
+                                          ? const Color(
+                                              0xFF10B981,
+                                            ).withValues(alpha: 0.15)
+                                          : (context.isDark
+                                              ? Colors.white.withValues(alpha: 0.06)
+                                              : Colors.black.withValues(alpha: 0.06)),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      sem.isActive ? 'ACTIVE' : 'ARCHIVED',
+                                      style: TextStyle(
+                                        color: sem.isActive
+                                            ? const Color(0xFF10B981)
+                                            : context.mutedTextColor,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                if (!sem.isActive)
+                                  Tooltip(
+                                    message: 'Set Active',
+                                    child: GestureDetector(
+                                      onTap: () => ref
+                                          .read(semesterRepositoryProvider.notifier)
+                                          .setActiveSemester(sem.id),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFF10B981,
+                                          ).withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(
+                                          Icons.check_rounded,
+                                          color: Color(0xFF10B981),
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                Tooltip(
+                                  message: 'Delete Semester',
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        _confirmDeleteSemester(context, sem.id, sem.name),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFFEF4444,
+                                        ).withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: Color(0xFFEF4444),
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
+
+                        // Subjects Section
+                        const SizedBox(height: 16),
+                        Divider(color: context.subtleBorderColor, height: 1),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 14,
+                                  color: context.subtextColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${semSubjects.length} Subject${semSubjects.length == 1 ? '' : 's'}',
+                                  style: TextStyle(
+                                    color: context.subtextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        if (semSubjects.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              'No subjects enrolled in this semester yet.',
+                              style: TextStyle(
+                                color: context.mutedTextColor,
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: semSubjects.length,
+                            separatorBuilder: (_, _) => const SizedBox(height: 8),
+                            itemBuilder: (context, sIdx) {
+                              final sub = semSubjects[sIdx];
+                              final subColor = Color(sub.colorValue);
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.isDark
+                                      ? Colors.white.withValues(alpha: 0.03)
+                                      : Colors.black.withValues(alpha: 0.03),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: context.subtleBorderColor,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Color Dot Indicator
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: subColor,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: subColor.withValues(alpha: 0.5),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    // Subject Details
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            sub.name,
+                                            style: TextStyle(
+                                              color: context.textColor,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            [
+                                              if (sub.code != null && sub.code!.isNotEmpty) sub.code!,
+                                              if (sub.facultyName.isNotEmpty) sub.facultyName,
+                                              'Target: ${sub.targetAttendance.toInt()}%',
+                                            ].join(' • '),
+                                            style: TextStyle(
+                                              color: context.mutedTextColor,
+                                              fontSize: 11,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Delete Subject Action Button
+                                    Tooltip(
+                                      message: 'Delete ${sub.name}',
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.delete_outline_rounded,
+                                          size: 18,
+                                          color: Color(0xFFEF4444),
+                                        ),
+                                        onPressed: () => _confirmDeleteSubject(
+                                          context,
+                                          sub,
+                                          sem.name,
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                       ],
                     ),
                   );

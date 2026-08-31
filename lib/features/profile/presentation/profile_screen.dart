@@ -6,11 +6,15 @@ import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
+import 'package:intl/intl.dart';
+import 'package:trackx/features/notifications/services/daily_digest_service.dart';
 import 'package:trackx/features/calendar/presentation/widgets/calendar_integration_sheet.dart';
 import 'package:trackx/features/calendar/providers/calendar_provider.dart';
 import 'package:trackx/core/services/app_lock_service.dart';
 import 'package:trackx/core/presentation/widgets/pin_setup_sheet.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -19,11 +23,17 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   double _globalTarget = 85.0;
   bool _smartNotifications = true;
   String _selectedPersonality = 'direct'; // 'direct' or 'butler'
   bool _incognitoMode = false;
+  String _cachedName = 'Pratap';
+  String _cachedBranch = 'Computer Science & Engineering';
 
   @override
   void initState() {
@@ -634,18 +644,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final authState = ref.watch(authRepositoryProvider);
     final profile = authState.userProfile;
-    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Student';
-    final branch = profile?.branch.isNotEmpty == true
-        ? profile!.branch
-        : 'No Department Configured';
+    if (profile?.name.isNotEmpty == true) {
+      _cachedName = profile!.name;
+    }
+    if (profile?.branch.isNotEmpty == true) {
+      _cachedBranch = profile!.branch;
+    }
+
+    final name = _cachedName;
+    final branch = _cachedBranch;
 
     final activeSem = ref.watch(activeSemesterProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
     final activeSubjectsCount = subjects
         .where((s) => s.semesterId == activeSem?.id)
         .length;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -688,6 +706,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
       body: ListView(
+        key: const PageStorageKey('profile_scroll'),
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 100),
         children: [
           // 1. Hero Profile Card
@@ -1107,7 +1126,356 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                 ),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+
+                // Daily Morning Digest
+                Consumer(
+                  builder: (context, ref, _) {
+                    final digestSettings =
+                        ref.watch(dailyDigestSettingsProvider);
+                    final timeStr = DateFormat('hh:mm a').format(
+                      DateTime(2026, 1, 1, digestSettings.hour,
+                          digestSettings.minute),
+                    );
+
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1B243B),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.wb_sunny_outlined,
+                                  color: Color(0xFFF59E0B),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: const [
+                                    Text(
+                                      'Daily Morning Digest',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Attendance risks & schedule summary',
+                                      style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: digestSettings.enabled,
+                                activeThumbColor: const Color(0xFF5B5FEF),
+                                onChanged: (v) {
+                                  ref
+                                      .read(
+                                          dailyDigestSettingsProvider.notifier)
+                                      .toggleEnabled(v);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (digestSettings.enabled) ...[
+                          Padding(
+                            padding:
+                                const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                            child: Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                InkWell(
+                                  onTap: () async {
+                                    final pickedTime = await showTimePicker(
+                                      context: context,
+                                      initialTime: TimeOfDay(
+                                        hour: digestSettings.hour,
+                                        minute: digestSettings.minute,
+                                      ),
+                                      builder: (context, child) {
+                                        return Theme(
+                                          data: ThemeData.dark().copyWith(
+                                            colorScheme:
+                                                const ColorScheme.dark(
+                                              primary: Color(0xFF5B5FEF),
+                                              surface: Color(0xFF0E1628),
+                                            ),
+                                          ),
+                                          child: child!,
+                                        );
+                                      },
+                                    );
+                                    if (pickedTime != null) {
+                                      ref
+                                          .read(dailyDigestSettingsProvider
+                                              .notifier)
+                                          .setDeliveryTime(
+                                            pickedTime.hour,
+                                            pickedTime.minute,
+                                          );
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.05),
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.1),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                            Icons.access_time_rounded,
+                                            size: 14,
+                                            color: Colors.white70),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Time: $timeStr',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: () async {
+                                    HapticFeedback.lightImpact();
+                                    await ref
+                                        .read(dailyDigestSettingsProvider
+                                            .notifier)
+                                        .triggerTestPreview();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                            'Test Daily Digest notification sent!',
+                                          ),
+                                          duration:
+                                              const Duration(seconds: 2),
+                                          behavior:
+                                              SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.send_rounded,
+                                      size: 14),
+                                  label: const Text('Test Notification'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor:
+                                        const Color(0xFF7BD0FF),
+                                    textStyle: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          // APPEARANCE & THEME SETTINGS
+          const Text(
+            'APPEARANCE & THEME',
+            style: TextStyle(
+              color: Color(0xFF908FA0),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF131A2B) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.06),
+              ),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
+            child: Consumer(
+              builder: (context, ref, _) {
+                final currentMode = ref.watch(themeModeProvider);
+                final currentAccent = ref.watch(accentColorProvider);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            currentMode == ThemeMode.light
+                                ? Icons.light_mode_rounded
+                                : (currentMode == ThemeMode.dark
+                                    ? Icons.dark_mode_rounded
+                                    : Icons.brightness_auto_rounded),
+                            color: currentAccent,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Display Mode',
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              'Choose your preferred visual appearance',
+                              style: TextStyle(
+                                color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Theme selector buttons (Dark, Light, System)
+                    Row(
+                      children: [
+                        _buildThemeOption(
+                          context: context,
+                          label: 'Dark',
+                          icon: Icons.dark_mode_rounded,
+                          isSelected: currentMode == ThemeMode.dark,
+                          isDark: isDark,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        _buildThemeOption(
+                          context: context,
+                          label: 'Light',
+                          icon: Icons.light_mode_rounded,
+                          isSelected: currentMode == ThemeMode.light,
+                          isDark: isDark,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        _buildThemeOption(
+                          context: context,
+                          label: 'System',
+                          icon: Icons.settings_brightness_rounded,
+                          isSelected: currentMode == ThemeMode.system,
+                          isDark: isDark,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.06),
+                      height: 1,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Accent Color Pack
+                    Text(
+                      'ACCENT COLOR PACK',
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF908FA0) : const Color(0xFF64748B),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildAccentCircle(ref, const Color(0xFF5B5FEF), currentAccent),
+                        _buildAccentCircle(ref, const Color(0xFF3B82F6), currentAccent),
+                        _buildAccentCircle(ref, const Color(0xFF10B981), currentAccent),
+                        _buildAccentCircle(ref, const Color(0xFFF59E0B), currentAccent),
+                        _buildAccentCircle(ref, const Color(0xFFEC4899), currentAccent),
+                        _buildAccentCircle(ref, const Color(0xFF8151EB), currentAccent),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 22),
@@ -1282,6 +1650,102 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
                 const SizedBox(height: 12),
 
+                // AI Assistant & Gemini API Key Settings Row
+                Consumer(
+                  builder: (context, ref, _) {
+                    final aiSettings = ref.watch(aiSettingsProvider);
+                    final hasKey = aiSettings.customApiKey.trim().isNotEmpty;
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => context.push('/ai-settings'),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1B243B),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.auto_awesome_rounded,
+                              color: Color(0xFFC0C1FF),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'AI Assistant & Gemini Key',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: hasKey
+                                            ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                                            : const Color(0xFFEF4444).withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: hasKey
+                                              ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                                              : const Color(0xFFEF4444).withValues(alpha: 0.4),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        hasKey ? 'KEY ACTIVE' : 'KEY MISSING',
+                                        style: TextStyle(
+                                          color: hasKey
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFFFF8B94),
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  hasKey
+                                      ? 'Custom Gemini Key connected • Tap to edit'
+                                      : 'Tap here to paste your free Gemini API key',
+                                  style: TextStyle(
+                                    color: hasKey
+                                        ? const Color(0xFF10B981)
+                                        : Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white38,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                const SizedBox(height: 12),
+
                 // Google Calendar Holidays Integration Row
                 Consumer(
                   builder: (context, ref, _) {
@@ -1425,6 +1889,93 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOption({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final activeBorder = const Color(0xFF5B5FEF);
+    final activeBg = const Color(0xFF5B5FEF).withValues(alpha: isDark ? 0.22 : 0.12);
+    final inactiveBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
+
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? activeBg : inactiveBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? activeBorder : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? (isDark ? const Color(0xFFC0C1FF) : const Color(0xFF5B5FEF))
+                    : (isDark ? Colors.white54 : const Color(0xFF64748B)),
+                size: 22,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                      : (isDark ? Colors.white60 : const Color(0xFF64748B)),
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccentCircle(WidgetRef ref, Color color, Color selectedColor) {
+    final isSelected = color.toARGB32() == selectedColor.toARGB32();
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        ref.read(accentColorProvider.notifier).setAccent(color);
+      },
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: 2.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: isSelected ? 0.5 : 0.2),
+              blurRadius: isSelected ? 8 : 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: isSelected
+            ? const Center(
+                child: Icon(Icons.check_rounded, color: Colors.white, size: 20),
+              )
+            : null,
       ),
     );
   }

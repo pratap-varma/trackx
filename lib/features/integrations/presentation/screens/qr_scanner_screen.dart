@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackx/features/attendance/data/attendance_repository.dart';
+import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/features/semesters/data/semester_repository.dart';
+import 'package:trackx/features/subjects/data/subject_repository.dart';
+import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_primary_button.dart';
 import 'package:trackx/theme/app_theme.dart';
 
-class QrScannerScreen extends StatefulWidget {
+class QrScannerScreen extends ConsumerStatefulWidget {
   const QrScannerScreen({super.key});
 
   @override
-  State<QrScannerScreen> createState() => _QrScannerScreenState();
+  ConsumerState<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen> {
+class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   bool _isValidating = false;
   Map<String, dynamic>? _validatedSession;
   String? _error;
@@ -63,13 +69,64 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     });
   }
 
-  void _confirmAttendance() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Attendance recorded successfully based on verified QR!'),
-      ),
+  Future<void> _confirmAttendance() async {
+    final session = _validatedSession;
+    if (session == null) return;
+
+    final activeSem = ref.read(activeSemesterProvider);
+    final subjects = ref.read(subjectRepositoryProvider);
+    final authState = ref.read(authRepositoryProvider);
+    final userId = authState.userProfile?.id ?? 'user';
+    final targetName = session['subject'].toString().toLowerCase().trim();
+
+    String semesterId = activeSem?.id ?? 'sem_default';
+    Subject? matchedSubject = subjects.cast<Subject?>().firstWhere(
+      (s) =>
+          s != null &&
+          (s.name.toLowerCase().trim() == targetName ||
+              (s.code != null && s.code!.toLowerCase().trim() == targetName) ||
+              s.name.toLowerCase().contains(targetName) ||
+              targetName.contains(s.name.toLowerCase())),
+      orElse: () => null,
     );
-    Navigator.pop(context);
+
+    if (matchedSubject == null && activeSem != null) {
+      final added = await ref.read(subjectRepositoryProvider.notifier).addSubject(
+            activeSem.id,
+            session['subject'].toString(),
+            session['instructor'].toString(),
+            0xFF5B5FEF,
+            75.0,
+          );
+      if (added) {
+        final updatedSubjects = ref.read(subjectRepositoryProvider);
+        matchedSubject = updatedSubjects.firstWhere(
+          (s) => s.name.toLowerCase() == targetName,
+          orElse: () => updatedSubjects.last,
+        );
+      }
+    }
+
+    if (matchedSubject != null) {
+      await ref.read(attendanceRepositoryProvider.notifier).markAttendance(
+            userId: userId,
+            semesterId: semesterId,
+            subjectId: matchedSubject.id,
+            date: DateTime.now(),
+            status: 'present',
+          );
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Attendance marked Present for ${matchedSubject?.name ?? session['subject']}!'),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context);
+    }
   }
 
   @override

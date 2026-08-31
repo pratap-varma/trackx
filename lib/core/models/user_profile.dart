@@ -24,6 +24,10 @@ class UserProfile {
   final int preferredStudySessionMinutes;
   final bool cloudSyncEnabled;
 
+  // Admin & Activity fields
+  final bool isSuspended;
+  final int? lastActiveTimestamp;
+
   UserProfile({
     required this.id,
     required this.name,
@@ -47,6 +51,8 @@ class UserProfile {
     String? preferredTimezone,
     int? preferredStudySessionMinutes,
     bool? cloudSyncEnabled,
+    this.isSuspended = false,
+    this.lastActiveTimestamp,
   }) : defaultAttendanceTarget = defaultAttendanceTarget ?? globalTarget,
        preferredLanguage = preferredLanguage ?? 'en',
        preferredTimezone = preferredTimezone ?? 'UTC',
@@ -76,6 +82,8 @@ class UserProfile {
     String? preferredTimezone,
     int? preferredStudySessionMinutes,
     bool? cloudSyncEnabled,
+    bool? isSuspended,
+    int? lastActiveTimestamp,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -103,6 +111,8 @@ class UserProfile {
       preferredStudySessionMinutes:
           preferredStudySessionMinutes ?? this.preferredStudySessionMinutes,
       cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
+      isSuspended: isSuspended ?? this.isSuspended,
+      lastActiveTimestamp: lastActiveTimestamp ?? this.lastActiveTimestamp,
     );
   }
 
@@ -133,6 +143,8 @@ class UserProfile {
       'preferredTimezone': preferredTimezone,
       'preferredStudySessionMinutes': preferredStudySessionMinutes,
       'cloudSyncEnabled': cloudSyncEnabled,
+      'isSuspended': isSuspended,
+      'lastActiveTimestamp': lastActiveTimestamp,
     };
   }
 
@@ -171,6 +183,8 @@ class UserProfile {
       preferredTimezone: map['preferredTimezone'] ?? 'UTC',
       preferredStudySessionMinutes: map['preferredStudySessionMinutes'],
       cloudSyncEnabled: map['cloudSyncEnabled'],
+      isSuspended: map['isSuspended'] ?? false,
+      lastActiveTimestamp: map['lastActiveTimestamp'],
     );
   }
 }

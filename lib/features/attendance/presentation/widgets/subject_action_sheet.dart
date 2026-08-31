@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
@@ -469,6 +470,42 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Take Note / Detailed Statistics
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        GoRouter.of(context).push('/subject-detail/${widget.stats.subject.id}');
+                      },
+                      icon: const Icon(
+                        Icons.edit_note_rounded,
+                        size: 18,
+                        color: Color(0xFFC0C1FF),
+                      ),
+                      label: const Text(
+                        'Take Note / View Statistics',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFFC0C1FF),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                        ),
+                        backgroundColor:
+                            const Color(0xFF5B5FEF).withValues(alpha: 0.12),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     ),
                   ),

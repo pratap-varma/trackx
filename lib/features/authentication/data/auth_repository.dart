@@ -1,9 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/core/models/user_profile.dart';
+import 'package:trackx/core/models/user_role.dart';
+import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/core/services/persistence_service.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/core/services/sync_service.dart';
@@ -64,14 +67,66 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
   }
 
+  /// Read the Firebase Custom Claim role for [fbUser] without forcing a token refresh.
+  /// Returns [UserRole.student] if claims are unavailable or malformed.
+  Future<UserRole> _readRoleFromClaims(fb.User fbUser) async {
+    try {
+      final tokenResult = await fbUser.getIdTokenResult();
+      return parseUserRole(tokenResult.claims?['role']);
+    } catch (_) {
+      return UserRole.student;
+    }
+  }
+
   Future<void> _loadUserProfileFromFirestoreOrCache(fb.User fbUser) async {
-    // 1. Instant Cache-First: If profile is cached locally, authenticate immediately!
+    // Read Firebase Custom Claim role (non-blocking best-effort)
+    final role = await _readRoleFromClaims(fbUser);
+
+    // 1. Instant Cache-First: If profile is cached locally, check suspension & authenticate immediately!
     final cachedProfile = _persistence.getUserProfile(fbUser.uid);
     if (cachedProfile != null) {
+      if (cachedProfile.isSuspended) {
+        await _firebaseAuth?.signOut();
+        await _persistence.clearSession();
+        state = AuthState.error(
+          'Your account has been suspended by an administrator. Please contact support.',
+        );
+        return;
+      }
       await _persistence.saveAuthToken(fbUser.uid);
-      state = AuthState.authenticated(cachedProfile);
-    } else {
-      // 2. Instant Optimistic Profile: Don't block UI on Firestore roundtrips
+      state = AuthState.authenticated(cachedProfile, role: role);
+      ActivityLogger().logEvent('user_login', userId: fbUser.uid);
+      
+      // Fast background sync with Firestore (non-blocking)
+      _syncProfileFromFirestoreBackground(fbUser);
+      return;
+    }
+    
+    // 2. Fetch from Firestore (blocking, for returning users on fresh install)
+    try {
+      final fetchedProfile = await _fetchProfileFromFirestore(fbUser);
+      if (fetchedProfile != null) {
+        if (fetchedProfile.isSuspended) {
+          await _firebaseAuth?.signOut();
+          await _persistence.clearSession();
+          state = AuthState.error(
+            'Your account has been suspended by an administrator. Please contact support.',
+          );
+          return;
+        }
+        await _persistence.saveAuthToken(fbUser.uid);
+        await _persistence.saveUserProfile(fetchedProfile);
+        state = AuthState.authenticated(fetchedProfile, role: role);
+        ActivityLogger().logEvent('user_login', userId: fbUser.uid);
+
+        // Immediately pull all user data (semesters, subjects, tasks, notes, etc.)
+        try {
+          _ref?.read(syncServiceProvider).triggerSync();
+        } catch (_) {}
+        return;
+      }
+
+      // 3. Fallback or New User: Initial Optimistic Profile
       final initialProfile = UserProfile(
         id: fbUser.uid,
         name: fbUser.displayName ?? '',
@@ -87,32 +142,163 @@ class AuthRepository extends StateNotifier<AuthState> {
       );
       await _persistence.saveAuthToken(fbUser.uid);
       await _persistence.saveUserProfile(initialProfile);
-      state = AuthState.authenticated(initialProfile);
+      state = AuthState.authenticated(initialProfile, role: role);
+    } catch (e) {
+      // Network error or timeout - do not create a blank profile!
+      state = AuthState.error(
+        'Network error while loading profile. Please check your connection and try again.',
+      );
     }
-
-    // 3. Fast background sync with Firestore (non-blocking)
-    _syncProfileFromFirestoreBackground(fbUser);
   }
 
   Future<void> _syncProfileFromFirestoreBackground(fb.User fbUser) async {
+    final profile = await _fetchProfileFromFirestore(fbUser);
+    if (profile != null) {
+      if (profile.isSuspended) {
+        await _firebaseAuth?.signOut();
+        await _persistence.clearSession();
+        state = AuthState.error(
+          'Your account has been suspended by an administrator. Please contact support.',
+        );
+        return;
+      }
+      await _persistence.saveUserProfile(profile);
+      // Preserve existing role — background sync should not downgrade role
+      state = AuthState.authenticated(profile, role: state.role);
+    }
     try {
-      if (_firestore == null) return;
-      final doc = await _firestore!
+      _ref?.read(syncServiceProvider).triggerSync();
+    } catch (_) {}
+  }
+
+  // ─── Role & Claims API ──────────────────────────────────────────────────
+
+  /// Returns the current user's role from Firebase ID Token claims.
+  /// Always returns [UserRole.student] if unauthenticated or claims unavailable.
+  /// Does NOT force a token refresh — use [refreshUserClaims] for that.
+  Future<UserRole> getCurrentUserRole() async {
+    try {
+      final fbUser = _firebaseAuth?.currentUser;
+      if (fbUser == null) return UserRole.student;
+      final tokenResult = await fbUser.getIdTokenResult();
+      return parseUserRole(tokenResult.claims?['role']);
+    } catch (_) {
+      return UserRole.student;
+    }
+  }
+
+  /// Returns true only if the current user's Firebase Custom Claim contains
+  /// `{ "role": "admin" }`. Reads from the current token without forcing refresh.
+  Future<bool> isAdmin() async {
+    return (await getCurrentUserRole()) == UserRole.admin;
+  }
+
+  /// Forces a Firebase ID Token refresh so newly assigned Custom Claims become
+  /// visible in the app without requiring sign-out.
+  ///
+  /// Call this after an admin role has been assigned via the backend script.
+  /// Do NOT call this on every widget rebuild.
+  Future<void> refreshUserClaims() async {
+    try {
+      final fbUser = _firebaseAuth?.currentUser;
+      if (fbUser == null) return;
+
+      // Force token refresh from Firebase servers
+      await fbUser.getIdToken(true);
+
+      // Read updated role
+      final role = await _readRoleFromClaims(fbUser);
+
+      // Update state with fresh role (profile stays the same)
+      final currentProfile = state.userProfile;
+      if (currentProfile != null) {
+        state = AuthState.authenticated(currentProfile, role: role);
+      }
+    } catch (_) {
+      // Refresh failure is non-fatal; keep existing state
+    }
+  }
+
+  Future<bool> _checkUserHasCloudData(String uid) async {
+    if (_firestore == null) return false;
+    final collections = [
+      'semesters',
+      'subjects',
+      'attendances',
+      'tasks',
+      'timetables',
+      'notes',
+      'flashcardDecks',
+      'cgpaCourses',
+      'programmes',
+    ];
+    for (final col in collections) {
+      try {
+        final snap = await _firestore!
+            .collection('users')
+            .doc(uid)
+            .collection(col)
+            .limit(1)
+            .get()
+            .timeout(const Duration(seconds: 4));
+        if (snap.docs.isNotEmpty) return true;
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  Future<UserProfile?> _fetchProfileFromFirestore(fb.User fbUser) async {
+    try {
+      if (_firestore == null) return null;
+
+      // 1. Check direct document: users/{uid}
+      var doc = await _firestore!
           .collection('users')
           .doc(fbUser.uid)
           .get()
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 15));
 
-      if (doc.exists && doc.data() != null) {
-        final data = doc.data()!;
-        final String name = data['name']?.toString() ?? '';
+      Map<String, dynamic>? data = doc.exists ? doc.data() : null;
+
+      // 2. Fallback: Search by email if direct UID document is absent
+      if (data == null && fbUser.email != null && fbUser.email!.isNotEmpty) {
+        try {
+          final querySnap = await _firestore!
+              .collection('users')
+              .where('email', isEqualTo: fbUser.email)
+              .limit(1)
+              .get()
+              .timeout(const Duration(seconds: 5));
+          if (querySnap.docs.isNotEmpty) {
+            data = querySnap.docs.first.data();
+          }
+        } catch (_) {}
+      }
+
+      if (data != null) {
+        final String name = data['name']?.toString() ?? fbUser.displayName ?? '';
         final String department =
             data['department']?.toString() ??
             data['branch']?.toString() ??
             '';
-        final bool isOnboarded =
-            data['onboardingCompleted'] == true ||
-            (name.isNotEmpty && department.isNotEmpty);
+
+        bool isOnboarded = data['onboardingCompleted'] == true ||
+            data['onboardingCompleted'] == 'true' ||
+            data['onboarded'] == true ||
+            data['onboarded'] == 'true' ||
+            department.isNotEmpty ||
+            (data['semester'] != null && (data['semester'] as num) > 0) ||
+            (data['globalTarget'] != null && (data['globalTarget'] as num) > 0) ||
+            data['currentSemesterId'] != null ||
+            data['programmeName'] != null;
+
+        // If not explicitly flagged as onboarded, check if user has existing subcollections
+        if (!isOnboarded) {
+          final hasData = await _checkUserHasCloudData(fbUser.uid);
+          if (hasData) {
+            isOnboarded = true;
+          }
+        }
 
         final profile = UserProfile(
           id: fbUser.uid,
@@ -150,12 +336,49 @@ class AuthRepository extends StateNotifier<AuthState> {
           cloudSyncEnabled: data['cloudSyncEnabled'] ?? true,
         );
 
-        await _persistence.saveUserProfile(profile);
-        state = AuthState.authenticated(profile);
+        // Auto-heal / repair Firestore doc if onboarding flag was missing in cloud
+        if (isOnboarded && data['onboardingCompleted'] != true) {
+          _firestore!.collection('users').doc(fbUser.uid).set({
+            'onboardingCompleted': true,
+            'onboarded': true,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true)).catchError((_) {});
+        }
+
+        return profile;
+      } else {
+        // Document didn't exist at root: check if user has existing subcollections in cloud
+        final hasData = await _checkUserHasCloudData(fbUser.uid);
+        if (hasData) {
+          final recoveredProfile = UserProfile(
+            id: fbUser.uid,
+            name: fbUser.displayName ?? '',
+            email: fbUser.email ?? '',
+            branch: 'General',
+            semester: 1,
+            globalTarget: 75.0,
+            themeMode: 'dark',
+            themeColorPack: 'purple',
+            onboardingCompleted: true,
+            createdTimestamp: DateTime.now().millisecondsSinceEpoch,
+            updatedTimestamp: DateTime.now().millisecondsSinceEpoch,
+          );
+          await _firestore!.collection('users').doc(fbUser.uid).set({
+            'id': fbUser.uid,
+            'name': fbUser.displayName ?? '',
+            'email': fbUser.email ?? '',
+            'onboardingCompleted': true,
+            'onboarded': true,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true)).catchError((_) {});
+          return recoveredProfile;
+        }
       }
-    } catch (_) {
-      // Ignored for background sync; local state is already loaded
+    } catch (e) {
+      // Rethrow so the caller knows this was a network issue, not a missing profile
+      rethrow;
     }
+    return null;
   }
 
   Future<void> login(String email, String password) async {
@@ -171,7 +394,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       );
       final fbUser = cred.user;
       if (fbUser != null) {
-        await _loadUserProfileFromFirestoreOrCache(fbUser);
+        // Let authStateChanges listener handle profile loading
         return;
       }
       state = AuthState.error('No user account returned from sign-in.');
@@ -206,6 +429,41 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> signInWithGoogle() async {
+    state = AuthState.loading();
+    try {
+      if (_firebaseAuth == null) {
+        state = AuthState.error('Authentication service is not available.');
+        return;
+      }
+      final googleSignIn = GoogleSignIn();
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        state = AuthState.unauthenticated();
+        return; // The user canceled the sign-in
+      }
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final fb.AuthCredential credential = fb.GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final fb.UserCredential userCredential =
+          await _firebaseAuth!.signInWithCredential(credential);
+      final fb.User? fbUser = userCredential.user;
+      if (fbUser != null) {
+        // Let authStateChanges listener handle profile loading
+        return;
+      }
+      state = AuthState.error('No user account returned from sign-in.');
+    } catch (e) {
+      state = AuthState.error('Google Sign-In failed: ${e.toString()}');
+    }
+  }
+
   Future<void> register(String email, String password) async {
     state = AuthState.loading();
     try {
@@ -219,7 +477,7 @@ class AuthRepository extends StateNotifier<AuthState> {
       );
       final fbUser = cred.user;
       if (fbUser != null) {
-        await _loadUserProfileFromFirestoreOrCache(fbUser);
+        // Let authStateChanges listener handle profile loading
         return;
       }
       state = AuthState.error('Failed to create user account.');
@@ -309,7 +567,7 @@ class AuthRepository extends StateNotifier<AuthState> {
     // Save permanently to Firestore users/{uid}
     try {
       if (_firestore != null) {
-        _firestore!.collection('users').doc(uid).set({
+        await _firestore!.collection('users').doc(uid).set({
           'id': uid,
           'name': name,
           'department': branch,
@@ -320,16 +578,13 @@ class AuthRepository extends StateNotifier<AuthState> {
           'themeMode': updated.themeMode,
           'themeColorPack': updated.themeColorPack,
           'onboardingCompleted': true,
+          'onboarded': true,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)).catchError((_) {
-          _ref
-              ?.read(syncServiceProvider)
-              .addToQueue('profile', uid, 'update', updated.toMap());
-        });
+        }, SetOptions(merge: true)).timeout(const Duration(seconds: 10));
       }
     } catch (_) {
-      // Enqueue to sync service if offline
+      // Enqueue to sync service if offline or timeout
       _ref
           ?.read(syncServiceProvider)
           .addToQueue('profile', uid, 'update', updated.toMap());
@@ -381,7 +636,7 @@ class AuthRepository extends StateNotifier<AuthState> {
 
     try {
       if (_firestore != null) {
-        _firestore!.collection('users').doc(uid).set({
+        await _firestore!.collection('users').doc(uid).set({
           'name': name,
           'department': branch,
           'branch': branch,
@@ -398,12 +653,10 @@ class AuthRepository extends StateNotifier<AuthState> {
           'preferredTimezone': preferredTimezone,
           'preferredStudySessionMinutes': preferredStudySessionMinutes,
           'cloudSyncEnabled': cloudSyncEnabled,
+          'onboardingCompleted': true,
+          'onboarded': true,
           'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)).catchError((_) {
-          _ref
-              ?.read(syncServiceProvider)
-              .addToQueue('profile', updated.id, 'update', updated.toMap());
-        });
+        }, SetOptions(merge: true)).timeout(const Duration(seconds: 10));
       }
     } catch (_) {
       _ref
@@ -412,9 +665,30 @@ class AuthRepository extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> saveFullProfile(UserProfile updated) async {
+    await _persistence.saveUserProfile(updated);
+    state = AuthState.authenticated(updated);
+
+    try {
+      if (_firestore != null) {
+        await _firestore!.collection('users').doc(updated.id).set({
+          'themeMode': updated.themeMode,
+          'themeColorPack': updated.themeColorPack,
+          'onboardingCompleted': updated.onboardingCompleted,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {}
+  }
+
   Future<void> logout() async {
     try {
       await _firebaseAuth?.signOut();
+    } catch (_) {}
+    try {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+      await googleSignIn.disconnect();
     } catch (_) {}
     try {
       await _ref?.read(calendarRepositoryProvider.notifier).disconnect();

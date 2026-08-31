@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TrackX</string>
+    <string name="widget_description">View your attendance, timetable &amp; schedule</string>
+</resources>

@@ -38,6 +38,7 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
         return AlertDialog(
           backgroundColor: Colors.transparent,
           content: GlassContainer(
@@ -46,11 +47,11 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Bookmark Resource',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -60,9 +61,9 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedType,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: const [
                       DropdownMenuItem(value: 'Links', child: Text('Links')),
                       DropdownMenuItem(value: 'Notes', child: Text('Notes')),
@@ -92,9 +93,9 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: context.subtextColor),
                         ),
                       ),
                       ElevatedButton(
@@ -142,13 +143,14 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Resource Library',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
           actions: [
             IconButton(
-              icon: const Icon(Icons.bookmark_add, color: Colors.white),
+              icon: Icon(Icons.bookmark_add, color: context.textColor),
               onPressed: _showAddResourceDialog,
             ),
           ],
@@ -160,23 +162,23 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.bookmark,
-                        color: Colors.white60,
+                        color: context.mutedTextColor,
                         size: 48,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Resource Library Empty',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.textColor,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Keep private links, past papers, notes, or references here.',
-                        style: TextStyle(color: Colors.white60, fontSize: 11),
+                        style: TextStyle(color: context.subtextColor, fontSize: 11),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -201,9 +203,9 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                               Expanded(
                                 child: Text(
                                   res.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: context.textColor,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -214,7 +216,9 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.08),
+                                  color: context.isDark
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.black.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -241,8 +245,8 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                             const SizedBox(height: 6),
                             Text(
                               res.description!,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: context.subtextColor,
                                 fontSize: 11,
                               ),
                             ),

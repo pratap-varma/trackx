@@ -6,6 +6,7 @@ import 'package:trackx/features/subjects/domain/topic_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class TopicTrackingScreen extends ConsumerStatefulWidget {
   const TopicTrackingScreen({super.key});
@@ -48,6 +49,7 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
         return AlertDialog(
           backgroundColor: Colors.transparent,
           content: GlassContainer(
@@ -56,11 +58,11 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Add Syllabus Topic',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -81,9 +83,9 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedDifficulty,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: const [
                       DropdownMenuItem(value: 'Easy', child: Text('Easy')),
                       DropdownMenuItem(
@@ -109,9 +111,9 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedConfidence,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: const [
                       DropdownMenuItem(
                         value: 'Not Rated',
@@ -143,9 +145,9 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: context.subtextColor),
                         ),
                       ),
                       ElevatedButton(
@@ -187,24 +189,25 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
         return AlertDialog(
           backgroundColor: Colors.transparent,
           content: GlassContainer(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Confidence Level',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: context.textColor,
                   ),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  dropdownColor: Colors.purple.shade900,
+                  dropdownColor: dropdownBg,
                   initialValue: currentConf,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.textColor),
                   items: const [
                     DropdownMenuItem(
                       value: 'Not Rated',
@@ -234,9 +237,9 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
+                      child: Text(
                         'Cancel',
-                        style: TextStyle(color: Colors.white60),
+                        style: TextStyle(color: context.subtextColor),
                       ),
                     ),
                     ElevatedButton(
@@ -275,19 +278,21 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
     final filteredTopics = topics
         .where((t) => t.subjectId == _selectedSubjectId)
         .toList();
+    final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
 
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Syllabus Topic Checklists',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
           actions: [
             IconButton(
-              icon: const Icon(Icons.add_task, color: Colors.white),
+              icon: Icon(Icons.add_task, color: context.textColor),
               onPressed: _showAddTopicDialog,
             ),
           ],
@@ -296,9 +301,9 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
             ? Center(
                 child: GlassContainer(
                   padding: const EdgeInsets.all(24),
-                  child: const Text(
+                  child: Text(
                     'Create subjects first under Semester Configuration to configure syllabus topics.',
-                    style: TextStyle(color: Colors.white70),
+                    style: TextStyle(color: context.subtextColor),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -309,12 +314,12 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                   Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: DropdownButtonFormField<String>(
-                      dropdownColor: Colors.purple.shade900,
+                      dropdownColor: dropdownBg,
                       initialValue: _selectedSubjectId,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.textColor),
                       decoration: InputDecoration(
                         labelText: 'Select Subject',
-                        labelStyle: const TextStyle(color: Colors.white60),
+                        labelStyle: TextStyle(color: context.subtextColor),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -338,10 +343,10 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                   // List of topics
                   Expanded(
                     child: filteredTopics.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
                               'No topics created yet.',
-                              style: TextStyle(color: Colors.white38),
+                              style: TextStyle(color: context.mutedTextColor),
                             ),
                           )
                         : ReorderableListView.builder(
@@ -377,7 +382,7 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                                               : Icons.check_box_outline_blank,
                                           color: isCompleted
                                               ? Colors.greenAccent
-                                              : Colors.white60,
+                                              : context.mutedTextColor,
                                         ),
                                         onPressed: () {
                                           if (isCompleted) {
@@ -411,7 +416,7 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                                               topic.title,
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.white,
+                                                color: context.textColor,
                                                 fontSize: 13,
                                                 decoration: isCompleted
                                                     ? TextDecoration.lineThrough
@@ -421,16 +426,16 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                                             if (topic.description != null)
                                               Text(
                                                 topic.description!,
-                                                style: const TextStyle(
-                                                  color: Colors.white70,
+                                                style: TextStyle(
+                                                  color: context.subtextColor,
                                                   fontSize: 11,
                                                 ),
                                               ),
                                             const SizedBox(height: 4),
                                             Text(
                                               'Difficulty: ${topic.difficulty} • Confidence: ${topic.confidence}',
-                                              style: const TextStyle(
-                                                color: Colors.white38,
+                                              style: TextStyle(
+                                                color: context.mutedTextColor,
                                                 fontSize: 10,
                                               ),
                                             ),
@@ -440,9 +445,9 @@ class _TopicTrackingScreenState extends ConsumerState<TopicTrackingScreen> {
                                       Row(
                                         children: [
                                           IconButton(
-                                            icon: const Icon(
+                                            icon: Icon(
                                               Icons.thumb_up_alt_outlined,
-                                              color: Colors.white70,
+                                              color: context.subtextColor,
                                               size: 18,
                                             ),
                                             tooltip: 'Set Confidence',

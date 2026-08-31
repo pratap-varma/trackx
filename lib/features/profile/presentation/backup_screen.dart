@@ -21,10 +21,13 @@ import 'package:trackx/features/subjects/data/topic_repository.dart';
 import 'package:trackx/features/subjects/domain/topic_model.dart';
 import 'package:trackx/features/notes/data/resource_repository.dart';
 import 'package:trackx/features/notes/domain/models/academic_resource_model.dart';
+import 'package:trackx/features/notes/domain/models/flashcard_model.dart';
+import 'package:trackx/features/notes/providers/flashcard_provider.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_primary_button.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class BackupScreen extends ConsumerStatefulWidget {
   const BackupScreen({super.key});
@@ -55,29 +58,31 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Restore JSON Backup',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.textColor,
                       fontSize: 16,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Paste the generated backup JSON string below. This will validate the schema and show a preview before writing.',
-                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                    style: TextStyle(color: context.subtextColor, fontSize: 11),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _restoreController,
                     maxLines: 8,
-                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                    style: TextStyle(color: context.textColor, fontSize: 10),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.05),
+                      fillColor: context.isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.05),
                       hintText: '{"app": "TrackX", ...}',
-                      hintStyle: const TextStyle(color: Colors.white38),
+                      hintStyle: TextStyle(color: context.mutedTextColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -89,9 +94,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: context.subtextColor),
                         ),
                       ),
                       ElevatedButton(
@@ -143,6 +148,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       final examsList = (map['exams'] as List? ?? []);
       final assignmentsList = (map['assignments'] as List? ?? []);
       final notesList = (map['notes'] as List? ?? []);
+      final flashcardsList = (map['flashcards'] as List? ?? []);
 
       showDialog(
         context: context,
@@ -156,84 +162,72 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Restore Preview',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.textColor,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Schema Version: $version',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: context.subtextColor,
                         fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'â€¢ Semesters: ${semestersList.length}',
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      '• Semesters: ${semestersList.length}',
+                      style: TextStyle(
+                        color: context.subtextColor,
                         fontSize: 11,
                       ),
                     ),
                     Text(
-                      'â€¢ Subjects: ${subjectsList.length}',
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      '• Subjects: ${subjectsList.length}',
+                      style: TextStyle(
+                        color: context.subtextColor,
                         fontSize: 11,
                       ),
                     ),
                     Text(
-                      'â€¢ Attendance Records: ${attendanceList.length}',
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      '• Attendance Records: ${attendanceList.length}',
+                      style: TextStyle(
+                        color: context.subtextColor,
                         fontSize: 11,
                       ),
                     ),
                     Text(
-                      'â€¢ Tasks: ${tasksList.length}',
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      '• Tasks: ${tasksList.length}',
+                      style: TextStyle(
+                        color: context.subtextColor,
                         fontSize: 11,
                       ),
                     ),
                     if (version >= 2) ...[
                       Text(
-                        'â€¢ Programmes: ${programmesList.length}',
-                        style: const TextStyle(
-                          color: Colors.white60,
+                        '• Programmes: ${programmesList.length}',
+                        style: TextStyle(
+                          color: context.subtextColor,
                           fontSize: 11,
                         ),
                       ),
                       Text(
-                        'â€¢ Dependencies: ${dependenciesList.length}',
-                        style: const TextStyle(
-                          color: Colors.white60,
+                        '• Dependencies: ${dependenciesList.length}',
+                        style: TextStyle(
+                          color: context.subtextColor,
                           fontSize: 11,
                         ),
                       ),
+                    ],
+                    if (version >= 3) ...[
                       Text(
-                        'â€¢ Scenarios: ${scenariosList.length}',
-                        style: const TextStyle(
-                          color: Colors.white60,
-                          fontSize: 11,
-                        ),
-                      ),
-                      Text(
-                        'â€¢ Topics: ${topicsList.length}',
-                        style: const TextStyle(
-                          color: Colors.white60,
-                          fontSize: 11,
-                        ),
-                      ),
-                      Text(
-                        'â€¢ Resources: ${resourcesList.length}',
-                        style: const TextStyle(
-                          color: Colors.white60,
+                        '• Flashcard Decks: ${flashcardsList.length}',
+                        style: TextStyle(
+                          color: context.subtextColor,
                           fontSize: 11,
                         ),
                       ),
@@ -253,9 +247,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text(
+                          child: Text(
                             'Cancel',
-                            style: TextStyle(color: Colors.white60),
+                            style: TextStyle(color: context.subtextColor),
                           ),
                         ),
                         ElevatedButton(
@@ -275,6 +269,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                               exams: examsList,
                               assignments: assignmentsList,
                               notes: notesList,
+                              flashcards: flashcardsList,
                             );
                           },
                           style: ElevatedButton.styleFrom(
@@ -310,6 +305,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     required List exams,
     required List assignments,
     required List notes,
+    required List flashcards,
   }) async {
     try {
       // 1. Create a safety backup
@@ -327,10 +323,11 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       final currentExams = ref.read(examsProvider);
       final currentAssignments = ref.read(assignmentsProvider);
       final currentNotes = ref.read(notesProvider);
+      final currentFlashcards = ref.read(flashcardsProvider);
 
       final safetyMap = {
         'app': 'TrackX',
-        'schemaVersion': 2,
+        'schemaVersion': 3,
         'exportedAt': DateTime.now().toIso8601String(),
         'semesters': currentSemesters.map((e) => e.toMap()).toList(),
         'subjects': currentSubjects.map((e) => e.toMap()).toList(),
@@ -345,6 +342,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         'exams': currentExams.map((e) => e.toMap()).toList(),
         'assignments': currentAssignments.map((e) => e.toMap()).toList(),
         'notes': currentNotes.map((e) => e.toMap()).toList(),
+        'flashcards': currentFlashcards.map((e) => e.toMap()).toList(),
       };
 
       await prefs.setString('px_safety_backup', jsonEncode(safetyMap));
@@ -452,6 +450,13 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
           .toList();
       ref.read(notesProvider.notifier).restore(restoredNotes);
 
+      // flashcards
+      for (final f in flashcards) {
+        ref.read(flashcardsProvider.notifier).saveDeck(
+              FlashcardDeck.fromMap(Map<String, dynamic>.from(f)),
+            );
+      }
+
       _showMsg('Success: Backup restored successfully. Safety backup saved.');
     } catch (e) {
       _showMsg('Error performing restore: $e');
@@ -470,21 +475,22 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Backup & Export',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
         ),
         body: ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
             // Export Card
-            const Text(
+            Text(
               'Manual JSON Backups',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.white,
+                color: context.textColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -492,9 +498,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Create local state backup containing all subjects, semester targets, and daily class records.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: context.subtextColor, fontSize: 12),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -530,10 +536,11 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                             final exams = ref.read(examsProvider);
                             final assignments = ref.read(assignmentsProvider);
                             final notes = ref.read(notesProvider);
+                            final flashcards = ref.read(flashcardsProvider);
 
                             final backupMap = {
                               'app': 'TrackX',
-                              'schemaVersion': 2,
+                              'schemaVersion': 3,
                               'exportedAt': DateTime.now().toIso8601String(),
                               'semesters': semesters
                                   .map((e) => e.toMap())
@@ -564,6 +571,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                                   .map((e) => e.toMap())
                                   .toList(),
                               'notes': notes.map((e) => e.toMap()).toList(),
+                              'flashcards': flashcards
+                                  .map((e) => e.toMap())
+                                  .toList(),
                             };
 
                             final backupStr = jsonEncode(backupMap);
@@ -578,19 +588,19 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Text(
+                                          Text(
                                             'Backup Generated (Schema v2)',
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                              color: context.textColor,
                                             ),
                                           ),
                                           const SizedBox(height: 12),
                                           SelectableText(
                                             backupStr,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 10,
-                                              color: Colors.white60,
+                                              color: context.subtextColor,
                                             ),
                                           ),
                                           const SizedBox(height: 16),
@@ -624,12 +634,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
             const SizedBox(height: 24),
 
             // CSV Export Card
-            const Text(
+            Text(
               'CSV Attendance Exports',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.white,
+                color: context.textColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -637,9 +647,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Export the active semester\'s attendance logs into spreadsheet-ready CSV tables.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: context.subtextColor, fontSize: 12),
                   ),
                   const SizedBox(height: 16),
                   GlassPrimaryButton(
@@ -673,19 +683,19 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'CSV Export Complete!',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                        color: context.textColor,
                                       ),
                                     ),
                                     const SizedBox(height: 12),
                                     SelectableText(
                                       csvBuffer.toString(),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 10,
-                                        color: Colors.white60,
+                                        color: context.subtextColor,
                                       ),
                                     ),
                                     const SizedBox(height: 16),

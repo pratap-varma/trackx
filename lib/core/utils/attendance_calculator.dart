@@ -53,6 +53,22 @@ class AttendanceCalculator {
     return (newAttended / newTotal) * 100.0;
   }
 
+  /// Calculate projected attendance percentage if current session(s) are missed/bunked.
+  /// Formula: (attended / (total + sessions)) * 100
+  static double calculateIfBunk(int attended, int total, [int sessions = 1]) {
+    final newTotal = total + sessions;
+    if (newTotal <= 0) return 0.0;
+    return (attended / newTotal) * 100.0;
+  }
+
+  /// Calculate projected attendance percentage if current session(s) are attended.
+  /// Formula: ((attended + sessions) / (total + sessions)) * 100
+  static double calculateIfAttend(int attended, int total, [int sessions = 1]) {
+    final newTotal = total + sessions;
+    if (newTotal <= 0) return 100.0;
+    return ((attended + sessions) / newTotal) * 100.0;
+  }
+
   /// Get the risk classification level based on percentage and target
   static String getRiskClassification(double percentage, double target) {
     if (percentage == 0 && target > 0) return 'Below Target';

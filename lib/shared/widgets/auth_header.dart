@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:trackx/theme/app_theme.dart';
 
 class AuthHeader extends StatelessWidget {
@@ -40,9 +40,11 @@ class AuthHeader extends StatelessWidget {
                   width: 64,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
+                    color: context.isDark
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.black.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white24),
+                    border: Border.all(color: context.subtleBorderColor),
                   ),
                 ),
               ),
@@ -53,9 +55,11 @@ class AuthHeader extends StatelessWidget {
                   width: 64,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: context.isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.black.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white24),
+                    border: Border.all(color: context.subtleBorderColor),
                   ),
                 ),
               ),

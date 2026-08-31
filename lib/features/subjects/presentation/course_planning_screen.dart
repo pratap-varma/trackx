@@ -50,6 +50,7 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
         return AlertDialog(
           backgroundColor: Colors.transparent,
           content: GlassContainer(
@@ -58,11 +59,11 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Add Course Entry',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -88,9 +89,9 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedType,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: const [
                       DropdownMenuItem(value: 'Theory', child: Text('Theory')),
                       DropdownMenuItem(
@@ -120,9 +121,9 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: dropdownBg,
                     initialValue: _selectedDifficulty,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: context.textColor),
                     items: const [
                       DropdownMenuItem(value: 'Easy', child: Text('Easy')),
                       DropdownMenuItem(
@@ -152,9 +153,9 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: context.subtextColor),
                         ),
                       ),
                       ElevatedButton(
@@ -214,6 +215,7 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final dropdownBg = context.isDark ? const Color(0xFF131A2B) : Colors.white;
         return AlertDialog(
           backgroundColor: Colors.transparent,
           content: StatefulBuilder(
@@ -222,18 +224,18 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Convert to Semester Subject',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.textColor,
                       ),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      dropdownColor: Colors.purple.shade900,
+                      dropdownColor: dropdownBg,
                       initialValue: selectedSemId,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.textColor),
                       items: semesters
                           .map(
                             (s) => DropdownMenuItem(
@@ -260,9 +262,9 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text(
+                          child: Text(
                             'Cancel',
-                            style: TextStyle(color: Colors.white60),
+                            style: TextStyle(color: context.subtextColor),
                           ),
                         ),
                         ElevatedButton(
@@ -318,13 +320,14 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Personal Course Catalog',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
           actions: [
             IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+              icon: Icon(Icons.add_circle_outline, color: context.textColor),
               onPressed: _showAddCourseDialog,
             ),
           ],
@@ -369,12 +372,12 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: context.textColor),
+                  decoration: InputDecoration(
                     hintText: 'Search catalog by title/code...',
-                    hintStyle: TextStyle(color: Colors.white38),
+                    hintStyle: TextStyle(color: context.mutedTextColor),
                     border: InputBorder.none,
-                    icon: Icon(Icons.search, color: Colors.white38),
+                    icon: Icon(Icons.search, color: context.mutedTextColor),
                   ),
                   onChanged: (val) {
                     setState(() {
@@ -389,10 +392,10 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
             // List
             Expanded(
               child: filtered.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'No courses found.',
-                        style: TextStyle(color: Colors.white38),
+                        style: TextStyle(color: context.mutedTextColor),
                       ),
                     )
                   : ListView.builder(
@@ -414,9 +417,9 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                                     Expanded(
                                       child: Text(
                                         '${course.title} (${course.courseCode ?? "No Code"})',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                          color: context.textColor,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -435,16 +438,16 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                                 if (course.description != null)
                                   Text(
                                     course.description!,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: context.subtextColor,
                                       fontSize: 11,
                                     ),
                                   ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'Credits: ${course.credits ?? "TBD"} â€¢ Type: ${course.subjectType} â€¢ Difficulty: ${course.expectedDifficulty}',
-                                  style: const TextStyle(
-                                    color: Colors.white38,
+                                  'Credits: ${course.credits ?? "TBD"} • Type: ${course.subjectType} • Difficulty: ${course.expectedDifficulty}',
+                                  style: TextStyle(
+                                    color: context.mutedTextColor,
                                     fontSize: 10,
                                   ),
                                 ),

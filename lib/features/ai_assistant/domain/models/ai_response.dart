@@ -56,6 +56,30 @@ class AiResponse {
     required this.createdAt,
   });
 
+  AiResponse copyWith({
+    String? id,
+    String? requestId,
+    String? text,
+    List<AiSourceReference>? sources,
+    List<AiSuggestedAction>? suggestedActions,
+    AiConfidence? confidence,
+    List<String>? limitations,
+    String? modelId,
+    DateTime? createdAt,
+  }) {
+    return AiResponse(
+      id: id ?? this.id,
+      requestId: requestId ?? this.requestId,
+      text: text ?? this.text,
+      sources: sources ?? this.sources,
+      suggestedActions: suggestedActions ?? this.suggestedActions,
+      confidence: confidence ?? this.confidence,
+      limitations: limitations ?? this.limitations,
+      modelId: modelId ?? this.modelId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

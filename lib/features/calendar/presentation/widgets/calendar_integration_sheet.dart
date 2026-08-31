@@ -258,58 +258,111 @@ class _CalendarIntegrationSheetState
                         ? AppTheme.accentOrange
                         : const Color(0xFF4285F4);
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF131A2B),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: cal.isSelected
-                              ? iconColor.withValues(alpha: 0.3)
-                              : Colors.white.withValues(alpha: 0.04),
+                    return GestureDetector(
+                      onTap: () {
+                        ref
+                            .read(calendarRepositoryProvider.notifier)
+                            .toggleCalendarSelection(cal.id);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(icon, color: iconColor, size: 18),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  cal.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (cal.isPrimary)
-                                  const Text(
-                                    'Default Calendar',
-                                    style: TextStyle(
-                                      color: Colors.white38,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                              ],
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF131A2B),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: cal.isSelected
+                                ? iconColor.withValues(alpha: 0.4)
+                                : Colors.white.withValues(alpha: 0.05),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: iconColor.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(icon, color: iconColor, size: 18),
                             ),
-                          ),
-                          Checkbox(
-                            value: cal.isSelected,
-                            activeColor: const Color(0xFF5B5FEF),
-                            onChanged: (v) {
-                              ref
-                                  .read(calendarRepositoryProvider.notifier)
-                                  .toggleCalendarSelection(cal.id);
-                            },
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          cal.name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (cal.isPrimary) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF5B5FEF).withValues(alpha: 0.25),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Text(
+                                            'PRIMARY',
+                                            style: TextStyle(
+                                              color: Color(0xFFC0C1FF),
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  if (cal.description != null &&
+                                      cal.description!.isNotEmpty &&
+                                      cal.description != cal.name)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2.0),
+                                      child: Text(
+                                        cal.description!,
+                                        style: const TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Checkbox(
+                              value: cal.isSelected,
+                              activeColor: const Color(0xFF5B5FEF),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              onChanged: (v) {
+                                ref
+                                    .read(calendarRepositoryProvider.notifier)
+                                    .toggleCalendarSelection(cal.id);
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }),

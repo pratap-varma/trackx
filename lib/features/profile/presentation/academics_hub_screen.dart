@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class AcademicsHubScreen extends StatelessWidget {
   const AcademicsHubScreen({super.key});
@@ -15,18 +16,18 @@ class AcademicsHubScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.white,
+              color: context.textColor,
               size: 18,
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: const Text(
+          title: Text(
             'Academic Hub',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: context.textColor,
               fontSize: 18,
             ),
           ),
@@ -35,7 +36,7 @@ class AcademicsHubScreen extends StatelessWidget {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
           children: [
-            _sectionHeader('ACADEMIC MANAGEMENT'),
+            _sectionHeader(context, 'ACADEMIC MANAGEMENT'),
             const SizedBox(height: 10),
             _hubCard(
               context,
@@ -75,7 +76,7 @@ class AcademicsHubScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 24),
-            _sectionHeader('SYLLABUS & PREPARATION'),
+            _sectionHeader(context, 'SYLLABUS & PREPARATION'),
             const SizedBox(height: 10),
             _hubCard(
               context,
@@ -106,7 +107,7 @@ class AcademicsHubScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 24),
-            _sectionHeader('ANALYTICS & PROGRESS'),
+            _sectionHeader(context, 'ANALYTICS & PROGRESS'),
             const SizedBox(height: 10),
             _hubCard(
               context,
@@ -123,11 +124,11 @@ class AcademicsHubScreen extends StatelessWidget {
     );
   }
 
-  static Widget _sectionHeader(String title) {
+  static Widget _sectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
-        color: Colors.white30,
+      style: TextStyle(
+        color: context.mutedTextColor,
         fontSize: 10,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.5,
@@ -172,8 +173,8 @@ class AcademicsHubScreen extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.textColor,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -207,8 +208,8 @@ class AcademicsHubScreen extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: Colors.white38,
+                      style: TextStyle(
+                        color: context.mutedTextColor,
                         fontSize: 11,
                       ),
                     ),
@@ -217,7 +218,7 @@ class AcademicsHubScreen extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right_rounded,
-                color: Colors.white.withValues(alpha: 0.2),
+                color: context.mutedTextColor,
                 size: 20,
               ),
             ],

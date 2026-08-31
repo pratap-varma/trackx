@@ -17,7 +17,9 @@ import 'package:trackx/features/notes/presentation/screens/notes_screen.dart';
 import 'package:trackx/features/timetable/presentation/screens/timetable_screen.dart';
 import 'package:trackx/features/profile/presentation/backup_screen.dart';
 import 'package:trackx/features/ai_assistant/presentation/screens/ai_chat_screen.dart';
+import 'package:trackx/features/ai_assistant/presentation/screens/ai_assistant_settings_screen.dart';
 import 'package:trackx/features/attendance/presentation/screens/classroom_mapping_screen.dart';
+import 'package:trackx/features/attendance/presentation/screens/attendance_heatmap_screen.dart';
 import 'package:trackx/features/profile/presentation/feedback_screen.dart';
 import 'package:trackx/features/timetable_import/presentation/screens/timetable_import_screen.dart';
 import 'package:trackx/features/study_timer/presentation/screens/focus_timer_screen.dart';
@@ -37,7 +39,16 @@ import 'package:trackx/features/semesters/presentation/scenario_comparison_scree
 import 'package:trackx/features/subjects/presentation/topic_tracking_screen.dart';
 import 'package:trackx/features/planner/presentation/screens/exam_prep_detail_screen.dart';
 import 'package:trackx/features/notes/presentation/screens/resource_library_screen.dart';
+import 'package:trackx/features/notes/presentation/screens/flashcard_study_screen.dart';
+import 'package:trackx/features/notes/presentation/screens/flashcards_hub_screen.dart';
 import 'package:trackx/features/profile/presentation/global_search_screen.dart';
+
+import 'package:trackx/features/admin/presentation/screens/admin_activity_screen.dart';
+import 'package:trackx/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:trackx/features/admin/presentation/screens/admin_login_screen.dart';
+import 'package:trackx/features/admin/presentation/screens/admin_user_detail_screen.dart';
+import 'package:trackx/features/admin/presentation/screens/admin_user_list_screen.dart';
+import 'package:trackx/features/admin/providers/admin_providers.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -46,6 +57,7 @@ class RouterNotifier extends ChangeNotifier {
 
   RouterNotifier(this._ref) {
     _ref.listen<AuthState>(authRepositoryProvider, (_, _) => notifyListeners());
+    _ref.listen<AdminAuthState>(adminAuthStateProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -101,6 +113,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/ai', builder: (context, state) => const AIChatScreen()),
       GoRoute(
+        path: '/ai-settings',
+        builder: (context, state) => const AiAssistantSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/ai/settings',
+        builder: (context, state) => const AiAssistantSettingsScreen(),
+      ),
+      GoRoute(
         path: '/classrooms',
         builder: (context, state) => const ClassroomMappingScreen(),
       ),
@@ -109,32 +129,52 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const FeedbackScreen(),
       ),
       GoRoute(
+        path: '/timetable-import',
+        builder: (context, state) => const TimetableImportScreen(),
+      ),
+      GoRoute(
         path: '/import-timetable',
         builder: (context, state) => const TimetableImportScreen(),
       ),
       GoRoute(
-        path: '/focus-timer',
+        path: '/subjects',
+        builder: (context, state) => const SemesterManageScreen(),
+      ),
+      GoRoute(
+        path: '/courses',
+        builder: (context, state) => const CoursePlanningScreen(),
+      ),
+      GoRoute(
+        path: '/graduation',
+        builder: (context, state) => const GraduationProgressScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const MainShell(),
+      ),
+      GoRoute(
+        path: '/study-timer',
         builder: (context, state) => const FocusTimerScreen(),
       ),
       GoRoute(
-        path: '/comparison',
+        path: '/semesters/comparison',
         builder: (context, state) => const SemesterComparisonScreen(),
       ),
       GoRoute(
-        path: '/reconciliation',
+        path: '/integrations/reconciliation',
         builder: (context, state) => const ReconciliationScreen(),
       ),
       GoRoute(
-        path: '/qr-scanner',
+        path: '/integrations/qr-scanner',
         builder: (context, state) => const QrScannerScreen(),
       ),
       GoRoute(
-        path: '/devices',
+        path: '/profile/devices',
         builder: (context, state) => const DevicesScreen(),
       ),
       // Stage 16 routes
       GoRoute(
-        path: '/academics',
+        path: '/academics-hub',
         builder: (context, state) => const AcademicsHubScreen(),
       ),
       GoRoute(
@@ -146,19 +186,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DependencyManageScreen(),
       ),
       GoRoute(
-        path: '/graduation',
+        path: '/graduation-progress',
         builder: (context, state) => const GraduationProgressScreen(),
       ),
       GoRoute(
-        path: '/courses',
+        path: '/course-planning',
         builder: (context, state) => const CoursePlanningScreen(),
       ),
       GoRoute(
-        path: '/scenarios',
+        path: '/future-planner',
         builder: (context, state) => const FutureSemesterPlannerScreen(),
       ),
       GoRoute(
-        path: '/scenarios-compare',
+        path: '/scenarios',
         builder: (context, state) => const ScenarioComparisonScreen(),
       ),
       GoRoute(
@@ -177,17 +217,83 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/search',
         builder: (context, state) => const GlobalSearchScreen(),
       ),
+      GoRoute(
+        path: '/flashcards',
+        builder: (context, state) => const FlashcardsHubScreen(),
+      ),
+      GoRoute(
+        path: '/flashcards/:deckId',
+        builder: (context, state) {
+          final deckId = state.pathParameters['deckId'] ?? '';
+          return FlashcardStudyScreen(deckId: deckId);
+        },
+      ),
+      GoRoute(
+        path: '/attendance/heatmap',
+        builder: (context, state) {
+          final subjectId = state.uri.queryParameters['subjectId'];
+          return AttendanceHeatmapScreen(initialSubjectId: subjectId);
+        },
+      ),
+      // Restricted Admin Panel Routes
+      GoRoute(
+        path: '/admin/login',
+        builder: (context, state) => const AdminLoginScreen(),
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/admin/dashboard',
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users',
+        builder: (context, state) => const AdminUserListScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid'] ?? '';
+          return AdminUserDetailScreen(uid: uid);
+        },
+      ),
+      GoRoute(
+        path: '/admin/activity',
+        builder: (context, state) => const AdminActivityScreen(),
+      ),
     ],
     redirect: (context, state) {
+      final loc = state.matchedLocation;
+      final isAdminRoute = loc.startsWith('/admin');
+
+      // 1. Admin route protection and guards
+      if (isAdminRoute) {
+        final adminState = ref.read(adminAuthStateProvider);
+        final isGoingToAdminLogin = loc == '/admin/login';
+
+        if (adminState.isAuthenticated) {
+          if (isGoingToAdminLogin) {
+            return '/admin/dashboard';
+          }
+          return null;
+        } else {
+          // If unauthenticated as admin, redirect to admin login
+          return isGoingToAdminLogin ? null : '/admin/login';
+        }
+      }
+
+      // 2. Regular student user authentication & onboarding redirect
       final authState = ref.read(authRepositoryProvider);
       final status = authState.status;
       final onboarding = authState.userProfile?.onboardingCompleted ?? false;
 
       final goingToAuth =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register' ||
-          state.matchedLocation == '/forgot-password';
-      final goingToSplash = state.matchedLocation == '/splash';
+          loc == '/login' ||
+          loc == '/register' ||
+          loc == '/forgot-password';
+      final goingToSplash = loc == '/splash';
 
       if (status == AuthStatus.loading) {
         // If already on auth pages, stay on auth page while loading
@@ -201,7 +307,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (status == AuthStatus.authenticated) {
         if (!onboarding) {
-          return state.matchedLocation == '/onboarding' ? null : '/onboarding';
+          return loc == '/onboarding' ? null : '/onboarding';
         }
         if (goingToAuth || goingToSplash) {
           return '/';

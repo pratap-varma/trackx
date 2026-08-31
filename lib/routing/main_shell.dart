@@ -35,6 +35,12 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(navIndexProvider, (previous, next) {
+      if (_pageController.hasClients && _pageController.page?.round() != next) {
+        _pageController.jumpToPage(next);
+      }
+    });
+
     final currentIndex = ref.watch(navIndexProvider);
 
 
@@ -63,6 +69,9 @@ class _MainShellState extends ConsumerState<MainShell> {
             Positioned.fill(
               child: PageView(
                 controller: _pageController,
+                physics: const PageScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
                 onPageChanged: (index) {
                   ref.read(navIndexProvider.notifier).state = index;
                 },
@@ -80,11 +89,6 @@ class _MainShellState extends ConsumerState<MainShell> {
                 items: dockItems,
                 onTabSelected: (index) {
                   ref.read(navIndexProvider.notifier).state = index;
-                  _pageController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
                 },
               ),
             ),

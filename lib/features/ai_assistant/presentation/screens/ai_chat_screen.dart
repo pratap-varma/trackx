@@ -5,8 +5,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:trackx/routing/nav_provider.dart';
+import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/ai_assistant/domain/services/ai_document_analyzer_service.dart';
+import 'package:trackx/features/ai_assistant/data/services/ai_context_builder.dart';
+import 'package:trackx/features/ai_assistant/data/services/gemini_provider.dart';
+import 'package:trackx/features/ai_assistant/data/services/offline_fallback_provider.dart';
+import 'package:trackx/features/ai_assistant/domain/models/ai_request.dart';
+import 'package:trackx/features/ai_assistant/domain/models/ai_response.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
+import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
@@ -16,6 +23,7 @@ import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 import 'package:trackx/theme/app_theme.dart';
+import 'package:trackx/shared/widgets/glass_container.dart';
 
 class AIChatScreen extends ConsumerStatefulWidget {
   const AIChatScreen({super.key});
@@ -139,14 +147,20 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
 
   void _showAttachmentOptions() {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final iconBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0E1628),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.all(22),
           child: Column(
@@ -158,24 +172,24 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: isDark ? Colors.white24 : Colors.black12,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Upload Document or Photo to AI',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 17,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'AI will automatically recognize your timetable, exam date-sheet, or assignment.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: subtextColor, fontSize: 12),
               ),
               const SizedBox(height: 18),
 
@@ -183,8 +197,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1B243B),
+                  decoration: BoxDecoration(
+                    color: iconBg,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -193,17 +207,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     size: 20,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Take Photo with Camera',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Capture printed notice or timetable',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: subtextColor, fontSize: 11),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -215,8 +229,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1B243B),
+                  decoration: BoxDecoration(
+                    color: iconBg,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -225,17 +239,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     size: 20,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Choose Image from Gallery',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Select a schedule screenshot or photo',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: subtextColor, fontSize: 11),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -247,8 +261,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1B243B),
+                  decoration: BoxDecoration(
+                    color: iconBg,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -257,17 +271,17 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                     size: 20,
                   ),
                 ),
-                title: const Text(
+                title: Text(
                   'Upload PDF / Document',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Select any academic timetable or date-sheet PDF',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: subtextColor, fontSize: 11),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -388,6 +402,14 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           });
         });
       }
+    } else if (act == 'Attendance Summary' ||
+        act == 'Plan Study Week' ||
+        act == 'Schedule Study Block' ||
+        act == 'Setup Profile' ||
+        act == 'Add Subject' ||
+        act.contains('Study Block') ||
+        act.contains('Summary')) {
+      _sendMessage(act);
     } else if (act.contains('Attendance')) {
       ref.read(navIndexProvider.notifier).state = 1;
       ScaffoldMessenger.of(
@@ -399,9 +421,63 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Switched to Planner.')));
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Action: $act')));
+      _sendMessage(act);
+    }
+  }
+
+  Future<void> _handleSuggestedAction(AiSuggestedAction act) async {
+    HapticFeedback.mediumImpact();
+    final tasksNotifier = ref.read(tasksProvider.notifier);
+    final activeSem = ref.read(activeSemesterProvider);
+
+    if (act.type == 'CreatePlannerTask' ||
+        act.type == 'CreateTask' ||
+        act.type == 'CreateStudySession') {
+      final title = act.parameters['title'] as String? ?? act.title;
+      final category = act.parameters['category'] as String? ?? 'Study';
+      final duration = act.parameters['durationMinutes'] as int? ?? 45;
+
+      DateTime dueDate = DateTime.now().add(const Duration(days: 1));
+      if (act.parameters['dueDate'] != null) {
+        dueDate =
+            DateTime.tryParse(act.parameters['dueDate'].toString()) ?? dueDate;
+      }
+
+      tasksNotifier.addTask(
+        Task(
+          id: 'task-ai-${DateTime.now().millisecondsSinceEpoch}',
+          userId: 'user',
+          semesterId: activeSem?.id ?? 'sem-1',
+          title: title,
+          description: 'AI Suggested: $duration min focus session',
+          category: category,
+          priority: 'High',
+          dueDate: dueDate,
+          isCompleted: false,
+          recurrenceRule: 'None',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+
+      setState(() {
+        _messages.add({
+          'isBot': true,
+          'text': '✅ Scheduled task "$title" into your Planner!',
+          'actions': ['View Planner'],
+        });
+      });
+    } else if (act.type == 'OpenAttendance' ||
+        act.title.toLowerCase().contains('attendance')) {
+      ref.read(navIndexProvider.notifier).state = 1;
+    } else if (act.type == 'OpenPlanner' ||
+        act.title.toLowerCase().contains('planner')) {
+      ref.read(navIndexProvider.notifier).state = 2;
+    } else if (act.type == 'OpenTimetable' ||
+        act.title.toLowerCase().contains('timetable')) {
+      ref.read(navIndexProvider.notifier).state = 0;
+    } else {
+      _handleAction(act.title);
     }
   }
 
@@ -450,87 +526,161 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     });
   }
 
-  void _sendMessage() {
-    final text = _textController.text.trim();
+  Future<void> _sendMessage([String? customPrompt]) async {
+    final text = (customPrompt ?? _textController.text).trim();
     if (text.isEmpty) return;
 
     HapticFeedback.lightImpact();
+    _textController.clear();
+
     setState(() {
       _messages.add({'isBot': false, 'text': text});
-      _textController.clear();
+      _messages.add({
+        'isBot': true,
+        'text': '🤖 Gemini is analyzing your academic data...',
+        'isLoading': true,
+      });
     });
 
-    final lower = text.toLowerCase();
-    final stats = ref.read(statsProvider);
-    final exams = ref.read(examsProvider);
-    final subjects = ref.read(subjectRepositoryProvider);
-    final timetable = ref.read(timetableRepositoryProvider);
+    try {
+      final settings = ref.read(aiSettingsProvider);
+      final usageNotifier = ref.read(aiUsageProvider.notifier);
+      final usageSummary = ref.read(aiUsageProvider);
 
-    String reply;
-    List<String>? actions;
+      if (!settings.enableAi) {
+        setState(() {
+          _messages.removeWhere((m) => m['isLoading'] == true);
+          _messages.add({
+            'isBot': true,
+            'text':
+                '⚠️ AI Assistant features are currently disabled. Please enable them in Privacy settings.',
+          });
+        });
+        return;
+      }
 
-    if (lower.contains('attendance') ||
-        lower.contains('bunk') ||
-        lower.contains('miss')) {
-      if (stats.allSubjectStats.isEmpty) {
-        reply =
-            'No attendance data yet. Add your subjects and attendance to get personalized insights.';
-        actions = ['Add Subject'];
-      } else {
-        final lowSubjects = stats.allSubjectStats
-            .where((s) => s.percentage < s.target)
-            .toList();
-        if (lowSubjects.isEmpty) {
-          reply =
-              'Based on your recorded attendance, all enrolled subjects are safely above your target (${stats.globalTarget.toStringAsFixed(0)}%)! Overall average is ${stats.overallPercentage.toStringAsFixed(0)}%.';
-        } else {
-          final worst = lowSubjects.first;
-          reply =
-              'Attention: Your attendance in ${worst.subject.name} is at ${worst.percentage.toStringAsFixed(0)}% (Target: ${worst.target.toStringAsFixed(0)}%). You need to attend ${worst.requiredRecovery} more classes to recover.';
+      if (usageSummary.requestsToday >= usageSummary.maxDailyRequests) {
+        setState(() {
+          _messages.removeWhere((m) => m['isLoading'] == true);
+          _messages.add({
+            'isBot': true,
+            'text':
+                '⚠️ You have reached your daily limit of ${usageSummary.maxDailyRequests} requests. Please retry tomorrow.',
+          });
+        });
+        return;
+      }
+
+      final bool useOffline =
+          settings.provider == 'Offline only' || settings.provider == 'Offline';
+      final provider = useOffline
+          ? OfflineFallbackProvider()
+          : GeminiAiProvider(overrideApiKey: settings.customApiKey);
+
+      final authState = ref.read(authRepositoryProvider);
+      final profile = authState.userProfile;
+      if (profile == null) {
+        setState(() {
+          _messages.removeWhere((m) => m['isLoading'] == true);
+          _messages.add({
+            'isBot': true,
+            'text': '⚠️ User profile is not loaded.',
+          });
+        });
+        return;
+      }
+
+      String? subjectFilterId;
+      final subjects = ref.read(subjectRepositoryProvider);
+      for (final s in subjects) {
+        if (text.toLowerCase().contains(s.name.toLowerCase()) ||
+            (s.code != null &&
+                text.toLowerCase().contains(s.code!.toLowerCase()))) {
+          subjectFilterId = s.id;
+          break;
         }
       }
-    } else if (lower.contains('exam') ||
-        lower.contains('study') ||
-        lower.contains('prep')) {
-      if (exams.isEmpty) {
-        reply =
-            'No upcoming exams found in your planner. You can add your exam dates in the Planner to receive study recommendations!';
-        actions = ['Add Exam to Planner'];
-      } else {
-        final nextExam = exams.first;
-        reply =
-            'I recommend a 45-minute focused study session on ${nextExam.title}, currently scheduled for ${DateFormat('MMM dd').format(nextExam.examDate)}.';
-        actions = ['Add to Planner', 'Adjust Times'];
-      }
-    } else if (lower.contains('planner') ||
-        lower.contains('schedule') ||
-        lower.contains('class') ||
-        lower.contains('timetable')) {
-      if (timetable.isEmpty) {
-        reply =
-            'No timetable data yet. Add your class schedule in Timetable to let me track your upcoming periods.';
-        actions = ['Open Timetable'];
-      } else {
-        reply =
-            'Your schedule has ${timetable.length} scheduled periods. I can help block your free time for assignments and revision!';
-      }
-    } else {
-      if (subjects.isEmpty) {
-        reply =
-            'No attendance data yet. Add your subjects and attendance to get personalized insights.';
-      } else {
-        reply =
-            'I have analyzed your ${subjects.length} active courses and attendance records. Everything is synchronized with your planner!';
-      }
-    }
 
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() {
-          _messages.add({'isBot': true, 'text': reply, 'actions': actions});
-        });
+      final aiContext = AiContextBuilder.build(
+        profile: profile,
+        semesters: ref.read(semesterRepositoryProvider),
+        subjects: subjects,
+        attendance: ref.read(attendanceRepositoryProvider),
+        tasks: ref.read(tasksProvider),
+        assignments: ref.read(assignmentsProvider),
+        exams: ref.read(examsProvider),
+        timetable: ref.read(timetableRepositoryProvider),
+        consentFlags: settings.consentFlags,
+        subjectFilterId: subjectFilterId,
+      );
+
+      AiFeatureType featureType = AiFeatureType.generalChat;
+      final lower = text.toLowerCase();
+      if (lower.contains('miss') ||
+          lower.contains('attendance') ||
+          lower.contains('bunk')) {
+        featureType = AiFeatureType.attendanceExplanation;
+      } else if (lower.contains('study') ||
+          lower.contains('schedule') ||
+          lower.contains('plan')) {
+        featureType = AiFeatureType.studyPlanning;
+      } else if (lower.contains('exam') || lower.contains('countdown')) {
+        featureType = AiFeatureType.examPreparation;
+      } else if (lower.contains('assignment') || lower.contains('breakdown')) {
+        featureType = AiFeatureType.assignmentBreakdown;
       }
-    });
+
+      final request = AiRequest(
+        id: 'req-${DateTime.now().millisecondsSinceEpoch}',
+        userId: profile.id,
+        featureType: featureType,
+        userPrompt: text,
+        context: aiContext.toMap(),
+        conversationId: 'default',
+        modelId: useOffline ? 'offline' : 'gemini-1.5-flash',
+        createdAt: DateTime.now(),
+      );
+
+      final response = await provider.generate(request);
+
+      if (useOffline) {
+        await usageNotifier.incrementOfflineFallback();
+      } else {
+        await usageNotifier.incrementRequests();
+      }
+
+      ref.read(activityLoggerProvider).logEvent('ai_query_sent', parameters: {
+        'prompt_length': text.length,
+        'feature': featureType.name,
+      });
+
+      if (!mounted) return;
+
+      final actionLabels =
+          response.suggestedActions.map((a) => a.title).toList();
+
+      setState(() {
+        _messages.removeWhere((m) => m['isLoading'] == true);
+        _messages.add({
+          'isBot': true,
+          'text': response.text,
+          'actions': actionLabels.isNotEmpty ? actionLabels : null,
+          'suggestedActions': response.suggestedActions,
+          'sources': response.sources,
+          'confidence': response.confidence,
+          'limitations': response.limitations,
+        });
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.removeWhere((m) => m['isLoading'] == true);
+        _messages.add({
+          'isBot': true,
+          'text': '⚠️ An error occurred while contacting Gemini: $e',
+        });
+      });
+    }
   }
 
   @override
@@ -544,6 +694,14 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final stats = ref.watch(statsProvider);
     final exams = ref.watch(examsProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final cardBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFFFFFFF);
+    final cardBorder = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06);
+    final botBubbleBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
+    final userBubbleBg = isDark ? const Color(0xFF252A4A) : const Color(0xFFE2E8F0);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -556,29 +714,29 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             onTap: () => ref.read(navIndexProvider.notifier).state = 4,
             child: CircleAvatar(
               radius: 16,
-              backgroundColor: const Color(0xFF1B243B),
-              child: const Icon(
+              backgroundColor: isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0),
+              child: Icon(
                 Icons.person_rounded,
-                color: Colors.white70,
+                color: subtextColor,
                 size: 20,
               ),
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           'TrackX AI',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
             fontSize: 20,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.notifications_none_rounded,
-              color: Colors.white,
+              color: textColor,
               size: 22,
             ),
             onPressed: () {
@@ -599,7 +757,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
@@ -646,8 +804,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                         stats.allSubjectStats.isEmpty
                             ? 'Welcome to TrackX! Complete your profile and add your subjects to get personalized academic insights.'
                             : 'Overall attendance is ${stats.overallPercentage.toStringAsFixed(0)}% across ${subjects.length} enrolled subjects.',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           height: 1.4,
@@ -663,7 +821,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                       ? Icons.trending_up_rounded
                                       : Icons.warning_amber_rounded),
                             color: stats.allSubjectStats.isEmpty
-                                ? Colors.white54
+                                ? subtextColor
                                 : (stats.overallPercentage >= stats.globalTarget
                                       ? const Color(0xFF10B981)
                                       : const Color(0xFFFF8B94)),
@@ -680,7 +838,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                         : 'Attendance is below your ${stats.globalTarget.toStringAsFixed(0)}% target'),
                               style: TextStyle(
                                 color: stats.allSubjectStats.isEmpty
-                                    ? Colors.white54
+                                    ? subtextColor
                                     : (stats.overallPercentage >=
                                               stats.globalTarget
                                           ? const Color(0xFF10B981)
@@ -702,11 +860,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
+                      border: Border.all(color: cardBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -719,7 +875,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1B243B),
+                                    color: isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: const Icon(
@@ -734,16 +890,16 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                   children: [
                                     Text(
                                       'Exam: ${exams.first.title}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: textColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
                                     ),
                                     Text(
                                       'Date: ${DateFormat('MMM dd').format(exams.first.examDate)} • Progress: ${exams.first.preparationProgress.toStringAsFixed(0)}%',
-                                      style: const TextStyle(
-                                        color: Colors.white54,
+                                      style: TextStyle(
+                                        color: subtextColor,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -776,8 +932,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                         const SizedBox(height: 14),
                         Text(
                           'Suggested: Review core study notes for ${exams.first.title}.',
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : const Color(0xFF475569),
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -818,11 +974,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: stats.allSubjectStats.isEmpty
-                          ? Colors.white.withValues(alpha: 0.06)
+                          ? cardBorder
                           : const Color(0xFFFF8B94).withValues(alpha: 0.4),
                     ),
                   ),
@@ -862,8 +1018,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                             : (stats.overallPercentage >= stats.globalTarget
                                   ? 'Attendance is safely above ${stats.globalTarget.toStringAsFixed(0)}% across enrolled subjects.'
                                   : 'One or more subjects require attendance to maintain your ${stats.globalTarget.toStringAsFixed(0)}% target.'),
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
                           fontSize: 13,
                           height: 1.4,
                         ),
@@ -875,9 +1031,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                               1; // Jump to Attendance Log
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
+                          foregroundColor: isDark ? Colors.white70 : const Color(0xFF475569),
                           side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12),
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -904,7 +1060,12 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 ..._messages.map((msg) {
                   final isBot = msg['isBot'] as bool;
                   final text = msg['text'] as String;
+                  final isLoading = msg['isLoading'] == true;
                   final actions = msg['actions'] as List<String>?;
+                  final suggestedActions =
+                      msg['suggestedActions'] as List<AiSuggestedAction>?;
+                  final sources = msg['sources'] as List<AiSourceReference>?;
+                  final limitations = msg['limitations'] as List<String>?;
 
                   if (isBot) {
                     return Padding(
@@ -915,13 +1076,15 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                           Container(
                             width: 32,
                             height: 32,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Color(0xFF1B243B),
+                              color: botBubbleBg,
                             ),
-                            child: const Icon(
-                              Icons.smart_toy_outlined,
-                              color: Color(0xFFC0C1FF),
+                            child: Icon(
+                              isLoading
+                                  ? Icons.auto_awesome_rounded
+                                  : Icons.smart_toy_outlined,
+                              color: const Color(0xFFC0C1FF),
                               size: 18,
                             ),
                           ),
@@ -930,21 +1093,155 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1B243B),
+                                color: botBubbleBg,
                                 borderRadius: BorderRadius.circular(18),
+                                border: isLoading
+                                    ? Border.all(
+                                        color: const Color(0xFF5B5FEF)
+                                            .withValues(alpha: 0.4),
+                                      )
+                                    : null,
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    text,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      height: 1.4,
+                                  if (isLoading)
+                                    Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Color(0xFFC0C1FF),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            text,
+                                            style: TextStyle(
+                                              color: subtextColor,
+                                              fontSize: 13,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    Text(
+                                      text,
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontSize: 14,
+                                        height: 1.4,
+                                      ),
                                     ),
-                                  ),
-                                  if (actions != null) ...[
+
+                                  // Sources References
+                                  if (sources != null &&
+                                      sources.isNotEmpty) ...[
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: sources.map((src) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '📚 ${src.title}: ${src.detail}',
+                                            style: TextStyle(
+                                              color: subtextColor,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+
+                                  // Limitations / Diagnostics
+                                  if (limitations != null &&
+                                      limitations.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    ...limitations.map(
+                                      (lim) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 2.0),
+                                        child: Text(
+                                          'ℹ️ $lim',
+                                          style: TextStyle(
+                                            color: mutedTextColor,
+                                            fontSize: 10,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+
+                                  // 1-Tap Suggested Actions from Gemini
+                                  if (suggestedActions != null &&
+                                      suggestedActions.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: suggestedActions.map((sug) {
+                                        return GestureDetector(
+                                          onTap: () =>
+                                              _handleSuggestedAction(sug),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF5B5FEF)
+                                                  .withValues(alpha: 0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: const Color(0xFF5B5FEF)
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.auto_awesome_rounded,
+                                                  color: Color(0xFFC0C1FF),
+                                                  size: 14,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  sug.title,
+                                                  style: const TextStyle(
+                                                    color: Color(0xFFC0C1FF),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ] else if (actions != null) ...[
                                     const SizedBox(height: 12),
                                     Wrap(
                                       spacing: 8,
@@ -952,12 +1249,10 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                       children: actions.map((act) {
                                         IconData chipIcon =
                                             Icons.arrow_forward_rounded;
-                                        Color chipColor = const Color(
-                                          0xFF5B5FEF,
-                                        );
+                                        Color chipColor =
+                                            const Color(0xFF5B5FEF);
                                         if (act.contains('Timetable')) {
-                                          chipIcon =
-                                              Icons.table_chart_rounded;
+                                          chipIcon = Icons.table_chart_rounded;
                                           chipColor = const Color(0xFF10B981);
                                         } else if (act.contains('Exam')) {
                                           chipIcon = Icons.event_note_rounded;
@@ -965,9 +1260,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                         } else if (act.contains('Task')) {
                                           chipIcon = Icons.task_alt_rounded;
                                           chipColor = const Color(0xFF7BD0FF);
-                                        } else if (act.contains(
-                                          'Attendance',
-                                        )) {
+                                        } else if (act.contains('Attendance')) {
                                           chipIcon = Icons
                                               .assignment_turned_in_rounded;
                                           chipColor = const Color(0xFFC0C1FF);
@@ -1040,8 +1333,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: isDoc
-                                    ? const Color(0xFF1B243B)
-                                    : const Color(0xFF252A4A),
+                                    ? botBubbleBg
+                                    : userBubbleBg,
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
                                   color: isDoc
@@ -1055,8 +1348,8 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                               ),
                               child: Text(
                                 text,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: textColor,
                                   fontSize: 14,
                                   height: 1.4,
                                 ),
@@ -1064,12 +1357,12 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const CircleAvatar(
+                          CircleAvatar(
                             radius: 16,
-                            backgroundColor: Color(0xFF1B243B),
+                            backgroundColor: botBubbleBg,
                             child: Icon(
                               Icons.person_rounded,
-                              color: Colors.white70,
+                              color: subtextColor,
                               size: 18,
                             ),
                           ),
@@ -1083,91 +1376,86 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           ),
 
           // Bottom Input Bar
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0E131F).withValues(alpha: 0.9),
-              border: Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
-              ),
-            ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: _showAttachmentOptions,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 90),
+            child: GlassContainer(
+              tier: GlassTier.modal,
+              borderRadius: 24,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: _showAttachmentOptions,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
+                        ),
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.attach_file_rounded,
-                      color: Color(0xFF7BD0FF),
-                      size: 20,
+                      child: const Icon(
+                        Icons.attach_file_rounded,
+                        color: Color(0xFF7BD0FF),
+                        size: 18,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GlassContainer(
+                      tier: GlassTier.subtle,
+                      borderRadius: 16,
+                      showLightRim: false,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                      child: TextField(
+                        controller: _textController,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Ask AI or upload PDF...',
+                          hintStyle: TextStyle(
+                            color: mutedTextColor,
+                            fontSize: 13,
+                          ),
+                          border: InputBorder.none,
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
-                    child: TextField(
-                      controller: _textController,
-                      style: const TextStyle(
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _sendMessage,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5B5FEF),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF5B5FEF,
+                            ).withValues(alpha: 0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.send_rounded,
                         color: Colors.white,
-                        fontSize: 14,
+                        size: 18,
                       ),
-                      decoration: const InputDecoration(
-                        hintText: 'Ask AI or upload academic PDF...',
-                        hintStyle: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 13.5,
-                        ),
-                        border: InputBorder.none,
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFF5B5FEF,
-                          ).withValues(alpha: 0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.send_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

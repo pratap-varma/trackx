@@ -1,0 +1,12 @@
+{
+  "name": "trackx-backend",
+  "version": "1.0.0",
+  "description": "TrackX Firebase Admin SDK backend scripts",
+  "scripts": {
+    "set-role": "node backend/set-role.js",
+    "set-role-by-email": "node backend/set-role-by-email.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.3.0"
+  }
+}

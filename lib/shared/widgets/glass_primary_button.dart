@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/theme/app_theme.dart';
 
@@ -17,14 +17,16 @@ class GlassPrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassContainer(
+      tier: GlassTier.standard,
       borderRadius: 16.0,
+      showLightRim: true,
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       onTap: isLoading ? null : onPressed,
       gradientColors: onPressed == null
           ? [Colors.white10, Colors.white10]
           : [
-              AppTheme.accentPurple.withValues(alpha: 0.8),
-              AppTheme.accentBlue.withValues(alpha: 0.8),
+              AppTheme.accentPurple.withValues(alpha: 0.85),
+              AppTheme.accentBlue.withValues(alpha: 0.85),
             ],
       child: Center(
         child: isLoading

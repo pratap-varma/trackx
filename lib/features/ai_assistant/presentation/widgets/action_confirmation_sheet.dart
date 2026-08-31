@@ -112,14 +112,14 @@ class _ActionConfirmationSheetState
                   children: [
                     Text(
                       'AI Action: ${widget.action.type}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Colors.white,
+                        color: context.textColor,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white60),
+                      icon: Icon(Icons.close, color: context.mutedTextColor),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -172,10 +172,10 @@ class _ActionConfirmationSheetState
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        dropdownColor: Colors.purple.shade900,
+                        dropdownColor: context.isDark ? const Color(0xFF131A2B) : Colors.white,
                         initialValue: _priority,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textColor,
                           fontSize: 13,
                         ),
                         items: ['Low', 'Medium', 'High', 'Urgent'].map((p) {
@@ -189,7 +189,7 @@ class _ActionConfirmationSheetState
                         },
                         decoration: InputDecoration(
                           labelText: 'Priority',
-                          labelStyle: const TextStyle(color: Colors.white60),
+                          labelStyle: TextStyle(color: context.mutedTextColor),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -199,10 +199,10 @@ class _ActionConfirmationSheetState
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        dropdownColor: Colors.purple.shade900,
+                        dropdownColor: context.isDark ? const Color(0xFF131A2B) : Colors.white,
                         initialValue: _category,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textColor,
                           fontSize: 13,
                         ),
                         items:
@@ -223,7 +223,7 @@ class _ActionConfirmationSheetState
                         },
                         decoration: InputDecoration(
                           labelText: 'Category',
-                          labelStyle: const TextStyle(color: Colors.white60),
+                          labelStyle: TextStyle(color: context.mutedTextColor),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -262,21 +262,23 @@ class _ActionConfirmationSheetState
                       horizontal: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white10,
+                      color: context.isDark
+                          ? Colors.white10
+                          : Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white24),
+                      border: Border.all(color: context.subtleBorderColor),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Target Date:',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                          style: TextStyle(color: context.subtextColor, fontSize: 12),
                         ),
                         Text(
                           '${_dueDate.year}-${_dueDate.month.toString().padLeft(2, '0')}-${_dueDate.day.toString().padLeft(2, '0')}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.textColor,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -310,9 +312,9 @@ class _ActionConfirmationSheetState
                             .addActionRecord(record);
                         Navigator.pop(context);
                       },
-                      child: const Text(
+                      child: Text(
                         'Cancel',
-                        style: TextStyle(color: Colors.white60),
+                        style: TextStyle(color: context.mutedTextColor),
                       ),
                     ),
                     ElevatedButton(
@@ -377,7 +379,7 @@ class _ActionConfirmationSheetState
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.accentPurple,
                       ),
-                      child: const Text('Confirm'),
+                      child: const Text('Confirm', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),

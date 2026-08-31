@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -69,14 +68,6 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
         _entries = parsed;
         _isProcessing = false;
       });
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Parsed ${_entries.length} entries successfully! Please review.',
-          ),
-        ),
-      );
     });
   }
 
@@ -149,14 +140,22 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
 
   void _showMediaSourceSheet() {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final itemBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9);
+    final iconBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0);
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0E1628),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -168,24 +167,24 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Import Timetable Image / PDF',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Choose how you would like to provide your timetable:',
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+                style: TextStyle(color: subtextColor, fontSize: 13),
               ),
               const SizedBox(height: 20),
 
@@ -198,18 +197,16 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: itemBg,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF1B243B),
+                        decoration: BoxDecoration(
+                          color: iconBg,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -219,32 +216,32 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Take Photo from Camera',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Snap a clear picture of your printed timetable',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: subtextColor,
                                 fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white38,
+                        color: subtextColor,
                       ),
                     ],
                   ),
@@ -261,18 +258,16 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: itemBg,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF1B243B),
+                        decoration: BoxDecoration(
+                          color: iconBg,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -282,32 +277,32 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Choose from Photos / Gallery',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Pick a screenshot or downloaded schedule image',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: subtextColor,
                                 fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white38,
+                        color: subtextColor,
                       ),
                     ],
                   ),
@@ -324,18 +319,16 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: itemBg,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF1B243B),
+                        decoration: BoxDecoration(
+                          color: iconBg,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -345,32 +338,32 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Pick PDF / Document File',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Select official timetable PDF from files',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: subtextColor,
                                 fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white38,
+                        color: subtextColor,
                       ),
                     ],
                   ),
@@ -414,7 +407,27 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
 
       int colorIdx = 0;
 
+      // De-duplicate entries by day and period, preferring higher confidence
+      final uniqueEntries = <String, DetectedTimetableEntry>{};
       for (final entry in _entries) {
+        final key = '${entry.weekday}_${entry.period}';
+        if (uniqueEntries.containsKey(key)) {
+           if (entry.confidence > uniqueEntries[key]!.confidence) {
+              uniqueEntries[key] = entry;
+           }
+        } else {
+           uniqueEntries[key] = entry;
+        }
+      }
+
+      for (final entry in uniqueEntries.values) {
+        // Skip explicitly non-class entries if they aren't meant to be scheduled as subjects
+        if (entry.type != 'class' && entry.type != 'lab') {
+           // We could still add it as a "Break" entry if the domain model supported it easily,
+           // but normally breaks don't need dedicated Subject mapping unless explicitly desired.
+           // We will map it but maybe give it a default 'Break' subject.
+        }
+
         // 1. Resolve or Create Subject
         String subjectId = '';
         final currentSubjectsList = ref.read(subjectRepositoryProvider);
@@ -456,18 +469,18 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
         final dayOfWeek = _weekdayToInt(entry.weekday);
         final startMinutes = _timeToMinutes(entry.startTime);
         final endMinutes = _timeToMinutes(entry.endTime);
-        final uid = ref.read(authRepositoryProvider).userProfile?.id ?? 'user';
 
         final newTimetableEntry = TimetableEntry(
-          id: 'entry-${DateTime.now().millisecondsSinceEpoch}-${entry.weekday}-${entry.period}-${math.Random().nextInt(100)}',
-          userId: uid,
+          id: 'entry-ocr-${DateTime.now().microsecondsSinceEpoch}-$dayOfWeek-${entry.period}',
+          userId: ref.read(authRepositoryProvider).userProfile?.id ?? 'user',
           semesterId: activeSem.id,
           subjectId: subjectId,
           dayOfWeek: dayOfWeek,
           periodNumber: entry.period,
           startTime: startMinutes,
           endTime: endMinutes,
-          room: entry.room,
+          room: entry.room.isNotEmpty ? entry.room : null,
+          notes: 'Auto-imported via OCR/Parser',
           isEnabled: true,
           createdAt: DateTime.now().millisecondsSinceEpoch,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
@@ -477,9 +490,7 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Timetable imported successfully!')),
-      );
+
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -493,14 +504,18 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Import Timetable',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
           ),
         ),
         body: Stack(
@@ -508,9 +523,9 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
             ListView(
               padding: const EdgeInsets.all(24.0),
               children: [
-                const Text(
+                Text(
                   'Paste raw text, OCR dump, or upload an image of your timetable to automatically populate periods, subjects, and past attendance records.',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: subtextColor, fontSize: 12),
                 ),
                 const SizedBox(height: 16),
                 GlassContainer(
@@ -534,8 +549,8 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                               ),
                               label: const Text('Upload Photo / PDF'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white30),
+                                foregroundColor: textColor,
+                                side: BorderSide(color: isDark ? Colors.white30 : Colors.black26),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
@@ -556,10 +571,10 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                 ),
                 const SizedBox(height: 24),
                 if (_entries.isNotEmpty) ...[
-                  const Text(
+                  Text(
                     'Review Extracted Entries',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -576,13 +591,24 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  '${item.weekday} - Period ${item.period}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${item.weekday} - Period ${item.period}',
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    if (item.confidence < 0.8 || item.type != 'class') ...[
+                                      const SizedBox(width: 8),
+                                      const Tooltip(
+                                        message: 'Low confidence or special cell type (e.g. Break). Please verify.',
+                                        child: Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent, size: 16),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 IconButton(
                                   icon: const Icon(
@@ -604,18 +630,18 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                                 Expanded(
                                   child: TextFormField(
                                     initialValue: item.subjectName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: textColor,
                                       fontSize: 13,
                                     ),
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       labelText: 'Subject',
                                       labelStyle: TextStyle(
-                                        color: Colors.white70,
+                                        color: subtextColor,
                                       ),
                                       enabledBorder: UnderlineInputBorder(
                                         borderSide: BorderSide(
-                                          color: Colors.white38,
+                                          color: isDark ? Colors.white38 : Colors.black26,
                                         ),
                                       ),
                                     ),
@@ -637,18 +663,18 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                                   child: TextFormField(
                                     initialValue:
                                         '${item.startTime}-${item.endTime}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: textColor,
                                       fontSize: 13,
                                     ),
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       labelText: 'Time Slot',
                                       labelStyle: TextStyle(
-                                        color: Colors.white70,
+                                        color: subtextColor,
                                       ),
                                       enabledBorder: UnderlineInputBorder(
                                         borderSide: BorderSide(
-                                          color: Colors.white38,
+                                          color: isDark ? Colors.white38 : Colors.black26,
                                         ),
                                       ),
                                     ),

@@ -18,49 +18,68 @@ class OfflineFallbackProvider implements AiProvider {
       'No cloud AI processing performed.',
     ];
 
-    final prompt = request.userPrompt.toLowerCase();
-    if (prompt.contains('class') ||
-        prompt.contains('timetable') ||
-        prompt.contains('schedule')) {
-      text = _generateTimetableBrief(request.context, sources, actions);
-    } else {
-      switch (request.featureType) {
-        case AiFeatureType.attendanceExplanation:
+    switch (request.featureType) {
+      case AiFeatureType.attendanceExplanation:
+        text = _generateAttendanceExplanation(
+          request.context,
+          sources,
+          actions,
+        );
+        break;
+      case AiFeatureType.studyPlanning:
+        text = _generateStudyPlanning(request.context, sources, actions);
+        break;
+      case AiFeatureType.examPreparation:
+        text = _generateExamPreparation(request.context, sources, actions);
+        break;
+      case AiFeatureType.assignmentBreakdown:
+        text = _generateAssignmentBreakdown(
+          request.context,
+          sources,
+          actions,
+        );
+        break;
+      case AiFeatureType.topicExplanation:
+        text = _generateTopicExplanation(
+          request.context,
+          request.userPrompt,
+          sources,
+          actions,
+        );
+        break;
+      case AiFeatureType.notesSummary:
+      case AiFeatureType.resourceSummary:
+        text = _generateSummary(request.context, sources, actions);
+        break;
+      case AiFeatureType.generalChat:
+      default:
+        final prompt = request.userPrompt.toLowerCase();
+        if (prompt.contains('timetable') ||
+            (prompt.contains('schedule') && prompt.contains('class')) ||
+            prompt.contains('period')) {
+          text = _generateTimetableBrief(request.context, sources, actions);
+        } else if (prompt.contains('attendance') ||
+            prompt.contains('bunk') ||
+            prompt.contains('miss')) {
           text = _generateAttendanceExplanation(
             request.context,
             sources,
             actions,
           );
-          break;
-        case AiFeatureType.studyPlanning:
-          text = _generateStudyPlanning(request.context, sources, actions);
-          break;
-        case AiFeatureType.examPreparation:
+        } else if (prompt.contains('exam') || prompt.contains('countdown')) {
           text = _generateExamPreparation(request.context, sources, actions);
-          break;
-        case AiFeatureType.assignmentBreakdown:
+        } else if (prompt.contains('study') || prompt.contains('plan')) {
+          text = _generateStudyPlanning(request.context, sources, actions);
+        } else if (prompt.contains('assignment') || prompt.contains('homework')) {
           text = _generateAssignmentBreakdown(
             request.context,
             sources,
             actions,
           );
-          break;
-        case AiFeatureType.topicExplanation:
-          text = _generateTopicExplanation(
-            request.context,
-            request.userPrompt,
-            sources,
-            actions,
-          );
-          break;
-        case AiFeatureType.notesSummary:
-        case AiFeatureType.resourceSummary:
-          text = _generateSummary(request.context, sources, actions);
-          break;
-        default:
+        } else {
           text = _generateGeneralSummary(request.context, sources, actions);
-          break;
-      }
+        }
+        break;
     }
 
     return AiResponse(
@@ -116,11 +135,8 @@ class OfflineFallbackProvider implements AiProvider {
       buffer.writeln('#### ${days[dayIdx - 1]}');
       for (final entry in dayEntries) {
         final subId = entry['subjectId'];
-        final subMap = subjects.firstWhere(
-          (s) => s['id'] == subId,
-          orElse: () => null,
-        );
-        final subName = subMap != null ? subMap['name'] : 'Unknown Subject';
+        final matches = subjects.where((s) => s['id'] == subId);
+        final subName = matches.isNotEmpty ? matches.first['name'] : 'Unknown Subject';
 
         final startMin = entry['startTime'] as int;
         final endMin = entry['endTime'] as int;

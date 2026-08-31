@@ -30,6 +30,9 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
     _hoursController.text = exam.completedStudyHours.toString();
     _testsController.text = exam.practiceTestCount.toString();
     String currentConf = exam.confidence;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white70 : const Color(0xFF475569);
 
     showDialog(
       context: context,
@@ -42,18 +45,18 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Update Prep Details',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: isDark ? const Color(0xFF1B243B) : Colors.white,
                     initialValue: currentConf,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: textColor),
                     items: const [
                       DropdownMenuItem(value: 'Low', child: Text('Low')),
                       DropdownMenuItem(
@@ -69,6 +72,7 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                     onChanged: (val) => currentConf = val ?? 'Developing',
                     decoration: InputDecoration(
                       labelText: 'Confidence Level',
+                      labelStyle: TextStyle(color: subtextColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -77,21 +81,21 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _hoursController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: textColor),
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Completed Study Hours',
-                      labelStyle: TextStyle(color: Colors.white70),
+                      labelStyle: TextStyle(color: subtextColor),
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _testsController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: textColor),
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Practice Test Count',
-                      labelStyle: TextStyle(color: Colors.white70),
+                      labelStyle: TextStyle(color: subtextColor),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -100,9 +104,9 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: subtextColor),
                         ),
                       ),
                       ElevatedButton(
@@ -141,24 +145,28 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
   Widget build(BuildContext context) {
     final exams = ref.watch(examsProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
 
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Exam Preparation Planner',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
           ),
         ),
         body: exams.isEmpty
             ? Center(
                 child: GlassContainer(
                   padding: const EdgeInsets.all(24),
-                  child: const Text(
+                  child: Text(
                     'No exams scheduled yet. Go to Planner to schedule exams first.',
-                    style: TextStyle(color: Colors.white70),
+                    style: TextStyle(color: subtextColor),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -203,9 +211,9 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                               Expanded(
                                 child: Text(
                                   exam.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: textColor,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -218,7 +226,7 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                                 decoration: BoxDecoration(
                                   color: daysRemaining >= 0
                                       ? Colors.blue.withValues(alpha: 0.15)
-                                      : Colors.white10,
+                                      : (isDark ? Colors.white10 : Colors.black12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -228,7 +236,7 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                                   style: TextStyle(
                                     color: daysRemaining >= 0
                                         ? Colors.blueAccent
-                                        : Colors.white60,
+                                        : mutedTextColor,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -239,30 +247,37 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'Subject: ${sub.name}',
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: subtextColor,
                               fontSize: 12,
                             ),
                           ),
                           Text(
                             'Exam Date: ${exam.examDate.year}-${exam.examDate.month}-${exam.examDate.day} at ${exam.startTime}',
-                            style: const TextStyle(
-                              color: Colors.white60,
+                            style: TextStyle(
+                              color: mutedTextColor,
                               fontSize: 11,
                             ),
                           ),
-                          const Divider(color: Colors.white10, height: 20),
+                          Divider(
+                            color: isDark ? Colors.white10 : Colors.black12,
+                            height: 20,
+                          ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _buildPrepMetric('Confidence', exam.confidence),
+                              _buildPrepMetric('Confidence', exam.confidence, textColor, mutedTextColor),
                               _buildPrepMetric(
                                 'Hours Done',
                                 '${exam.completedStudyHours} hrs',
+                                textColor,
+                                mutedTextColor,
                               ),
                               _buildPrepMetric(
                                 'Practice Tests',
                                 '${exam.practiceTestCount} tests',
+                                textColor,
+                                mutedTextColor,
                               ),
                             ],
                           ),
@@ -290,17 +305,17 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
     );
   }
 
-  Widget _buildPrepMetric(String label, String value) {
+  Widget _buildPrepMetric(String label, String value, Color textColor, Color mutedTextColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9)),
+        Text(label, style: TextStyle(color: mutedTextColor, fontSize: 9)),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
             fontSize: 12,
           ),
         ),

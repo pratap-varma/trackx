@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class SemesterComparisonScreen extends StatelessWidget {
   const SemesterComparisonScreen({super.key});
@@ -14,18 +15,18 @@ class SemesterComparisonScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.white,
+              color: context.textColor,
               size: 18,
             ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: const Text(
+          title: Text(
             'Semester Comparison',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: context.textColor,
               fontSize: 18,
             ),
           ),
@@ -39,12 +40,12 @@ class SemesterComparisonScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     flex: 3,
                     child: Text(
                       'Metric',
                       style: TextStyle(
-                        color: Colors.white38,
+                        color: context.mutedTextColor,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.8,
@@ -55,14 +56,15 @@ class SemesterComparisonScreen extends StatelessWidget {
                   const SizedBox(width: 8),
                   _semLabel('SEM 2', const Color(0xFF5B5FEF)),
                   const SizedBox(width: 8),
-                  _semLabel('Δ', Colors.white24),
+                  _semLabel('Δ', context.mutedTextColor),
                 ],
               ),
             ),
 
             // Section: Performance
-            _sectionHeader('OVERALL PERFORMANCE'),
+            _sectionHeader(context, 'OVERALL PERFORMANCE'),
             _comparisonCard(
+              context,
               icon: Icons.how_to_reg_outlined,
               iconColor: const Color(0xFF10B981),
               metric: 'Attendance',
@@ -72,6 +74,7 @@ class SemesterComparisonScreen extends StatelessWidget {
               isPositive: true,
             ),
             _comparisonCard(
+              context,
               icon: Icons.grade_outlined,
               iconColor: const Color(0xFF5B5FEF),
               metric: 'SGPA',
@@ -81,6 +84,7 @@ class SemesterComparisonScreen extends StatelessWidget {
               isPositive: true,
             ),
             _comparisonCard(
+              context,
               icon: Icons.workspace_premium_outlined,
               iconColor: const Color(0xFFF59E0B),
               metric: 'CGPA',
@@ -91,8 +95,9 @@ class SemesterComparisonScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 20),
-            _sectionHeader('CONSISTENCY & EFFORT'),
+            _sectionHeader(context, 'CONSISTENCY & EFFORT'),
             _comparisonCard(
+              context,
               icon: Icons.timer_outlined,
               iconColor: const Color(0xFF7BD0FF),
               metric: 'Study Time',
@@ -102,43 +107,24 @@ class SemesterComparisonScreen extends StatelessWidget {
               isPositive: true,
             ),
             _comparisonCard(
-              icon: Icons.cancel_outlined,
+              context,
+              icon: Icons.assignment_turned_in_outlined,
+              iconColor: const Color(0xFF8151EB),
+              metric: 'Tasks Done',
+              sem1: '88%',
+              sem2: '94%',
+              trend: '+6%',
+              isPositive: true,
+            ),
+            _comparisonCard(
+              context,
+              icon: Icons.dangerous_outlined,
               iconColor: const Color(0xFFEF4444),
-              metric: 'Missed Classes',
-              sem1: '14',
-              sem2: '9',
-              trend: '-5',
+              metric: 'Bunks Left',
+              sem1: '4',
+              sem2: '7',
+              trend: '+3',
               isPositive: true,
-            ),
-            _comparisonCard(
-              icon: Icons.check_circle_outline,
-              iconColor: const Color(0xFF10B981),
-              metric: 'Assignments Done',
-              sem1: '18',
-              sem2: '23',
-              trend: '+5',
-              isPositive: true,
-            ),
-
-            const SizedBox(height: 20),
-            _sectionHeader('GRADES BREAKDOWN'),
-            _comparisonCard(
-              icon: Icons.star_outline_rounded,
-              iconColor: const Color(0xFF10B981),
-              metric: 'O Grade Subjects',
-              sem1: '2',
-              sem2: '4',
-              trend: '+2',
-              isPositive: true,
-            ),
-            _comparisonCard(
-              icon: Icons.trending_up_rounded,
-              iconColor: const Color(0xFF5B5FEF),
-              metric: 'A+ Grade Subjects',
-              sem1: '3',
-              sem2: '2',
-              trend: '-1',
-              isPositive: false,
             ),
 
             const SizedBox(height: 24),
@@ -146,7 +132,7 @@ class SemesterComparisonScreen extends StatelessWidget {
             // Summary insight
             GlassContainer(
               borderRadius: 18,
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -163,11 +149,11 @@ class SemesterComparisonScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'AI Insight',
                           style: TextStyle(
                             color: Color(0xFFC0C1FF),
@@ -176,11 +162,11 @@ class SemesterComparisonScreen extends StatelessWidget {
                             letterSpacing: 0.5,
                           ),
                         ),
-                        SizedBox(height: 5),
+                        const SizedBox(height: 5),
                         Text(
                           'Your Semester 2 shows a strong upward trend — attendance improved by 7.3% and SGPA grew by 0.44 points. Keep up the momentum!',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: context.subtextColor,
                             fontSize: 13,
                             height: 1.5,
                           ),
@@ -213,13 +199,13 @@ class SemesterComparisonScreen extends StatelessWidget {
     );
   }
 
-  static Widget _sectionHeader(String title) {
+  static Widget _sectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 4, left: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white30,
+        style: TextStyle(
+          color: context.mutedTextColor,
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -228,7 +214,8 @@ class SemesterComparisonScreen extends StatelessWidget {
     );
   }
 
-  static Widget _comparisonCard({
+  static Widget _comparisonCard(
+    BuildContext context, {
     required IconData icon,
     required Color iconColor,
     required String metric,
@@ -261,8 +248,8 @@ class SemesterComparisonScreen extends StatelessWidget {
               flex: 2,
               child: Text(
                 metric,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.textColor,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -273,7 +260,7 @@ class SemesterComparisonScreen extends StatelessWidget {
               child: Text(
                 sem1,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white38, fontSize: 13),
+                style: TextStyle(color: context.mutedTextColor, fontSize: 13),
               ),
             ),
             const SizedBox(width: 8),
@@ -282,8 +269,8 @@ class SemesterComparisonScreen extends StatelessWidget {
               child: Text(
                 sem2,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),

@@ -15,6 +15,8 @@ class DetectedTimetableEntry {
   final String subjectName; // e.g. DBMS
   final String faculty;
   final String room;
+  final String type; // e.g. class, break, lab
+  final double confidence; // e.g. 0.95
 
   DetectedTimetableEntry({
     required this.weekday,
@@ -24,6 +26,8 @@ class DetectedTimetableEntry {
     required this.subjectName,
     required this.faculty,
     required this.room,
+    this.type = 'class',
+    this.confidence = 1.0,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,18 +39,22 @@ class DetectedTimetableEntry {
       'subjectName': subjectName,
       'faculty': faculty,
       'room': room,
+      'type': type,
+      'confidence': confidence,
     };
   }
 
   factory DetectedTimetableEntry.fromMap(Map<String, dynamic> map) {
     return DetectedTimetableEntry(
-      weekday: map['weekday'] ?? 'Monday',
+      weekday: map['weekday'] ?? map['day'] ?? 'Monday',
       period: map['period'] ?? 1,
       startTime: map['startTime'] ?? '09:15',
       endTime: map['endTime'] ?? '10:15',
-      subjectName: map['subjectName'] ?? '',
+      subjectName: map['subjectName'] ?? map['subject'] ?? '',
       faculty: map['faculty'] ?? '',
       room: map['room'] ?? '',
+      type: map['type'] ?? 'class',
+      confidence: (map['confidence'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }
@@ -116,6 +124,47 @@ class DetectedExamEntry {
       endTime: map['endTime'] ?? '01:00 PM',
       room: map['room'] ?? '',
       syllabus: map['syllabus'] ?? 'Complete Syllabus',
+    );
+  }
+}
+
+class DetectedAttendanceEntry {
+  final String subjectName;
+  final String status;
+  final int? periodNumber;
+  final DateTime? date;
+
+  DetectedAttendanceEntry({
+    required this.subjectName,
+    required this.status,
+    this.periodNumber,
+    this.date,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'subjectName': subjectName,
+      'status': status,
+      'periodNumber': periodNumber,
+      'date': date?.toIso8601String(),
+    };
+  }
+
+  factory DetectedAttendanceEntry.fromMap(Map<String, dynamic> map) {
+    DateTime? parsedDate;
+    if (map['date'] != null) {
+      try {
+        parsedDate = DateTime.parse(map['date'].toString());
+      } catch (_) {}
+    }
+
+    return DetectedAttendanceEntry(
+      subjectName: map['subjectName'] ?? map['course_name'] ?? 'Unknown Subject',
+      status: map['status'] ?? 'present',
+      periodNumber: map['periodNumber'] is int 
+          ? map['periodNumber'] 
+          : int.tryParse('${map['periodNumber']}'),
+      date: parsedDate,
     );
   }
 }

@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trackx/core/services/hive_db_service.dart';
+import 'package:trackx/core/services/sync_service.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
+import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/features/subjects/data/dependency_repository.dart';
@@ -39,34 +42,113 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
 
   void _load() {
     final uid = _currentUserId;
-    if (uid.isEmpty) {
-      state = [];
-      return;
-    }
     final key = _getKey(uid);
-    final jsonStr = _prefs.getString(key);
+    var jsonStr = _prefs.getString(key);
+    if (jsonStr == null && uid.isNotEmpty) {
+      jsonStr = _prefs.getString(_keySubjects);
+    }
+
     if (jsonStr != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         state = decoded
             .map((item) => Subject.fromMap(item as Map<String, dynamic>))
-            .where((s) => s.userId == uid || s.userId.isEmpty)
-            .map((s) => s.userId != uid ? s.copyWith(userId: uid) : s)
+            .where(
+              (s) =>
+                  uid.isEmpty ||
+                  s.userId == uid ||
+                  s.userId.isEmpty ||
+                  s.userId == 'guest' ||
+                  s.userId == 'user' ||
+                  s.userId == 'u1',
+            )
+            .map(
+              (s) => (uid.isNotEmpty && s.userId != uid)
+                  ? s.copyWith(userId: uid)
+                  : s,
+            )
             .toList();
       } catch (_) {
         state = [];
       }
     } else {
-      state = [];
+      // Fallback: check Hive Box if SharedPreferences is empty
+      try {
+        final db = _ref?.read(hiveDbServiceProvider);
+        if (db != null) {
+          final box = db.getBoxOrNull(HiveDbService.boxSubjects);
+          if (box != null && box.isNotEmpty) {
+            final hiveSubjects = box.values
+                .map((e) => Subject.fromMap(Map<String, dynamic>.from(e as Map)))
+                .where(
+                  (s) =>
+                      uid.isEmpty ||
+                      s.userId == uid ||
+                      s.userId.isEmpty ||
+                      s.userId == 'guest' ||
+                      s.userId == 'user' ||
+                      s.userId == 'u1',
+                )
+                .toList();
+            if (hiveSubjects.isNotEmpty) {
+              state = hiveSubjects;
+            }
+          }
+        }
+      } catch (_) {}
     }
+  }
+
+  void reloadFromStorage() {
+    _load();
   }
 
   Future<void> _save() async {
     final uid = _currentUserId;
-    if (uid.isEmpty) return;
     final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((s) => s.toMap()).toList());
     await _prefs.setString(key, jsonStr);
+    if (uid.isNotEmpty) {
+      await _prefs.setString(_keySubjects, jsonStr);
+    }
+
+    // Save to Hive Database
+    try {
+      final db = _ref?.read(hiveDbServiceProvider);
+      if (db != null) {
+        final box = db.getBoxOrNull(HiveDbService.boxSubjects);
+        if (box != null) {
+          for (final sub in state) {
+            await box.put(sub.id, sub.toMap());
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  void syncAttendanceCounts(List<AttendanceRecord> records) {
+    if (state.isEmpty) return;
+    bool hasChanges = false;
+    final updatedList = state.map((sub) {
+      final subRecords = records.where((r) => r.subjectId == sub.id).toList();
+      final present = subRecords.where((r) => r.status == 'present').length;
+      final total = subRecords.length;
+      final absent = total - present;
+      if (sub.presentClasses != present || sub.absentClasses != absent) {
+        hasChanges = true;
+        return sub.copyWith(
+          presentClasses: present,
+          absentClasses: absent,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+        );
+      }
+      return sub;
+    }).toList();
+
+    if (hasChanges) {
+      state = updatedList;
+      _save();
+    }
   }
 
   Future<bool> addSubject(
@@ -116,6 +198,12 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
 
     state = [...state, sub];
     await _save();
+
+    try {
+      final syncService = _ref?.read(syncServiceProvider);
+      syncService?.addToQueue('subject', sub.id, 'create', sub.toMap());
+    } catch (_) {}
+
     return true;
   }
 
@@ -134,9 +222,10 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
     double? marks,
     String? status,
   }) async {
+    Subject? updatedSubject;
     state = state.map((s) {
       if (s.id == id) {
-        return s.copyWith(
+        updatedSubject = s.copyWith(
           name: name,
           facultyName: faculty,
           colorValue: color,
@@ -151,15 +240,36 @@ class SubjectRepository extends StateNotifier<List<Subject>> {
           status: status ?? s.status,
           updatedAt: DateTime.now().millisecondsSinceEpoch,
         );
+        return updatedSubject!;
       }
       return s;
     }).toList();
     await _save();
+
+    if (updatedSubject != null) {
+      try {
+        final syncService = _ref?.read(syncServiceProvider);
+        syncService?.addToQueue(
+          'subject',
+          updatedSubject!.id,
+          'update',
+          updatedSubject!.toMap(),
+        );
+      } catch (_) {}
+    }
   }
 
   Future<void> deleteSubject(String id) async {
     state = state.where((s) => s.id != id).toList();
     await _save();
+
+    try {
+      final db = _ref?.read(hiveDbServiceProvider);
+      db?.getBoxOrNull(HiveDbService.boxSubjects)?.delete(id);
+      final syncService = _ref?.read(syncServiceProvider);
+      syncService?.addToQueue('subject', id, 'delete', {'id': id});
+    } catch (_) {}
+
     try {
       _ref
           ?.read(timetableRepositoryProvider.notifier)

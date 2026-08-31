@@ -42,62 +42,64 @@ class _FutureSemesterPlannerScreenState
     _semNameController.clear();
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (ctx) {
         return AlertDialog(
-          backgroundColor: Colors.transparent,
-          content: GlassContainer(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Create Upcoming Semester',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          backgroundColor: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: ctx.subtleBorderColor),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Create Upcoming Semester',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: ctx.textColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GlassTextField(
+                controller: _semNameController,
+                labelText: 'Semester Name (e.g. Semester 6)',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: ctx.mutedTextColor),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                GlassTextField(
-                  controller: _semNameController,
-                  labelText: 'Semester Name (e.g. Semester 6)',
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: Colors.white60),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final name = _semNameController.text.trim();
-                        final activeProg = ref.read(activeProgrammeProvider);
-                        if (name.isNotEmpty && activeProg != null) {
-                          await ref
-                              .read(semesterRepositoryProvider.notifier)
-                              .createSemester(
-                                name,
-                                6, // number
-                                DateTime.now().add(
-                                  const Duration(days: 120),
-                                ), // Future start date
-                                null,
-                                programmeId: activeProg.id,
-                                status: 'Upcoming',
-                              );
-                          if (context.mounted) Navigator.of(context).pop();
-                        }
-                      },
-                      child: const Text('Create'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final name = _semNameController.text.trim();
+                      final activeProg = ref.read(activeProgrammeProvider);
+                      if (name.isNotEmpty && activeProg != null) {
+                        await ref
+                            .read(semesterRepositoryProvider.notifier)
+                            .createSemester(
+                              name,
+                              6, // number
+                              DateTime.now().add(
+                                const Duration(days: 120),
+                              ), // Future start date
+                              null,
+                              programmeId: activeProg.id,
+                              status: 'Upcoming',
+                            );
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                      }
+                    },
+                    child: const Text('Create'),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
@@ -122,20 +124,24 @@ class _FutureSemesterPlannerScreenState
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (ctx) {
         return AlertDialog(
-          backgroundColor: Colors.transparent,
-          content: GlassContainer(
+          backgroundColor: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: ctx.subtleBorderColor),
+          ),
+          content: SizedBox(
             width: 320,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Plan New Subject',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: ctx.textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -162,9 +168,9 @@ class _FutureSemesterPlannerScreenState
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: ctx.isDark ? const Color(0xFF131A2B) : Colors.white,
                     initialValue: _selectedType,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: ctx.textColor),
                     items: const [
                       DropdownMenuItem(value: 'Theory', child: Text('Theory')),
                       DropdownMenuItem(
@@ -195,7 +201,7 @@ class _FutureSemesterPlannerScreenState
                     onChanged: (val) => _selectedType = val ?? 'Theory',
                     decoration: InputDecoration(
                       labelText: 'Subject Type',
-                      labelStyle: const TextStyle(color: Colors.white60),
+                      labelStyle: TextStyle(color: ctx.mutedTextColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -203,9 +209,9 @@ class _FutureSemesterPlannerScreenState
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    dropdownColor: Colors.purple.shade900,
+                    dropdownColor: ctx.isDark ? const Color(0xFF131A2B) : Colors.white,
                     initialValue: _selectedDifficulty,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: ctx.textColor),
                     items: const [
                       DropdownMenuItem(value: 'Easy', child: Text('Easy')),
                       DropdownMenuItem(
@@ -224,7 +230,7 @@ class _FutureSemesterPlannerScreenState
                     onChanged: (val) => _selectedDifficulty = val ?? 'Moderate',
                     decoration: InputDecoration(
                       labelText: 'Expected Difficulty',
-                      labelStyle: const TextStyle(color: Colors.white60),
+                      labelStyle: TextStyle(color: ctx.mutedTextColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -235,10 +241,10 @@ class _FutureSemesterPlannerScreenState
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: ctx.mutedTextColor),
                         ),
                       ),
                       ElevatedButton(
@@ -268,7 +274,7 @@ class _FutureSemesterPlannerScreenState
                                   expectedDifficulty: _selectedDifficulty,
                                   status: 'Planned',
                                 );
-                            if (context.mounted) Navigator.of(context).pop();
+                            if (ctx.mounted) Navigator.of(ctx).pop();
                           }
                         },
                         child: const Text('Add Plan'),
@@ -311,13 +317,14 @@ class _FutureSemesterPlannerScreenState
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Future Semester Planner',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
           actions: [
             IconButton(
-              icon: const Icon(Icons.add_box_rounded, color: Colors.white),
+              icon: Icon(Icons.add_box_rounded, color: context.textColor),
               onPressed: _showAddSemesterDialog,
             ),
           ],
@@ -326,9 +333,9 @@ class _FutureSemesterPlannerScreenState
             ? Center(
                 child: GlassContainer(
                   padding: const EdgeInsets.all(24),
-                  child: const Text(
+                  child: Text(
                     'Set an active programme in settings to start planning upcoming semesters.',
-                    style: TextStyle(color: Colors.white70),
+                    style: TextStyle(color: context.subtextColor),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -336,9 +343,9 @@ class _FutureSemesterPlannerScreenState
             : ListView(
                 padding: const EdgeInsets.all(24.0),
                 children: [
-                  const Text(
+                  Text(
                     'Plan upcoming semesters and build mock syllabus catalogs offline.',
-                    style: TextStyle(color: Colors.white60, fontSize: 11),
+                    style: TextStyle(color: context.subtextColor, fontSize: 11),
                   ),
                   const SizedBox(height: 20),
 
@@ -347,12 +354,12 @@ class _FutureSemesterPlannerScreenState
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          dropdownColor: Colors.purple.shade900,
+                          dropdownColor: context.isDark ? const Color(0xFF131A2B) : Colors.white,
                           initialValue: _selectedSemesterId,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: context.textColor),
                           decoration: InputDecoration(
                             labelText: 'Select Target Semester',
-                            labelStyle: const TextStyle(color: Colors.white60),
+                            labelStyle: TextStyle(color: context.mutedTextColor),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -384,21 +391,21 @@ class _FutureSemesterPlannerScreenState
                   const SizedBox(height: 24),
 
                   // Planned subjects list
-                  const Text(
+                  Text(
                     'Planned Subjects Checkbox',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.textColor,
                       fontSize: 15,
                     ),
                   ),
                   const SizedBox(height: 12),
                   plannedSubjects.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'No subjects planned for this semester yet.',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: context.mutedTextColor,
                               fontSize: 12,
                             ),
                           ),
@@ -425,17 +432,17 @@ class _FutureSemesterPlannerScreenState
                                         children: [
                                           Text(
                                             '${sub.name} (${sub.code ?? "No Code"})',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                              color: context.textColor,
                                               fontSize: 13,
                                             ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             'Credits: ${sub.credits ?? "Not Set"} • Type: ${sub.type} • Difficulty: ${sub.expectedDifficulty}',
-                                            style: const TextStyle(
-                                              color: Colors.white60,
+                                            style: TextStyle(
+                                              color: context.subtextColor,
                                               fontSize: 11,
                                             ),
                                           ),
@@ -446,9 +453,9 @@ class _FutureSemesterPlannerScreenState
                                       children: [
                                         // Activate Button
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.play_circle_outline,
-                                            color: Colors.greenAccent,
+                                            color: context.isDark ? Colors.greenAccent : Colors.green.shade700,
                                           ),
                                           tooltip: 'Convert to Active Subject',
                                           onPressed: () {

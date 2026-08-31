@@ -52,24 +52,46 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
     _load();
   }
 
+  List<CalendarEvent> _mergeWithStandardHolidays(List<CalendarEvent> baseEvents) {
+    final merged = <CalendarEvent>[...baseEvents];
+    final seenDateTitles = <String>{};
+
+    for (final ev in merged) {
+      final k = '${_dateKey(ev.startDateTime)}_${ev.title.toLowerCase().trim()}';
+      seenDateTitles.add(k);
+    }
+
+    for (final std in _getStandardAcademicHolidays()) {
+      final k = '${_dateKey(std.startDateTime)}_${std.title.toLowerCase().trim()}';
+      if (!seenDateTitles.contains(k)) {
+        seenDateTitles.add(k);
+        merged.add(std);
+      }
+    }
+
+    merged.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    return merged;
+  }
+
   void _load() {
     final key = _getKey(_keyEvents);
     final raw = _prefs.getString(key);
+    List<CalendarEvent> loaded = [];
     if (raw != null) {
       try {
         final List<dynamic> decoded = jsonDecode(raw);
-        state = decoded
+        loaded = decoded
             .map(
               (item) =>
                   CalendarEvent.fromMap(Map<String, dynamic>.from(item as Map)),
             )
             .toList();
       } catch (_) {
-        state = [];
+        loaded = [];
       }
-    } else {
-      state = [];
     }
+
+    state = _mergeWithStandardHolidays(loaded);
 
     final calsKey = _getKey(_keyCalendars);
     final calsRaw = _prefs.getString(calsKey);
@@ -181,7 +203,6 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
   /// Connect Device Calendar and fetch real public holidays & personal events
   Future<bool> connectAndSync({String? countryCode}) async {
     try {
-      final region = countryCode ?? getRegion();
       final granted = await _calendarService.requestCalendarAccess();
       if (!granted) {
         return false;
@@ -193,38 +214,19 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
         userCalendars = await _calendarService.getUserCalendars();
       } catch (_) {}
 
-      // Ensure holiday calendar is resolved and included
-      String holidayCalId = 'en.$region#holiday@group.v.calendar.google.com';
-      try {
-        holidayCalId = await _calendarService.resolveHolidayCalendarId(
-          countryCode: region,
-        );
-      } catch (_) {}
-
-      final hasHolidayCal = userCalendars.any((c) => c.id == holidayCalId);
-      final combinedCalendars = List<UserCalendarInfo>.from(userCalendars);
-      if (!hasHolidayCal) {
-        combinedCalendars.add(
-          UserCalendarInfo(
-            id: holidayCalId,
-            name: region == 'indian' ? 'Holidays in India' : 'Public Holidays',
-            isHolidayCalendar: true,
-            isSelected: true,
-          ),
-        );
-      }
-
-      _availableCalendars = combinedCalendars;
+      _availableCalendars = userCalendars;
 
       // Fetch events from all selected calendars
       List<CalendarEvent> events = [];
       try {
-        events = await _calendarService.fetchMultipleCalendarEvents(
-          calendars: _availableCalendars,
-        );
+        if (_availableCalendars.isNotEmpty) {
+          events = await _calendarService.fetchMultipleCalendarEvents(
+            calendars: _availableCalendars,
+          );
+        }
       } catch (_) {}
 
-      state = events;
+      state = _mergeWithStandardHolidays(events);
       _lastSyncTime = DateTime.now();
       await _save();
 
@@ -242,7 +244,7 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
       await _calendarService.disconnect();
     } catch (_) {}
 
-    state = [];
+    state = _getStandardAcademicHolidays();
     _availableCalendars = [];
     _lastSyncTime = null;
 
@@ -264,27 +266,17 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
 
     try {
       if (_availableCalendars.isEmpty) {
-        final region = getRegion();
-        final holidayCalId = await _calendarService.resolveHolidayCalendarId(
-          countryCode: region,
+        _availableCalendars = await _calendarService.getUserCalendars();
+      }
+
+      List<CalendarEvent> events = [];
+      if (_availableCalendars.isNotEmpty) {
+        events = await _calendarService.fetchMultipleCalendarEvents(
+          calendars: _availableCalendars,
         );
-        _availableCalendars = [
-          UserCalendarInfo(
-            id: holidayCalId,
-            name: region == 'indian' ? 'Holidays in India' : 'Public Holidays',
-            isHolidayCalendar: true,
-            isSelected: true,
-          ),
-        ];
       }
 
-      final events = await _calendarService.fetchMultipleCalendarEvents(
-        calendars: _availableCalendars,
-      );
-
-      if (events.isNotEmpty) {
-        state = events;
-      }
+      state = _mergeWithStandardHolidays(events);
       _lastSyncTime = DateTime.now();
       await _save();
       _isRefreshing = false;
@@ -463,5 +455,369 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
     await _save();
     // Trigger state change so listeners update
     state = List<CalendarEvent>.from(state);
+  }
+
+  Future<void> resetDayOfWeekOverride(DateTime date) async {
+    _dayOfWeekOverrides.remove(_dateKey(date));
+    await _save();
+    state = List<CalendarEvent>.from(state);
+  }
+
+  static List<CalendarEvent> _getStandardAcademicHolidays() {
+    final list = <CalendarEvent>[];
+    for (final year in [2025, 2026, 2027, 2028]) {
+      list.addAll([
+        CalendarEvent(
+          id: 'holiday_new_year_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: "New Year's Day",
+          description: "Public & Academic Holiday",
+          startDateTime: DateTime(year, 1, 1),
+          endDateTime: DateTime(year, 1, 1, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_pongal_sankranti_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Makar Sankranti / Pongal',
+          description: 'Harvest Festival & Public Holiday',
+          startDateTime: DateTime(year, 1, 14),
+          endDateTime: DateTime(year, 1, 15, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_republic_day_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Republic Day',
+          description: 'National Holiday',
+          startDateTime: DateTime(year, 1, 26),
+          endDateTime: DateTime(year, 1, 26, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_maha_shivaratri_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Maha Shivaratri',
+          description: 'Religious & Academic Holiday',
+          startDateTime: DateTime(
+            year,
+            year == 2025 ? 2 : (year == 2026 ? 2 : 3),
+            year == 2025 ? 26 : (year == 2026 ? 15 : 6),
+          ),
+          endDateTime: DateTime(
+            year,
+            year == 2025 ? 2 : (year == 2026 ? 2 : 3),
+            year == 2025 ? 26 : (year == 2026 ? 15 : 6),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_holi_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Holi',
+          description: 'Festival of Colors',
+          startDateTime: DateTime(
+            year,
+            3,
+            year == 2025 ? 14 : (year == 2026 ? 3 : 22),
+          ),
+          endDateTime: DateTime(
+            year,
+            3,
+            year == 2025 ? 14 : (year == 2026 ? 3 : 22),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_good_friday_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Good Friday',
+          description: 'Christian Holiday',
+          startDateTime: DateTime(
+            year,
+            year == 2025 ? 4 : (year == 2026 ? 4 : 3),
+            year == 2025 ? 18 : (year == 2026 ? 3 : 26),
+          ),
+          endDateTime: DateTime(
+            year,
+            year == 2025 ? 4 : (year == 2026 ? 4 : 3),
+            year == 2025 ? 18 : (year == 2026 ? 3 : 26),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_ugadi_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Ugadi / Gudi Padwa',
+          description: 'New Year Festival',
+          startDateTime: DateTime(
+            year,
+            3,
+            year == 2025 ? 30 : (year == 2026 ? 19 : 8),
+          ),
+          endDateTime: DateTime(
+            year,
+            3,
+            year == 2025 ? 30 : (year == 2026 ? 19 : 8),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_eid_al_fitr_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Eid al-Fitr (Ramzan Eid)',
+          description: 'Islamic Holiday',
+          startDateTime: DateTime(
+            year,
+            3,
+            year == 2025 ? 31 : (year == 2026 ? 20 : 10),
+          ),
+          endDateTime: DateTime(
+            year,
+            3,
+            year == 2025 ? 31 : (year == 2026 ? 20 : 10),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_ambedkar_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Dr. B.R. Ambedkar Jayanti',
+          description: 'Public & Academic Holiday',
+          startDateTime: DateTime(year, 4, 14),
+          endDateTime: DateTime(year, 4, 14, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_may_day_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: "May Day / Workers' Day",
+          description: 'Public Holiday',
+          startDateTime: DateTime(year, 5, 1),
+          endDateTime: DateTime(year, 5, 1, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_eid_al_adha_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Bakrid / Eid al-Adha',
+          description: 'Islamic Holiday',
+          startDateTime: DateTime(
+            year,
+            6,
+            year == 2025 ? 7 : (year == 2026 ? 27 : 17),
+          ),
+          endDateTime: DateTime(
+            year,
+            6,
+            year == 2025 ? 7 : (year == 2026 ? 27 : 17),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_muharram_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Muharram',
+          description: 'Islamic Observance',
+          startDateTime: DateTime(
+            year,
+            7,
+            year == 2025 ? 6 : (year == 2026 ? 26 : 16),
+          ),
+          endDateTime: DateTime(
+            year,
+            7,
+            year == 2025 ? 6 : (year == 2026 ? 26 : 16),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_independence_day_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Independence Day',
+          description: 'National Holiday',
+          startDateTime: DateTime(year, 8, 15),
+          endDateTime: DateTime(year, 8, 15, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_ganesh_chaturthi_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Ganesh Chaturthi / Vinayaka Chavithi',
+          description: 'Festival & Academic Holiday',
+          startDateTime: DateTime(
+            year,
+            year == 2025 ? 8 : (year == 2026 ? 9 : 9),
+            year == 2025 ? 27 : (year == 2026 ? 14 : 4),
+          ),
+          endDateTime: DateTime(
+            year,
+            year == 2025 ? 8 : (year == 2026 ? 9 : 9),
+            year == 2025 ? 27 : (year == 2026 ? 14 : 4),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_gandhi_jayanti_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Mahatma Gandhi Jayanti',
+          description: 'National Holiday',
+          startDateTime: DateTime(year, 10, 2),
+          endDateTime: DateTime(year, 10, 2, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+        CalendarEvent(
+          id: 'holiday_dussehra_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Dussehra / Vijayadashami',
+          description: 'Festival & Academic Holiday',
+          startDateTime: DateTime(
+            year,
+            10,
+            year == 2025 ? 2 : (year == 2026 ? 20 : 10),
+          ),
+          endDateTime: DateTime(
+            year,
+            10,
+            year == 2025 ? 2 : (year == 2026 ? 20 : 10),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_diwali_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Diwali / Deepavali',
+          description: 'Festival of Lights & Public Holiday',
+          startDateTime: DateTime(
+            year,
+            year == 2025 ? 10 : (year == 2026 ? 11 : 10),
+            year == 2025 ? 20 : (year == 2026 ? 8 : 29),
+          ),
+          endDateTime: DateTime(
+            year,
+            year == 2025 ? 10 : (year == 2026 ? 11 : 10),
+            year == 2025 ? 20 : (year == 2026 ? 8 : 29),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_guru_nanak_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Guru Nanak Jayanti',
+          description: 'Religious & Academic Holiday',
+          startDateTime: DateTime(
+            year,
+            11,
+            year == 2025 ? 5 : (year == 2026 ? 24 : 14),
+          ),
+          endDateTime: DateTime(
+            year,
+            11,
+            year == 2025 ? 5 : (year == 2026 ? 24 : 14),
+            23,
+            59,
+            59,
+          ),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'festival',
+        ),
+        CalendarEvent(
+          id: 'holiday_christmas_$year',
+          calendarId: 'public_holidays',
+          calendarName: 'Public Holidays',
+          title: 'Christmas Day',
+          description: 'Christian & Public Holiday',
+          startDateTime: DateTime(year, 12, 25),
+          endDateTime: DateTime(year, 12, 25, 23, 59, 59),
+          isAllDay: true,
+          source: 'Public Calendar',
+          eventType: 'holiday',
+        ),
+      ]);
+    }
+    return list;
   }
 }

@@ -2,9 +2,41 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/core/services/device_calendar_service.dart';
 import 'package:trackx/features/calendar/data/repositories/calendar_repository.dart';
-import 'package:mockito/mockito.dart';
+import 'package:trackx/features/calendar/domain/models/calendar_event_model.dart';
 
-class MockDeviceCalendarService extends Mock implements DeviceCalendarService {}
+class MockDeviceCalendarService implements DeviceCalendarService {
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  Future<List<CalendarEvent>> fetchMultipleCalendarEvents({
+    required List<UserCalendarInfo> calendars,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<List<UserCalendarInfo>> getUserCalendars() async {
+    return [];
+  }
+
+  @override
+  Future<bool> hasCalendarAccess() async {
+    return true;
+  }
+
+  @override
+  Future<bool> requestCalendarAccess() async {
+    return true;
+  }
+
+  @override
+  Future<String> resolveHolidayCalendarId({String countryCode = 'indian'}) async {
+    return '';
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

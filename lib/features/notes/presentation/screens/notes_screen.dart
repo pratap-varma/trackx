@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
+import 'package:trackx/features/notes/providers/flashcard_provider.dart';
+import 'package:trackx/features/notes/presentation/widgets/flashcard_preview_editor_sheet.dart';
+import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/shared/widgets/ai_thinking_indicator.dart';
 
 class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
@@ -528,6 +533,51 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     );
   }
 
+  Future<void> _generateFlashcardsForNote(Note note) async {
+    HapticFeedback.mediumImpact();
+    final aiSettings = ref.read(aiSettingsProvider);
+    final subjects = ref.read(subjectRepositoryProvider);
+    final subjectName = subjects
+        .where((s) => s.id == note.subjectId)
+        .firstOrNull
+        ?.name;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: AiThinkingIndicator(
+          label: 'Crafting AI Flashcards...',
+        ),
+      ),
+    );
+
+    try {
+      final deck = await ref.read(flashcardsProvider.notifier).generateFromNote(
+            note: note,
+            apiKey: aiSettings.customApiKey,
+            subjectName: subjectName,
+          );
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        final savedDeck = await FlashcardPreviewEditorSheet.show(
+          context,
+          deck: deck,
+        );
+        if (savedDeck != null && mounted) {
+          context.push('/flashcards/${savedDeck.id}');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate flashcards: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeSem = ref.watch(activeSemesterProvider);
@@ -750,6 +800,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                               .read(notesProvider.notifier)
                               .deleteNote(note.id),
                           onAttachmentTap: _previewAttachment,
+                          onGenerateFlashcards: () =>
+                              _generateFlashcardsForNote(note),
                         );
                       },
                     ),
@@ -767,6 +819,7 @@ class _NoteCard extends StatelessWidget {
   final VoidCallback onFavorite;
   final VoidCallback onDelete;
   final ValueChanged<String> onAttachmentTap;
+  final VoidCallback onGenerateFlashcards;
 
   const _NoteCard({
     required this.note,
@@ -774,6 +827,7 @@ class _NoteCard extends StatelessWidget {
     required this.onFavorite,
     required this.onDelete,
     required this.onAttachmentTap,
+    required this.onGenerateFlashcards,
   });
 
   static const _tagColors = [
@@ -800,11 +854,11 @@ class _NoteCard extends StatelessWidget {
               Row(
                 children: [
                   if (note.isFavorite)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
+                    const Padding(
+                      padding: EdgeInsets.only(right: 6),
                       child: Icon(
                         Icons.star_rounded,
-                        color: const Color(0xFFF59E0B),
+                        color: Color(0xFFF59E0B),
                         size: 16,
                       ),
                     ),
@@ -931,6 +985,47 @@ class _NoteCard extends StatelessWidget {
                   }).toList(),
                 ),
               ],
+              const SizedBox(height: 12),
+              const Divider(color: Colors.white10, height: 1),
+              const SizedBox(height: 10),
+              // AI Flashcards Action Button
+              Align(
+                alignment: Alignment.centerRight,
+                child: InkWell(
+                  onTap: onGenerateFlashcards,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 14,
+                          color: Color(0xFFC0C1FF),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Study Flashcards',
+                          style: TextStyle(
+                            color: Color(0xFFC0C1FF),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -938,3 +1033,4 @@ class _NoteCard extends StatelessWidget {
     );
   }
 }
+

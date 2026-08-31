@@ -15,6 +15,11 @@ import 'package:trackx/features/timetable/data/repositories/timetable_repository
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/shared/widgets/sync_status_badge.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:trackx/features/timetable_import/domain/services/ocr_service.dart';
+import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
+import 'package:trackx/core/utils/attendance_calculator.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
@@ -23,14 +28,19 @@ class AttendanceScreen extends ConsumerStatefulWidget {
   ConsumerState<AttendanceScreen> createState() => _AttendanceScreenState();
 }
 
-class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
+class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   DateTime _selectedDate = DateTime.now();
   final _subjectNameController = TextEditingController();
   final _facultyController = TextEditingController();
   final _overrideController = TextEditingController();
   int _selectedColor = 0xFF5B5FEF; // Luminous Indigo base
-  final Map<String, int> _subjectHours = {};
   final Map<String, String> _dailySubstitutes = {};
+
+  final _ocrService = OcrService();
+  bool _isScanningAttendance = false;
 
   @override
   void dispose() {
@@ -73,6 +83,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   }
 
   void _showAddSubjectDialog(String activeSemId) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final containerBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -81,9 +97,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF0E1628),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              decoration: BoxDecoration(
+                color: sheetBg,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: EdgeInsets.only(
                 left: 24,
@@ -101,24 +117,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                     ),
                     const SizedBox(height: 18),
-                    const Text(
+                    Text(
                       'Add New Subject',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Set up a course to start tracking your attendance.',
-                      style: TextStyle(color: Colors.white54, fontSize: 13),
+                      style: TextStyle(color: subtextColor, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
 
@@ -126,7 +142,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                     GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        context.push('/import-timetable');
+                        context.push('/timetable-import');
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -134,7 +150,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B243B),
+                          color: containerBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: const Color(
@@ -142,14 +158,14 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                             ).withValues(alpha: 0.4),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.document_scanner_rounded,
                               color: Color(0xFF7BD0FF),
                               size: 22,
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +173,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                   Text(
                                     'Scan & Auto-Import Timetable',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: textColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -165,7 +181,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                   Text(
                                     'Upload timetable image to detect all subjects',
                                     style: TextStyle(
-                                      color: Colors.white54,
+                                      color: subtextColor,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -174,7 +190,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                             ),
                             Icon(
                               Icons.arrow_forward_ios_rounded,
-                              color: Colors.white38,
+                              color: subtextColor,
                               size: 14,
                             ),
                           ],
@@ -182,22 +198,22 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Row(
+                    Row(
                       children: [
-                        Expanded(child: Divider(color: Colors.white12)),
+                        Expanded(child: Divider(color: isDark ? Colors.white12 : Colors.black12)),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
                             'OR ENTER MANUALLY',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: subtextColor,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1,
                             ),
                           ),
                         ),
-                        Expanded(child: Divider(color: Colors.white12)),
+                        Expanded(child: Divider(color: isDark ? Colors.white12 : Colors.black12)),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -220,10 +236,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       hintText: 'e.g. 80 (Optional)',
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Subject Color Theme',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: isDark ? Colors.white70 : const Color(0xFF475569),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -254,11 +270,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                   color: Color(c),
                                   border: isSelected
                                       ? Border.all(
-                                          color: Colors.white,
+                                          color: isDark ? Colors.white : Colors.black,
                                           width: 3,
                                         )
                                       : Border.all(
-                                          color: Colors.white.withValues(
+                                          color: (isDark ? Colors.white : Colors.black).withValues(
                                             alpha: 0.1,
                                           ),
                                         ),
@@ -284,9 +300,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white60,
+                              foregroundColor: subtextColor,
                               side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.12),
+                                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
@@ -811,11 +827,221 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     }
   }
 
+  Future<void> _scanAttendanceScreenshot(String activeSemId) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
+      );
+      if (pickedFile == null) return;
+
+      setState(() => _isScanningAttendance = true);
+
+      final bytes = await pickedFile.readAsBytes();
+      final settings = ref.read(aiSettingsProvider);
+      
+      final detected = await _ocrService.scanAttendanceScreenshot(
+        imageBytes: bytes,
+        apiKey: settings.customApiKey,
+      );
+
+      if (detected.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No attendance data recognized from the image.')),
+          );
+        }
+        setState(() => _isScanningAttendance = false);
+        return;
+      }
+
+      var currentSubjects = List<Subject>.from(ref.read(subjectRepositoryProvider));
+      final attendanceRepo = ref.read(attendanceRepositoryProvider.notifier);
+      final userId = ref.read(authRepositoryProvider).userProfile?.id ?? 'user';
+      int markedCount = 0;
+      int autoCreatedCount = 0;
+
+      const commonAcronyms = {
+        'os': 'operating systems',
+        'dbms': 'database management systems',
+        'dsa': 'data structures and algorithms',
+        'ds': 'data structures',
+        'daa': 'design and analysis of algorithms',
+        'cn': 'computer networks',
+        'cns': 'cryptography and network security',
+        'ai': 'artificial intelligence',
+        'ml': 'machine learning',
+        'dl': 'deep learning',
+        'se': 'software engineering',
+        'wt': 'web technologies',
+        'oop': 'object oriented programming',
+        'oops': 'object oriented programming',
+        'coa': 'computer organization and architecture',
+        'toc': 'theory of computation',
+        'cd': 'compiler design',
+      };
+
+      String normalize(String s) =>
+          s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '').trim();
+
+      for (final entry in detected) {
+        final rawTarget = entry.subjectName.trim();
+        final targetLower = rawTarget.toLowerCase();
+        final targetNorm = normalize(rawTarget);
+        final targetExpanded = commonAcronyms[targetLower] ?? targetLower;
+
+        Subject? matchedSubject = currentSubjects.cast<Subject?>().firstWhere(
+          (s) {
+            if (s == null) return false;
+            final sNameLower = s.name.toLowerCase().trim();
+            final sCodeLower = s.code?.toLowerCase().trim() ?? '';
+            return sNameLower == targetLower ||
+                sCodeLower == targetLower ||
+                normalize(s.name) == targetNorm ||
+                (s.code != null && normalize(s.code!) == targetNorm);
+          },
+          orElse: () => null,
+        );
+
+        matchedSubject ??= currentSubjects.cast<Subject?>().firstWhere(
+          (s) {
+            if (s == null) return false;
+            final sNameLower = s.name.toLowerCase().trim();
+            final sExpanded = commonAcronyms[sNameLower] ?? sNameLower;
+            return sExpanded == targetExpanded ||
+                sNameLower.contains(targetExpanded) ||
+                targetExpanded.contains(sNameLower);
+          },
+          orElse: () => null,
+        );
+
+        // Fallback: token intersection
+        if (matchedSubject == null) {
+          final targetTokens = targetLower.split(RegExp(r'\s+')).where((t) => t.length > 2).toSet();
+          if (targetTokens.isNotEmpty) {
+            matchedSubject = currentSubjects.cast<Subject?>().firstWhere(
+              (s) {
+                if (s == null) return false;
+                final sTokens = s.name.toLowerCase().split(RegExp(r'\s+')).where((t) => t.length > 2).toSet();
+                return sTokens.intersection(targetTokens).isNotEmpty;
+              },
+              orElse: () => null,
+            );
+          }
+        }
+
+        // If subject is still not in this semester, automatically add it to database
+        if (matchedSubject == null && rawTarget.isNotEmpty) {
+          final colors = [
+            0xFF5B5FEF,
+            0xFF10B981,
+            0xFF7BD0FF,
+            0xFFF59E0B,
+            0xFFEC4899,
+            0xFF8B5CF6,
+          ];
+          final color = colors[currentSubjects.length % colors.length];
+          final added = await ref.read(subjectRepositoryProvider.notifier).addSubject(
+                activeSemId,
+                rawTarget,
+                'Faculty',
+                color,
+                75.0,
+              );
+          if (added) {
+            autoCreatedCount++;
+            currentSubjects = List<Subject>.from(ref.read(subjectRepositoryProvider));
+            matchedSubject = currentSubjects.cast<Subject?>().firstWhere(
+              (s) => s != null && s.name.toLowerCase() == targetLower,
+              orElse: () => currentSubjects.isNotEmpty ? currentSubjects.last : null,
+            );
+          }
+        }
+
+        if (matchedSubject != null) {
+          await attendanceRepo.markAttendance(
+            userId: userId,
+            semesterId: activeSemId,
+            subjectId: matchedSubject.id,
+            date: entry.date ?? _selectedDate,
+            periodNumber: entry.periodNumber ?? 1,
+            status: entry.status.toLowerCase() == 'present'
+                ? 'present'
+                : entry.status.toLowerCase() == 'absent'
+                    ? 'absent'
+                    : 'cancelled',
+          );
+          markedCount++;
+        }
+      }
+
+      if (mounted) {
+        if (markedCount > 0) {
+          final autoText = autoCreatedCount > 0 ? ' ($autoCreatedCount new subject(s) added)' : '';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully scanned and logged $markedCount session(s)$autoText to the database.'),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Detected ${detected.length} course(s) from screenshot (${detected.map((d) => d.subjectName).join(', ')}).',
+              ),
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        final errStr = e.toString().replaceAll('Exception: ', '');
+        final isKeyRelated = errStr.toLowerCase().contains('api key') ||
+            errStr.toLowerCase().contains('gemini') ||
+            errStr.toLowerCase().contains('api_key') ||
+            errStr.toLowerCase().contains('settings');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Screenshot Scan: $errStr'),
+            duration: const Duration(seconds: 6),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFFEF4444),
+            action: isKeyRelated
+                ? SnackBarAction(
+                    label: 'Settings',
+                    textColor: Colors.white,
+                    onPressed: () => context.push('/ai-settings'),
+                  )
+                : null,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isScanningAttendance = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeSem = ref.watch(activeSemesterProvider);
     final stats = ref.watch(statsProvider);
     final allRecords = ref.watch(attendanceRepositoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final containerBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFFFFFFF);
+    final cardBorder = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06);
 
     if (activeSem == null) {
       return Scaffold(
@@ -829,24 +1055,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.school_outlined,
-                    color: Colors.white38,
+                    color: mutedTextColor,
                     size: 48,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'No Active Semester',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Create an active semester to start logging attendance.',
-                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                    style: TextStyle(color: subtextColor, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -901,6 +1127,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final isToday = _isSameDay(_selectedDate, DateTime.now());
     final monthYearFormatted = DateFormat('MMMM yyyy').format(_selectedDate);
 
+    super.build(context);
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -910,10 +1137,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           padding: const EdgeInsets.only(left: 16.0),
           child: CircleAvatar(
             radius: 16,
-            backgroundColor: const Color(0xFF1B243B),
+            backgroundColor: isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0),
             child: const Icon(
               Icons.assignment_turned_in_rounded,
-              color: Color(0xFFC0C1FF),
+              color: Color(0xFF5B5FEF),
               size: 18,
             ),
           ),
@@ -931,224 +1158,249 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                 letterSpacing: 1.2,
               ),
             ),
-            const Text(
+            Text(
               'Attendance Log',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textColor,
                 fontSize: 18,
               ),
             ),
           ],
         ),
         actions: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: SyncStatusBadge(),
+          ),
           IconButton(
             icon: const Icon(
-              Icons.document_scanner_rounded,
-              color: Color(0xFF7BD0FF),
+              Icons.calendar_view_month_rounded,
+              color: Color(0xFF10B981),
               size: 22,
             ),
-            tooltip: 'Upload / Scan Timetable Photo',
-            onPressed: () => context.push('/import-timetable'),
+            tooltip: 'Attendance Activity Heatmap',
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/attendance/heatmap');
+            },
           ),
           IconButton(
             icon: const Icon(
-              Icons.calendar_month_rounded,
-              color: Color(0xFFC0C1FF),
-              size: 24,
+              Icons.center_focus_strong_rounded,
+              color: Color(0xFF5B5FEF),
+              size: 22,
             ),
-            tooltip: 'Pick Any Date to Mark Attendance',
-            onPressed: _pickDate,
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.add_circle_outline_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-            tooltip: 'Add Subject',
-            onPressed: () => _showAddSubjectDialog(activeSem.id),
+            tooltip: 'Scan Attendance Screenshot',
+            onPressed: _isScanningAttendance ? null : () => _scanAttendanceScreenshot(activeSem.id),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 100),
+      body: Stack(
         children: [
-          // 1. Calendar Header & Date Navigation
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ListView(
+            key: const PageStorageKey('attendance_log_scroll'),
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 100),
             children: [
-              Row(
-                children: [
-                  Text(
-                    monthYearFormatted,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (!isToday) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () =>
-                          setState(() => _selectedDate = DateTime.now()),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(
-                              0xFF5B5FEF,
-                            ).withValues(alpha: 0.5),
+          // 1. Calendar Header & Date Navigation (With Swipe to Change Week)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragEnd: (details) {
+              if (details.primaryVelocity == null) return;
+              if (details.primaryVelocity! < -80) {
+                // Swiped Left -> Move to Next Week (+7 days)
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _selectedDate = _selectedDate.add(const Duration(days: 7));
+                });
+              } else if (details.primaryVelocity! > 80) {
+                // Swiped Right -> Move to Previous Week (-7 days)
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _selectedDate = _selectedDate.subtract(const Duration(days: 7));
+                });
+              }
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          monthYearFormatted,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.history_rounded,
-                              color: Color(0xFF7BD0FF),
-                              size: 12,
+                        if (!isToday) ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _selectedDate = DateTime.now()),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF5B5FEF,
+                                  ).withValues(alpha: 0.5),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.history_rounded,
+                                    color: Color(0xFF7BD0FF),
+                                    size: 12,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Jump to Today',
+                                    style: TextStyle(
+                                      color: Color(0xFFC0C1FF),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            SizedBox(width: 4),
+                          ),
+                        ],
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.chevron_left_rounded,
+                            color: subtextColor,
+                            size: 22,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            setState(
+                              () => _selectedDate = _selectedDate.subtract(
+                                const Duration(days: 7),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 14),
+                        IconButton(
+                          icon: Icon(
+                            Icons.chevron_right_rounded,
+                            color: subtextColor,
+                            size: 22,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            setState(
+                              () => _selectedDate = _selectedDate.add(
+                                const Duration(days: 7),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // 2. Horizontal Date Selector Strip (With Holiday Indicators & Swipe Support)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: weekDays.map((day) {
+                    final isSelected = _isSameDay(day, _selectedDate);
+                    final isActualToday = _isSameDay(day, DateTime.now());
+                    final isHolidayDay = allHolidays.any(
+                      (h) => h.occursOn(day) && h.isHolidayOrFestival,
+                    );
+                    final dayName = DateFormat('E').format(day).toUpperCase();
+                    final dayNumber = day.day.toString();
+
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedDate = day),
+                      child: Container(
+                        width: 44,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF5B5FEF)
+                              : isActualToday
+                              ? (isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0))
+                              : (isDark ? const Color(0xFF131A2B) : const Color(0xFFFFFFFF)),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.transparent
+                                : isHolidayDay
+                                ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
+                                : isActualToday
+                                ? const Color(0xFF5B5FEF).withValues(alpha: 0.5)
+                                : cardBorder,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
                             Text(
-                              'Jump to Today',
+                              dayName,
                               style: TextStyle(
-                                color: Color(0xFFC0C1FF),
+                                color: isSelected
+                                    ? Colors.white
+                                    : isHolidayDay
+                                    ? const Color(0xFFF59E0B)
+                                    : subtextColor,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            Text(
+                              dayNumber,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : textColor,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (isHolidayDay) ...[
+                              const SizedBox(height: 3),
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : const Color(0xFFF59E0B),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.chevron_left_rounded,
-                      color: Colors.white70,
-                      size: 22,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      setState(
-                        () => _selectedDate = _selectedDate.subtract(
-                          const Duration(days: 7),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 14),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.white70,
-                      size: 22,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      setState(
-                        () => _selectedDate = _selectedDate.add(
-                          const Duration(days: 7),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // 2. Horizontal Date Selector Strip (With Holiday Indicators)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: weekDays.map((day) {
-              final isSelected = _isSameDay(day, _selectedDate);
-              final isActualToday = _isSameDay(day, DateTime.now());
-              final isHolidayDay = allHolidays.any(
-                (h) => h.occursOn(day) && h.isHolidayOrFestival,
-              );
-              final dayName = DateFormat('E').format(day).toUpperCase();
-              final dayNumber = day.day.toString();
-
-              return GestureDetector(
-                onTap: () => setState(() => _selectedDate = day),
-                child: Container(
-                  width: 44,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFFC0C1FF)
-                        : isActualToday
-                        ? const Color(0xFF1B243B)
-                        : const Color(0xFF131A2B),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected
-                          ? Colors.transparent
-                          : isHolidayDay
-                          ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
-                          : isActualToday
-                          ? const Color(0xFF5B5FEF).withValues(alpha: 0.5)
-                          : Colors.white.withValues(alpha: 0.06),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        dayName,
-                        style: TextStyle(
-                          color: isSelected
-                              ? const Color(0xFF0E00AA)
-                              : isHolidayDay
-                              ? const Color(0xFFF59E0B)
-                              : Colors.white54,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        dayNumber,
-                        style: TextStyle(
-                          color: isSelected
-                              ? const Color(0xFF0E00AA)
-                              : Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (isHolidayDay) ...[
-                        const SizedBox(height: 3),
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFF0E00AA)
-                                : const Color(0xFFF59E0B),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
 
@@ -1156,9 +1408,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF131A2B),
+              color: containerBg,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              border: Border.all(color: cardBorder),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1182,8 +1434,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           DateFormat(
                             'EEEE, MMMM d, yyyy',
                           ).format(_selectedDate),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -1213,7 +1465,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                   style: TextStyle(
                                     color: isEffectiveHoliday
                                         ? const Color(0xFFF59E0B)
-                                        : Colors.white54,
+                                        : subtextColor,
                                     fontSize: 11,
                                     fontWeight: isEffectiveHoliday
                                         ? FontWeight.w600
@@ -1230,13 +1482,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                   vertical: 1,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white10,
+                                  color: isDark ? Colors.white10 : Colors.black12,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Custom',
                                   style: TextStyle(
-                                    color: Colors.white60,
+                                    color: subtextColor,
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1563,7 +1815,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         GestureDetector(
-                          onTap: () => context.push('/import-timetable'),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            context.push('/timetable-import');
+                          },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -1596,21 +1851,26 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         ),
                         const SizedBox(width: 12),
                         GestureDetector(
-                          onTap: () => _showAddSubjectDialog(activeSem.id),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _showAddSubjectDialog(activeSem.id);
+                          },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF131A2B),
+                              color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white24),
+                              border: Border.all(
+                                color: isDark ? Colors.white24 : Colors.black12,
+                              ),
                             ),
-                            child: const Text(
+                            child: Text(
                               '+ Add Manually',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1626,6 +1886,65 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             // Check if there are scheduled entries on the timetable for this day
             Builder(
               builder: (context) {
+                final effectiveHolidays = ref.watch(holidaysForSelectedDateProvider(_selectedDate));
+                if (isEffectiveHoliday) {
+                  final dayName = DateFormat('EEEE').format(_selectedDate);
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 36,
+                      horizontal: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131A2B),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withValues(
+                              alpha: 0.15,
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.celebration_rounded,
+                            color: Color(0xFFF59E0B),
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          effectiveHolidays.isNotEmpty
+                              ? effectiveHolidays.first.title
+                              : 'College Holiday ($dayName)',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'No classes scheduled today. Enjoy your day off!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 final timetableEntries = ref.watch(timetableRepositoryProvider);
                 final overrideDay = ref.watch(dayOfWeekOverrideProvider(_selectedDate));
                 final dayOfWeek = overrideDay ?? _selectedDate.weekday;
@@ -1710,29 +2029,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         }
                         return const SizedBox.shrink();
                       }),
-
-                      const SizedBox(height: 12),
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: () => _showAddSubjectDialog(activeSem.id),
-                          icon: const Icon(
-                            Icons.add_circle_outline_rounded,
-                            size: 16,
-                            color: Color(0xFF7BD0FF),
-                          ),
-                          label: const Text(
-                            '+ Log Extra / Unscheduled Class',
-                            style: TextStyle(
-                              color: Color(0xFF7BD0FF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   );
-                } else if (!isEffectiveHoliday) {
+                } else {
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
@@ -1790,116 +2089,27 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       ],
                     ),
                   );
-                } else {
-                  // No periods assigned to this day in the timetable
-                  final dayName = DateFormat('EEEE').format(_selectedDate);
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 36,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF5B5FEF).withValues(
-                              alpha: 0.15,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.event_busy_rounded,
-                            color: Color(0xFF7BD0FF),
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'No Classes Scheduled on $dayName',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Only periods assigned to this day appear here. You can configure your timetable or log a special extra class.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () => context.push('/timetable'),
-                              icon: const Icon(
-                                Icons.calendar_month_rounded,
-                                size: 16,
-                              ),
-                              label: const Text('Open Timetable'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF5B5FEF),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            OutlinedButton.icon(
-                              onPressed: () =>
-                                  _showAddSubjectDialog(activeSem.id),
-                              icon: const Icon(
-                                Icons.add_rounded,
-                                size: 16,
-                              ),
-                              label: const Text('Log Extra Class'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white70,
-                                side: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
                 }
               },
             ),
           ],
         ],
       ),
-    );
-  }
+      if (_isScanningAttendance)
+        Positioned.fill(
+          child: Container(
+            color: Colors.black54,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF5B5FEF),
+              ),
+            ),
+          ),
+        ),
+    ],
+    ),
+  );
+}
 
   Widget _buildSubjectCard(
     SubjectStats item,
@@ -1924,7 +2134,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final hasRecord = subjectRecords.isNotEmpty;
     final lastRecord = hasRecord ? subjectRecords.first : null;
     final isPresent = lastRecord?.status == 'present';
-    final isAbsent = lastRecord?.status == 'absent';
     final loggedHours = subjectRecords.length;
     int selectedHours = 1;
     if (scheduledEntry != null) {
@@ -1942,28 +2151,37 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         ? const Color(0xFFF59E0B)
         : const Color(0xFFEF4444);
 
+    // Projected Attendance Calculations via centralized AttendanceCalculator
+    final double ifBunkPct = AttendanceCalculator.calculateIfBunk(
+      item.presentCount,
+      item.totalCount,
+      selectedHours,
+    );
+    final double ifAttendPct = AttendanceCalculator.calculateIfAttend(
+      item.presentCount,
+      item.totalCount,
+      selectedHours,
+    );
+    final bool isBunkRisky = ifBunkPct < item.target;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: GestureDetector(
         onTap: () => context.push('/subject-detail/${sub.id}'),
-        child: Container(
+        child: GlassContainer(
+          tier: GlassTier.standard,
+          borderRadius: 20,
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF131A2B),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: hasRecord
-                  ? (isPresent
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444))
-                        .withValues(alpha: 0.4)
-                  : isSubstituted
-                  ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
-                  : scheduledEntry != null
-                  ? const Color(0xFF5B5FEF).withValues(alpha: 0.3)
-                  : Colors.white.withValues(alpha: 0.06),
-            ),
-          ),
+          borderColor: hasRecord
+              ? (isPresent
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFEF4444))
+                    .withValues(alpha: 0.4)
+              : isSubstituted
+              ? const Color(0xFFF59E0B).withValues(alpha: 0.5)
+              : scheduledEntry != null
+              ? const Color(0xFF5B5FEF).withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.08),
           child: Column(
             children: [
               if (scheduledEntry != null) ...[
@@ -1998,85 +2216,85 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         ),
                       ),
                     ),
-                        if (allSubjectStats != null && swapKey != null && originalSubject != null)
-                          GestureDetector(
-                            onTap: () => _showSwapSubjectSheet(
-                              scheduledEntry,
-                              originalSubject,
-                              allSubjectStats,
-                              swapKey,
+                    if (allSubjectStats != null && swapKey != null && originalSubject != null)
+                      GestureDetector(
+                        onTap: () => _showSwapSubjectSheet(
+                          scheduledEntry,
+                          originalSubject,
+                          allSubjectStats,
+                          swapKey,
+                        ),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSubstituted
+                                ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
+                                : const Color(0xFF7BD0FF).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isSubstituted
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
+                                  : const Color(0xFF7BD0FF).withValues(alpha: 0.4),
                             ),
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 6),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.swap_horiz_rounded,
                                 color: isSubstituted
-                                    ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
-                                    : const Color(0xFF7BD0FF).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
+                                    ? const Color(0xFFF59E0B)
+                                    : const Color(0xFF7BD0FF),
+                                size: 12,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                isSubstituted ? 'Proxy Active' : 'Swap Subject',
+                                style: TextStyle(
                                   color: isSubstituted
-                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
-                                      : const Color(0xFF7BD0FF).withValues(alpha: 0.4),
+                                      ? const Color(0xFFF59E0B)
+                                      : const Color(0xFF7BD0FF),
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.swap_horiz_rounded,
-                                    color: isSubstituted
-                                        ? const Color(0xFFF59E0B)
-                                        : const Color(0xFF7BD0FF),
-                                    size: 12,
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    isSubstituted ? 'Proxy Active' : 'Swap Subject',
-                                    style: TextStyle(
-                                      color: isSubstituted
-                                          ? const Color(0xFFF59E0B)
-                                          : const Color(0xFF7BD0FF),
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (scheduledEntry.room != null &&
+                        scheduledEntry.room!.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              color: Colors.white60,
+                              size: 11,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              scheduledEntry.room!,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
                               ),
                             ),
-                          ),
-                        if (scheduledEntry.room != null &&
-                            scheduledEntry.room!.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.06),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.location_on_outlined,
-                                  color: Colors.white60,
-                                  size: 11,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  scheduledEntry.room!,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -2172,7 +2390,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${pct.toStringAsFixed(0)}%',
+                        '${pct.toStringAsFixed(1)}%',
                         style: TextStyle(
                           color: pctColor,
                           fontWeight: FontWeight.bold,
@@ -2192,6 +2410,174 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               ),
               const SizedBox(height: 12),
 
+              // Projected Attendance Banner
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D1424),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isBunkRisky
+                        ? const Color(0xFFEF4444).withValues(alpha: 0.35)
+                        : Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.insights_rounded,
+                              color: Color(0xFFC0C1FF),
+                              size: 13,
+                            ),
+                            SizedBox(width: 5),
+                            Text(
+                              'PROJECTED ATTENDANCE',
+                              style: TextStyle(
+                                color: Color(0xFFC0C1FF),
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (isBunkRisky)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Color(0xFFEF4444),
+                                size: 13,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Bunk drops below ${item.target.toInt()}%',
+                                style: const TextStyle(
+                                  color: Color(0xFFEF4444),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // IF BUNK
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isBunkRisky
+                                    ? const Color(0xFFEF4444).withValues(alpha: 0.45)
+                                    : const Color(0xFFEF4444).withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'IF BUNK',
+                                  style: TextStyle(
+                                    color: Color(0xFFFF8B94),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${ifBunkPct.toStringAsFixed(1)}%',
+                                      style: TextStyle(
+                                        color: isBunkRisky
+                                            ? const Color(0xFFEF4444)
+                                            : const Color(0xFFFF8B94),
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    if (isBunkRisky) ...[
+                                      const SizedBox(width: 3),
+                                      const Icon(
+                                        Icons.arrow_downward_rounded,
+                                        color: Color(0xFFEF4444),
+                                        size: 12,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // IF ATTEND
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'IF ATTEND',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${ifAttendPct.toStringAsFixed(1)}%',
+                                      style: const TextStyle(
+                                        color: Color(0xFF10B981),
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    const Icon(
+                                      Icons.arrow_upward_rounded,
+                                      color: Color(0xFF10B981),
+                                      size: 12,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
 
               Container(
                 height: 1,
@@ -2199,14 +2585,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Action Buttons for this date
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 12,
-                children: [
-                  if (hasRecord)
+              // Action Buttons / Logged Status Pill
+              if (hasRecord)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
                     Row(
                       children: [
                         Icon(
@@ -2224,157 +2607,128 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  isPresent
-                                      ? (loggedHours > 1
-                                            ? 'Logged: Present ($loggedHours hrs)'
-                                            : 'Logged: Present')
-                                      : (loggedHours > 1
-                                            ? 'Logged: Absent ($loggedHours hrs)'
-                                            : 'Logged: Absent'),
-                                  style: TextStyle(
-                                    color: isPresent
-                                        ? const Color(0xFF10B981)
-                                        : const Color(0xFFEF4444),
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.bold,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                GestureDetector(
-                                  onTap: () => _unmarkAttendance(
-                                    sub.id,
-                                    sub.name,
-                                    scheduledEntry?.periodNumber,
-                                    selectedHours,
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.08,
-                                      ),
-                                      borderRadius: BorderRadius.circular(4),
+                                  decoration: BoxDecoration(
+                                    color: (isPresent
+                                            ? const Color(0xFF10B981)
+                                            : const Color(0xFFEF4444))
+                                        .withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: (isPresent
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFFEF4444))
+                                          .withValues(alpha: 0.4),
                                     ),
-                                    child: const Icon(
-                                      Icons.delete_outline_rounded,
-                                      color: Colors.white60,
-                                      size: 13,
+                                  ),
+                                  child: Text(
+                                    isPresent
+                                        ? (loggedHours > 1
+                                            ? 'Present ($loggedHours hrs)'
+                                            : 'Present')
+                                        : (loggedHours > 1
+                                            ? 'Absent ($loggedHours hrs)'
+                                            : 'Absent'),
+                                    style: TextStyle(
+                                      color: isPresent
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFEF4444),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                             if (lastRecord != null)
-                              Builder(
-                                builder: (context) {
-                                  final ts = lastRecord.updatedAt > 0
-                                      ? lastRecord.updatedAt
-                                      : lastRecord.createdAt;
-                                  final dt = ts > 0
-                                      ? DateTime.fromMillisecondsSinceEpoch(ts)
-                                      : lastRecord.date;
-                                  return Text(
-                                    'Marked at ${DateFormat('hh:mm a').format(dt)}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF7BD0FF),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  );
-                                },
+                              Padding(
+                                padding: const EdgeInsets.only(top: 3.0),
+                                child: Builder(
+                                  builder: (context) {
+                                    final ts = lastRecord.updatedAt > 0
+                                        ? lastRecord.updatedAt
+                                        : lastRecord.createdAt;
+                                    final dt = ts > 0
+                                        ? DateTime.fromMillisecondsSinceEpoch(ts)
+                                        : lastRecord.date;
+                                    return Text(
+                                      'Marked at ${DateFormat('hh:mm a').format(dt)}',
+                                      style: const TextStyle(
+                                        color: Color(0xFF7BD0FF),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                           ],
                         ),
                       ],
-                    )
-                  else
-                    const Text(
-                      'Not Logged Yet',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
                     ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Present Button (Taps toggle off if already marked)
-                      GestureDetector(
-                        onTap: () {
-                          if (isPresent) {
-                            _unmarkAttendance(
-                              sub.id,
-                              sub.name,
-                              scheduledEntry?.periodNumber,
-                              selectedHours,
-                            );
-                          } else {
-                            _mark(
-                              semesterId,
-                              sub.id,
-                              'present',
-                              scheduledEntry?.periodNumber,
-                              durationHours: selectedHours,
-                            );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isPresent
-                                ? const Color(0xFF10B981)
-                                : const Color(
-                                    0xFF10B981,
-                                  ).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isPresent
-                                  ? Colors.transparent
-                                  : const Color(
-                                      0xFF10B981,
-                                    ).withValues(alpha: 0.4),
+                    // Action to Undo / Switch / Delete
+                    GestureDetector(
+                      onTap: () => _unmarkAttendance(
+                        sub.id,
+                        sub.name,
+                        scheduledEntry?.periodNumber,
+                        selectedHours,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.restart_alt_rounded,
+                              color: Colors.white70,
+                              size: 13,
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.check_rounded,
-                                color: isPresent
-                                    ? Colors.black
-                                    : const Color(0xFF10B981),
-                                size: 16,
+                            SizedBox(width: 4),
+                            Text(
+                              'Undo',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                selectedHours > 1
-                                    ? 'Present (${selectedHours}h)'
-                                    : 'Present',
-                                style: TextStyle(
-                                  color: isPresent
-                                      ? Colors.black
-                                      : const Color(0xFF10B981),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-
-                      // Absent Button (Taps toggle off if already marked)
-                      GestureDetector(
-                        onTap: () {
-                          if (isAbsent) {
-                            _unmarkAttendance(
-                              sub.id,
-                              sub.name,
-                              scheduledEntry?.periodNumber,
-                              selectedHours,
-                            );
-                          } else {
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Unmarked Session',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        // BUNK Button
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
                             _mark(
                               semesterId,
                               sub.id,
@@ -2382,58 +2736,101 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                               scheduledEntry?.periodNumber,
                               durationHours: selectedHours,
                             );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isAbsent
-                                ? const Color(0xFFEF4444)
-                                : const Color(
-                                    0xFFEF4444,
-                                  ).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isAbsent
-                                  ? Colors.transparent
-                                  : const Color(
-                                      0xFFEF4444,
-                                    ).withValues(alpha: 0.4),
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.close_rounded,
+                                  color: Color(0xFFEF4444),
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  selectedHours > 1
+                                      ? 'BUNK (${selectedHours}h)'
+                                      : 'BUNK',
+                                  style: const TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.close_rounded,
-                                color: isAbsent
-                                    ? Colors.white
-                                    : const Color(0xFFEF4444),
-                                size: 16,
+                        ),
+                        const SizedBox(width: 10),
+
+                        // ATTEND Button
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            _mark(
+                              semesterId,
+                              sub.id,
+                              'present',
+                              scheduledEntry?.periodNumber,
+                              durationHours: selectedHours,
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF10B981), Color(0xFF059669)],
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                selectedHours > 1
-                                    ? 'Absent (${selectedHours}h)'
-                                    : 'Absent',
-                                style: TextStyle(
-                                  color: isAbsent
-                                      ? Colors.white
-                                      : const Color(0xFFEF4444),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.white,
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  selectedHours > 1
+                                      ? 'ATTEND (${selectedHours}h)'
+                                      : 'ATTEND',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                      ],
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

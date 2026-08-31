@@ -58,6 +58,11 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
       _endMin = 15;
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final dropdownBg = isDark ? const Color(0xFF131A2B) : Colors.white;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -91,10 +96,10 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                         existing == null
                             ? 'Schedule Period $period'
                             : 'Edit Period $period',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -102,17 +107,17 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                       // Subject Select
                       DropdownButtonFormField<String>(
                         initialValue: selectedSubId,
-                        dropdownColor: AppTheme.darkBgBase,
-                        decoration: const InputDecoration(
+                        dropdownColor: dropdownBg,
+                        decoration: InputDecoration(
                           labelText: 'Select Subject',
-                          labelStyle: TextStyle(color: Colors.white70),
+                          labelStyle: TextStyle(color: subtextColor),
                           border: InputBorder.none,
                         ),
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: textColor),
                         items: subjects.map((sub) {
                           return DropdownMenuItem<String>(
                             value: sub.id,
-                            child: Text(sub.name),
+                            child: Text(sub.name, style: TextStyle(color: textColor)),
                           );
                         }).toList(),
                         onChanged: (val) => selectedSubId = val,
@@ -148,25 +153,25 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white12),
+                                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Start Time',
                                       style: TextStyle(
-                                        color: Colors.white54,
+                                        color: subtextColor,
                                         fontSize: 10,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       startFormatted,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: textColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -197,25 +202,25 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.05),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white12),
+                                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'End Time',
                                       style: TextStyle(
-                                        color: Colors.white54,
+                                        color: subtextColor,
                                         fontSize: 10,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       endFormatted,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: textColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -309,6 +314,10 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
     final selectedDay = ref.watch(selectedTimetableDayProvider);
     final allEntries = ref.watch(activeSemesterTimetableProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
 
     final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -316,10 +325,10 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
       return AppBackground(
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          body: const Center(
+          body: Center(
             child: Text(
               'Please activate a semester in Profile settings first.',
-              style: TextStyle(color: Colors.white60),
+              style: TextStyle(color: subtextColor),
             ),
           ),
         ),
@@ -331,18 +340,18 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Timetable',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.file_upload_rounded, color: Colors.white),
+              icon: Icon(Icons.file_upload_rounded, color: textColor),
               tooltip: 'Import Timetable',
               onPressed: () => context.push('/import-timetable'),
             ),
             IconButton(
-              icon: const Icon(Icons.copy, color: Colors.white),
+              icon: Icon(Icons.copy, color: textColor),
               onPressed: () {
                 // Copy day simple prompt
                 showDialog(
@@ -357,22 +366,22 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                           children: [
                             Text(
                               'Copy ${weekdays[selectedDay - 1]} Schedule',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: textColor,
                               ),
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<int>(
                               initialValue: destDay,
-                              dropdownColor: AppTheme.darkBgBase,
+                              dropdownColor: isDark ? const Color(0xFF131A2B) : Colors.white,
                               decoration: const InputDecoration(
                                 labelText: 'Copy To Day',
                               ),
                               items: List.generate(6, (i) => i + 1).map((d) {
                                 return DropdownMenuItem<int>(
                                   value: d,
-                                  child: Text(weekdays[d - 1]),
+                                  child: Text(weekdays[d - 1], style: TextStyle(color: textColor)),
                                 );
                               }).toList(),
                               onChanged: (val) {
@@ -437,18 +446,18 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppTheme.accentPurple.withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.05),
+                            : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04)),
                         border: Border.all(
                           color: isSelected
                               ? AppTheme.accentPurple
-                              : Colors.white12,
+                              : (isDark ? Colors.white12 : Colors.black12),
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         weekdays[index],
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white60,
+                          color: isSelected ? (isDark ? Colors.white : AppTheme.accentPurple) : subtextColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -503,9 +512,9 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                               children: [
                                 Text(
                                   'Period $period',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.white60,
+                                    color: subtextColor,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -513,10 +522,10 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                                   sub?.name ?? 'Free Period',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: Colors.white,
+                                    color: textColor,
                                   ),
                                 ),
                                 if (entry != null)
@@ -524,9 +533,9 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                                     '${entry.startTimeDisplay} - ${entry.endTimeDisplay} ${entry.room != null ? "• Rm ${entry.room}" : ""}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.white54,
+                                      color: subtextColor,
                                     ),
                                   ),
                               ],
@@ -562,9 +571,9 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                               ],
                             )
                           else
-                            const Icon(
+                            Icon(
                               Icons.add_circle_outline,
-                              color: Colors.white38,
+                              color: mutedTextColor,
                             ),
                         ],
                       ),

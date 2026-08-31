@@ -52,11 +52,11 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Add Programme',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.textColor,
                       fontSize: 16,
                     ),
                   ),
@@ -99,9 +99,9 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
+                        child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: context.subtextColor),
                         ),
                       ),
                       ElevatedButton(
@@ -156,13 +156,14 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Manage Programmes',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
           actions: [
             IconButton(
-              icon: const Icon(Icons.add, color: Colors.white),
+              icon: Icon(Icons.add, color: context.textColor),
               onPressed: _showAddProgrammeDialog,
             ),
           ],
@@ -174,19 +175,19 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.school, color: Colors.white60, size: 48),
+                      Icon(Icons.school, color: context.subtextColor, size: 48),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'No Programmes Registered',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.textColor,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Add a programme manually to map your curricula.',
-                        style: TextStyle(color: Colors.white60, fontSize: 11),
+                        style: TextStyle(color: context.subtextColor, fontSize: 11),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -210,7 +211,7 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                     child: GlassContainer(
                       borderColor: isActive
                           ? AppTheme.accentPurple
-                          : Colors.white10,
+                          : context.subtleBorderColor,
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,10 +222,10 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                               Expanded(
                                 child: Text(
                                   prog.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
-                                    color: Colors.white,
+                                    color: context.textColor,
                                   ),
                                 ),
                               ),
@@ -259,30 +260,30 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                           if (prog.branch != null)
                             Text(
                               'Branch: ${prog.branch}',
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: context.subtextColor,
                                 fontSize: 12,
                               ),
                             ),
                           Text(
-                            'Joining Year: ${prog.joiningYear} â€¢ Total Semesters: ${prog.totalSemesters}',
-                            style: const TextStyle(
-                              color: Colors.white60,
+                            'Joining Year: ${prog.joiningYear} • Total Semesters: ${prog.totalSemesters}',
+                            style: TextStyle(
+                              color: context.mutedTextColor,
                               fontSize: 11,
                             ),
                           ),
                           if (prog.totalCredits != null)
                             Text(
                               'Total Credits Required: ${prog.totalCredits}',
-                              style: const TextStyle(
-                                color: Colors.white60,
+                              style: TextStyle(
+                                color: context.mutedTextColor,
                                 fontSize: 11,
                               ),
                             ),
                           Text(
                             'Status: ${prog.status}',
-                            style: const TextStyle(
-                              color: Colors.white60,
+                            style: TextStyle(
+                              color: context.mutedTextColor,
                               fontSize: 11,
                             ),
                           ),
@@ -352,18 +353,18 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Text(
+                                              Text(
                                                 'Delete Programme?',
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
+                                                  color: context.textColor,
                                                 ),
                                               ),
                                               const SizedBox(height: 12),
-                                              const Text(
+                                              Text(
                                                 'Are you sure you want to delete this programme? Previous records linked to other modules will not be erased, but the configuration maps will be deleted.',
                                                 style: TextStyle(
-                                                  color: Colors.white60,
+                                                  color: context.subtextColor,
                                                   fontSize: 11,
                                                 ),
                                               ),
@@ -376,10 +377,10 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                                                   TextButton(
                                                     onPressed: () =>
                                                         Navigator.pop(context),
-                                                    child: const Text(
+                                                    child: Text(
                                                       'Cancel',
                                                       style: TextStyle(
-                                                        color: Colors.white60,
+                                                        color: context.subtextColor,
                                                       ),
                                                     ),
                                                   ),

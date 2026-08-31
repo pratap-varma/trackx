@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class DevicesScreen extends StatefulWidget {
   const DevicesScreen({super.key});
@@ -48,17 +49,18 @@ class _DevicesScreenState extends State<DevicesScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Device Management',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: context.textColor),
           ),
+          iconTheme: IconThemeData(color: context.textColor),
         ),
         body: ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
-            const Text(
+            Text(
               'View and revoke logged-in device access tokens. Revoking will log out that session immediately.',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: context.subtextColor, fontSize: 12),
             ),
             const SizedBox(height: 20),
             ...List.generate(_devices.length, (idx) {
@@ -68,9 +70,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 child: GlassContainer(
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.devices_rounded,
-                        color: Colors.white70,
+                        color: context.subtextColor,
                         size: 28,
                       ),
                       const SizedBox(width: 16),
@@ -80,16 +82,16 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           children: [
                             Text(
                               dev['name']!,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: context.textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
                             Text(
                               '${dev['platform']} • ${dev['lastActive']}',
-                              style: const TextStyle(
-                                color: Colors.white54,
+                              style: TextStyle(
+                                color: context.mutedTextColor,
                                 fontSize: 11,
                               ),
                             ),
