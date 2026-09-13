@@ -11,6 +11,7 @@ import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/calendar/providers/calendar_provider.dart';
+import 'package:trackx/features/timetable/data/repositories/class_substitute_repository.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
@@ -20,6 +21,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:trackx/features/timetable_import/domain/services/ocr_service.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
 import 'package:trackx/core/utils/attendance_calculator.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
@@ -37,7 +39,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
   final _facultyController = TextEditingController();
   final _overrideController = TextEditingController();
   int _selectedColor = 0xFF5B5FEF; // Luminous Indigo base
-  final Map<String, String> _dailySubstitutes = {};
+  Map<String, String> get _dailySubstitutes =>
+      ref.read(classSubstituteRepositoryProvider);
 
   final _ocrService = OcrService();
   bool _isScanningAttendance = false;
@@ -61,17 +64,29 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
       builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF5B5FEF),
-              surface: Color(0xFF131A2B),
-              onSurface: Colors.white,
-            ),
-            dialogTheme: const DialogThemeData(
-              backgroundColor: Color(0xFF0E131F),
-            ),
-          ),
+          data: isDark
+              ? ThemeData.dark().copyWith(
+                  colorScheme: ColorScheme.dark(
+                    primary: context.accentColor,
+                    surface: const Color(0xFF131A2B),
+                    onSurface: Colors.white,
+                  ),
+                  dialogTheme: const DialogThemeData(
+                    backgroundColor: Color(0xFF0E131F),
+                  ),
+                )
+              : ThemeData.light().copyWith(
+                  colorScheme: ColorScheme.light(
+                    primary: context.accentColor,
+                    surface: Colors.white,
+                    onSurface: const Color(0xFF0F172A),
+                  ),
+                  dialogTheme: const DialogThemeData(
+                    backgroundColor: Colors.white,
+                  ),
+                ),
           child: child!,
         );
       },
@@ -84,9 +99,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
 
   void _showAddSubjectDialog(String activeSemId) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final sheetBg = context.cardColor;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
     final containerBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
 
     showModalBottomSheet(
@@ -122,7 +137,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     Text(
                       'Add New Subject',
                       style: TextStyle(
@@ -131,12 +146,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         color: textColor,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
                       'Set up a course to start tracking your attendance.',
                       style: TextStyle(color: subtextColor, fontSize: 13),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Quick OCR Timetable Option
                     GestureDetector(
@@ -160,12 +175,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.document_scanner_rounded,
                               color: Color(0xFF7BD0FF),
                               size: 22,
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,7 +212,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(child: Divider(color: isDark ? Colors.white12 : Colors.black12)),
@@ -216,26 +231,26 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         Expanded(child: Divider(color: isDark ? Colors.white12 : Colors.black12)),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     GlassTextField(
                       controller: _subjectNameController,
                       labelText: 'Subject Name',
                       hintText: 'e.g. Organic Chemistry',
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     GlassTextField(
                       controller: _facultyController,
                       labelText: 'Faculty / Instructor Name',
                       hintText: 'e.g. Dr. Verma',
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     GlassTextField(
                       controller: _overrideController,
                       labelText: 'Target Attendance (%)',
                       keyboardType: TextInputType.number,
                       hintText: 'e.g. 80 (Optional)',
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Text(
                       'Subject Color Theme',
                       style: TextStyle(
@@ -244,7 +259,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children:
@@ -293,7 +308,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             );
                           }).toList(),
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28),
                     Row(
                       children: [
                         Expanded(
@@ -309,10 +324,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Text('Cancel'),
+                            child: Text('Cancel'),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
                           child: GestureDetector(
                             onTap: () async {
@@ -361,7 +376,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                 ),
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Text(
                                   'Save Subject',
                                   style: TextStyle(
@@ -497,6 +512,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
         })
         .toList();
 
+    final backup = List<AttendanceRecord>.from(recordsToDelete);
     for (final r in recordsToDelete) {
       await ref
           .read(attendanceRepositoryProvider.notifier)
@@ -507,16 +523,149 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Attendance cleared for $subjectName'),
-          duration: const Duration(milliseconds: 1500),
+          content: Text('Attendance cleared for $subjectName.'),
+          duration: const Duration(milliseconds: 3000),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.only(bottom: 90, left: 16, right: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          action: SnackBarAction(
+            label: 'UNDO',
+            textColor: const Color(0xFF7BD0FF),
+            onPressed: () async {
+              for (final r in backup) {
+                await ref
+                    .read(attendanceRepositoryProvider.notifier)
+                    .insertRecord(r);
+              }
+            },
+          ),
         ),
       );
     }
+  }
+
+  void _confirmDeleteSessionAttendance(
+    BuildContext context,
+    String subjectId,
+    String subjectName, [
+    int? period,
+    int durationHours = 1,
+  ]) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final dateLabel = _isSameDay(_selectedDate, DateTime.now())
+        ? 'today'
+        : DateFormat('EEE, MMM d').format(_selectedDate);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFEF4444),
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Delete Attendance?',
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Remove attendance for $subjectName for $dateLabel${period != null ? ' (Period $period)' : ''}?',
+              style: TextStyle(color: subtextColor, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: subtextColor,
+                      side: BorderSide(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _unmarkAttendance(
+                        subjectId,
+                        subjectName,
+                        period,
+                        durationHours,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showSwapSubjectSheet(
@@ -536,8 +685,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF0E1628),
+              decoration: BoxDecoration(
+                color: context.cardColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -555,26 +704,26 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Swap Subject / Proxy Class',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: context.textColor,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Period ${entry.periodNumber} (${entry.startTimeDisplay} - ${entry.endTimeDisplay})',
-                            style: const TextStyle(
-                              color: Color(0xFF7BD0FF),
+                            style: TextStyle(
+                              color: context.accentColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -584,7 +733,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       if (_dailySubstitutes.containsKey(swapKey))
                         GestureDetector(
                           onTap: () {
-                            setState(() => _dailySubstitutes.remove(swapKey));
+                            ref
+                                .read(classSubstituteRepositoryProvider.notifier)
+                                .removeSubstituteByKey(swapKey);
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).clearSnackBars();
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -611,21 +762,21 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white10,
+                              color: context.isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Icon(
                                   Icons.restart_alt_rounded,
-                                  color: Colors.white70,
+                                  color: context.subtextColor,
                                   size: 14,
                                 ),
                                 SizedBox(width: 4),
                                 Text(
                                   'Reset',
                                   style: TextStyle(
-                                    color: Colors.white70,
+                                    color: context.subtextColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -636,12 +787,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  const Text(
+                  SizedBox(height: 14),
+                  Text(
                     'Teacher absent? Select which substitute subject was conducted during this period:',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(color: context.subtextColor, fontSize: 12),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   ConstrainedBox(
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 0.45,
@@ -659,27 +810,31 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
                             color: isCurrent
-                                ? const Color(
-                                    0xFF5B5FEF,
-                                  ).withValues(alpha: 0.2)
-                                : const Color(0xFF131A2B),
+                                ? context.accentColor.withValues(alpha: 0.15)
+                                : (context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC)),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isCurrent
-                                  ? const Color(0xFF5B5FEF)
-                                  : Colors.white.withValues(alpha: 0.06),
+                                  ? context.accentColor
+                                  : (context.isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
                               width: isCurrent ? 1.5 : 1.0,
                             ),
                           ),
                           child: ListTile(
                             onTap: () {
-                              setState(() {
-                                if (sub.id == originalSubject.id) {
-                                  _dailySubstitutes.remove(swapKey);
-                                } else {
-                                  _dailySubstitutes[swapKey] = sub.id;
-                                }
-                              });
+                              if (sub.id == originalSubject.id) {
+                                ref
+                                    .read(classSubstituteRepositoryProvider.notifier)
+                                    .removeSubstituteByKey(swapKey);
+                              } else {
+                                ref
+                                    .read(classSubstituteRepositoryProvider.notifier)
+                                    .setSubstitute(
+                                      date: _selectedDate,
+                                      entryId: entry.id,
+                                      substituteSubjectId: sub.id,
+                                    );
+                              }
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).clearSnackBars();
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -715,8 +870,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                 Expanded(
                                   child: Text(
                                     sub.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: context.textColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -729,13 +884,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white10,
+                                      color: context.isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'TIMETABLE DEFAULT',
                                       style: TextStyle(
-                                        color: Colors.white54,
+                                        color: context.subtextColor,
                                         fontSize: 8.5,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -747,20 +902,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                               sub.facultyName.isNotEmpty
                                   ? 'Prof. ${sub.facultyName}'
                                   : 'Instructor not set',
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              style: TextStyle(
+                                color: context.subtextColor,
                                 fontSize: 11,
                               ),
                             ),
                             trailing: isCurrent
-                                ? const Icon(
+                                ? Icon(
                                     Icons.check_circle_rounded,
-                                    color: Color(0xFF7BD0FF),
+                                    color: context.accentColor,
                                     size: 20,
                                   )
-                                : const Icon(
+                                : Icon(
                                     Icons.swap_horiz_rounded,
-                                    color: Colors.white38,
+                                    color: context.mutedTextColor,
                                     size: 20,
                                   ),
                           ),
@@ -815,7 +970,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Reset to original calendar schedule'),
+          content: Text('Reset to original calendar schedule'),
           duration: const Duration(milliseconds: 1500),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.only(bottom: 90, left: 16, right: 16),
@@ -846,6 +1001,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       final detected = await _ocrService.scanAttendanceScreenshot(
         imageBytes: bytes,
         apiKey: settings.customApiKey,
+        groqApiKey: settings.groqApiKey,
       );
 
       if (detected.isEmpty) {
@@ -967,7 +1123,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
             semesterId: activeSemId,
             subjectId: matchedSubject.id,
             date: entry.date ?? _selectedDate,
-            periodNumber: entry.periodNumber ?? 1,
+            periodNumber: entry.periodNumber,
             status: entry.status.toLowerCase() == 'present'
                 ? 'present'
                 : entry.status.toLowerCase() == 'absent'
@@ -1003,15 +1159,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       }
     } catch (e) {
       if (mounted) {
-        final errStr = e.toString().replaceAll('Exception: ', '');
-        final isKeyRelated = errStr.toLowerCase().contains('api key') ||
-            errStr.toLowerCase().contains('gemini') ||
-            errStr.toLowerCase().contains('api_key') ||
-            errStr.toLowerCase().contains('settings');
+        final errStr = e.toString().toLowerCase();
+        final isKeyRelated = errStr.contains('api key') ||
+            errStr.contains('gemini') ||
+            errStr.contains('api_key') ||
+            errStr.contains('settings');
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Screenshot Scan: $errStr'),
-            duration: const Duration(seconds: 6),
+            content: const Text(
+              'Screenshot analysis is temporarily unavailable. You can enter attendance manually.',
+            ),
+            duration: const Duration(seconds: 8),
             behavior: SnackBarBehavior.floating,
             backgroundColor: const Color(0xFFEF4444),
             action: isKeyRelated
@@ -1036,10 +1195,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
     final activeSem = ref.watch(activeSemesterProvider);
     final stats = ref.watch(statsProvider);
     final allRecords = ref.watch(attendanceRepositoryProvider);
+    final dailySubstitutes = ref.watch(classSubstituteRepositoryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
     final containerBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFFFFFFF);
     final cardBorder = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06);
 
@@ -1060,7 +1220,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                     color: mutedTextColor,
                     size: 48,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'No Active Semester',
                     style: TextStyle(
@@ -1069,13 +1229,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       color: textColor,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Create an active semester to start logging attendance.',
                     style: TextStyle(color: subtextColor, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   GestureDetector(
                     onTap: () => context.push('/semester-manage'),
                     child: Container(
@@ -1089,7 +1249,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Manage Semesters',
                         style: TextStyle(
                           color: Colors.white,
@@ -1138,7 +1298,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
           child: CircleAvatar(
             radius: 16,
             backgroundColor: isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0),
-            child: const Icon(
+            child: Icon(
               Icons.assignment_turned_in_rounded,
               color: Color(0xFF5B5FEF),
               size: 18,
@@ -1151,7 +1311,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
           children: [
             Text(
               activeSem.name.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFF908FA0),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -1169,12 +1329,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
           ],
         ),
         actions: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: SyncStatusBadge(),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.calendar_view_month_rounded,
               color: Color(0xFF10B981),
               size: 22,
@@ -1186,7 +1346,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
             },
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.center_focus_strong_rounded,
               color: Color(0xFF5B5FEF),
               size: 22,
@@ -1238,7 +1398,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           ),
                         ),
                         if (!isToday) ...[
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           GestureDetector(
                             onTap: () =>
                                 setState(() => _selectedDate = DateTime.now()),
@@ -1256,7 +1416,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                   ).withValues(alpha: 0.5),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
@@ -1298,7 +1458,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             );
                           },
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         IconButton(
                           icon: Icon(
                             Icons.chevron_right_rounded,
@@ -1319,7 +1479,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
 
                 // 2. Horizontal Date Selector Strip (With Holiday Indicators & Swipe Support)
                 Row(
@@ -1369,7 +1529,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               dayNumber,
                               style: TextStyle(
@@ -1381,7 +1541,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                               ),
                             ),
                             if (isHolidayDay) ...[
-                              const SizedBox(height: 3),
+                              SizedBox(height: 3),
                               Container(
                                 width: 4,
                                 height: 4,
@@ -1402,7 +1562,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
 
           // 3. Selected Date Status Bar
           Container(
@@ -1426,7 +1586,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           : const Color(0xFF7BD0FF),
                       size: 18,
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1475,7 +1635,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                               },
                             ),
                             if (isOverridden) ...[
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 5,
@@ -1509,10 +1669,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF),
+                      color: context.accentColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.edit_calendar_rounded,
@@ -1538,7 +1698,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
 
           // 3.1 Prominent Public Holiday / College Off Card with Interactive Toggle
           if (selectedHolidays.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             ...selectedHolidays.map((holiday) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -1570,13 +1730,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             ).withValues(alpha: 0.22),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.celebration_rounded,
                             color: Color(0xFFF59E0B),
                             size: 24,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1594,7 +1754,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                       ).withValues(alpha: 0.25),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'COLLEGE HOLIDAY',
                                       style: TextStyle(
                                         color: Color(0xFFF59E0B),
@@ -1604,11 +1764,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Flexible(
                                     child: Text(
                                       holiday.source,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Colors.white38,
                                         fontSize: 10,
                                       ),
@@ -1617,17 +1777,17 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              SizedBox(height: 6),
                               Text(
                                 holiday.title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
                                 ),
                               ),
-                              const SizedBox(height: 3),
-                              const Text(
+                              SizedBox(height: 3),
+                              Text(
                                 'College is closed today. Regular classes are not scheduled.',
                                 style: TextStyle(
                                   color: Colors.white70,
@@ -1639,16 +1799,16 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Divider(color: Colors.white10, height: 1),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 12),
+                    Divider(color: isDark ? Colors.white10 : Colors.black12, height: 1),
+                    SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'College is conducting classes today?',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: subtextColor,
                             fontSize: 11.5,
                           ),
                         ),
@@ -1670,7 +1830,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                 ).withValues(alpha: 0.4),
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
@@ -1699,7 +1859,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
             }),
           ] else ...[
             // Quick toggle option to declare a custom college holiday if needed
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.only(bottom: 6.0),
               child: Row(
@@ -1714,23 +1874,23 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF131A2B),
+                          color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white12),
+                          border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.restart_alt_rounded,
-                              color: Colors.white54,
+                              color: subtextColor,
                               size: 12,
                             ),
                             SizedBox(width: 4),
                             Text(
                               'Reset to Default',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: subtextColor,
                                 fontSize: 10.5,
                               ),
                             ),
@@ -1739,7 +1899,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       ),
                     )
                   else
-                    const SizedBox.shrink(),
+                    SizedBox.shrink(),
                   GestureDetector(
                     onTap: _toggleHolidayStatus,
                     child: Container(
@@ -1756,7 +1916,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           ).withValues(alpha: 0.3),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
@@ -1781,7 +1941,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
               ),
             ),
           ],
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
 
           // 4. Subjects List (Integrated with Today's Timetable Schedule)
           if (stats.allSubjectStats.isEmpty)
@@ -1790,27 +1950,27 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                 padding: const EdgeInsets.symmetric(vertical: 48.0),
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.menu_book_outlined,
-                      color: Colors.white24,
+                      color: mutedTextColor,
                       size: 48,
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       'No Subjects Added Yet',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
+                    SizedBox(height: 6),
+                    Text(
                       'Upload your timetable photo to automatically populate classes & schedule.',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                      style: TextStyle(color: subtextColor, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1830,7 +1990,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Icon(
                                   Icons.document_scanner_rounded,
@@ -1849,7 +2009,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -1896,7 +2056,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       horizontal: 20,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
+                      color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
@@ -1919,24 +2079,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             size: 32,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         Text(
                           effectiveHolidays.isNotEmpty
                               ? effectiveHolidays.first.title
                               : 'College Holiday ($dayName)',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
+                        SizedBox(height: 6),
+                        Text(
                           'No classes scheduled today. Enjoy your day off!',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.white54,
+                            color: subtextColor,
                             fontSize: 13,
                           ),
                         ),
@@ -1974,7 +2134,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           children: [
                             Text(
                               "${DateFormat('EEEE').format(_selectedDate).toUpperCase()}'S SCHEDULE (${scheduledEntries.length})",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xFFC0C1FF),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -1983,7 +2143,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             ),
                             GestureDetector(
                               onTap: () => context.push('/timetable'),
-                              child: const Text(
+                              child: Text(
                                 'Edit Timetable',
                                 style: TextStyle(
                                   color: Color(0xFF7BD0FF),
@@ -2007,7 +2167,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                               orElse: () => null,
                             );
                         final effectiveSubId =
-                            _dailySubstitutes[swapKey] ?? entry.subjectId;
+                            dailySubstitutes[swapKey] ?? entry.subjectId;
                         final effectiveStat = stats.allSubjectStats
                             .cast<SubjectStats?>()
                             .firstWhere(
@@ -2027,7 +2187,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             swapKey: swapKey,
                           );
                         }
-                        return const SizedBox.shrink();
+                        return SizedBox.shrink();
                       }),
                     ],
                   );
@@ -2043,19 +2203,19 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.sync_alt_rounded, color: Color(0xFF7BD0FF), size: 32),
-                        const SizedBox(height: 12),
-                        const Text(
+                        Icon(Icons.sync_alt_rounded, color: Color(0xFF7BD0FF), size: 32),
+                        SizedBox(height: 12),
+                        Text(
                           'No timetable scheduled today.',
                           style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
+                        SizedBox(height: 6),
+                        Text(
                           'Since this is a working day, which day\'s timetable is scheduled on this day?',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white70, fontSize: 13),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -2080,7 +2240,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                 ),
                                 child: Text(
                                   day['name'] as String,
-                                  style: const TextStyle(color: Color(0xFFC0C1FF), fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: TextStyle(color: Color(0xFFC0C1FF), fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
                               ),
                             );
@@ -2098,10 +2258,55 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
       if (_isScanningAttendance)
         Positioned.fill(
           child: Container(
-            color: Colors.black54,
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF5B5FEF),
+            color: Colors.black87,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(
+                    color: Color(0xFF5B5FEF),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Analyzing screenshot...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'This may take up to 15 seconds.',
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isScanningAttendance = false;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Screenshot analysis cancelled. You can enter attendance manually.'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white10,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('Cancel & Enter Manually'),
+                  ),
+                ],
               ),
             ),
           ),
@@ -2120,6 +2325,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
     List<SubjectStats>? allSubjectStats,
     String? swapKey,
   }) {
+    final isDark = context.isDark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
     final sub = item.subject;
     final subjectRecords = dateRecords
         .where((r) {
@@ -2208,7 +2417,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         selectedHours > 1
                             ? 'PERIOD ${scheduledEntry.periodNumber}-${scheduledEntry.periodNumber + selectedHours - 1} • $selectedHours HOURS CONTINUOUS CLASS'
                             : 'PERIOD ${scheduledEntry.periodNumber} • ${scheduledEntry.startTimeDisplay} - ${scheduledEntry.endTimeDisplay}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xFFC0C1FF),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -2251,7 +2460,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                     : const Color(0xFF7BD0FF),
                                 size: 12,
                               ),
-                              const SizedBox(width: 3),
+                              SizedBox(width: 3),
                               Text(
                                 isSubstituted ? 'Proxy Active' : 'Swap Subject',
                                 style: TextStyle(
@@ -2274,21 +2483,21 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.location_on_outlined,
-                              color: Colors.white60,
+                              color: subtextColor,
                               size: 11,
                             ),
-                            const SizedBox(width: 3),
+                            SizedBox(width: 3),
                             Text(
                               scheduledEntry.room!,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: subtextColor,
                                 fontSize: 10,
                               ),
                             ),
@@ -2297,7 +2506,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
               ],
               if (isSubstituted) ...[
                 Container(
@@ -2318,15 +2527,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.swap_horiz_rounded,
                             color: Color(0xFFF59E0B),
                             size: 13,
                           ),
-                          const SizedBox(width: 5),
+                          SizedBox(width: 5),
                           Text(
                             'Proxy / Substitute for ${originalSubject.name}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Color(0xFFF59E0B),
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
@@ -2337,12 +2546,14 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       GestureDetector(
                         onTap: () {
                           if (swapKey != null) {
-                            setState(() => _dailySubstitutes.remove(swapKey));
+                            ref
+                                .read(classSubstituteRepositoryProvider.notifier)
+                                .removeSubstituteByKey(swapKey);
                           }
                         },
-                        child: const Icon(
+                        child: Icon(
                           Icons.close_rounded,
-                          color: Colors.white60,
+                          color: subtextColor,
                           size: 14,
                         ),
                       ),
@@ -2360,27 +2571,27 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           sub.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: textColor,
                             fontSize: 15.5,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           sub.facultyName.isNotEmpty
                               ? 'Prof. ${sub.facultyName}'
                               : 'Instructor not set',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
-                            color: Colors.white54,
+                            color: subtextColor,
                           ),
                         ),
                       ],
@@ -2399,8 +2610,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       ),
                       Text(
                         'Target: ${item.target.toInt()}%',
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: mutedTextColor,
                           fontSize: 10,
                         ),
                       ),
@@ -2408,19 +2619,19 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Projected Attendance Banner
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D1424),
+                  color: isDark ? const Color(0xFF0D1424) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isBunkRisky
                         ? const Color(0xFFEF4444).withValues(alpha: 0.35)
-                        : Colors.white.withValues(alpha: 0.08),
+                        : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
                   ),
                 ),
                 child: Column(
@@ -2429,18 +2640,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
+                        Row(
                           children: [
                             Icon(
                               Icons.insights_rounded,
-                              color: Color(0xFFC0C1FF),
+                              color: context.accentColor,
                               size: 13,
                             ),
                             SizedBox(width: 5),
                             Text(
                               'PROJECTED ATTENDANCE',
                               style: TextStyle(
-                                color: Color(0xFFC0C1FF),
+                                color: context.accentColor,
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.6,
@@ -2451,15 +2662,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         if (isBunkRisky)
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.warning_amber_rounded,
                                 color: Color(0xFFEF4444),
                                 size: 13,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Text(
-                                'Bunk drops below ${item.target.toInt()}%',
-                                style: const TextStyle(
+                                'Absence drops below ${item.target.toInt()}%',
+                                style: TextStyle(
                                   color: Color(0xFFEF4444),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -2469,7 +2680,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                           ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Row(
                       children: [
                         // IF BUNK
@@ -2491,8 +2702,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'IF BUNK',
+                                Text(
+                                  'IF ABSENT',
                                   style: TextStyle(
                                     color: Color(0xFFFF8B94),
                                     fontSize: 10.5,
@@ -2512,8 +2723,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                       ),
                                     ),
                                     if (isBunkRisky) ...[
-                                      const SizedBox(width: 3),
-                                      const Icon(
+                                      SizedBox(width: 3),
+                                      Icon(
                                         Icons.arrow_downward_rounded,
                                         color: Color(0xFFEF4444),
                                         size: 12,
@@ -2525,7 +2736,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         // IF ATTEND
                         Expanded(
                           child: Container(
@@ -2543,7 +2754,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
+                                Text(
                                   'IF ATTEND',
                                   style: TextStyle(
                                     color: Color(0xFF10B981),
@@ -2555,14 +2766,14 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                   children: [
                                     Text(
                                       '${ifAttendPct.toStringAsFixed(1)}%',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Color(0xFF10B981),
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(width: 3),
-                                    const Icon(
+                                    SizedBox(width: 3),
+                                    Icon(
                                       Icons.arrow_upward_rounded,
                                       color: Color(0xFF10B981),
                                       size: 12,
@@ -2581,9 +2792,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
 
               Container(
                 height: 1,
-                color: Colors.white.withValues(alpha: 0.06),
+                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Action Buttons / Logged Status Pill
               if (hasRecord)
@@ -2601,7 +2812,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                               : const Color(0xFFEF4444),
                           size: 18,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -2657,7 +2868,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                                         : lastRecord.date;
                                     return Text(
                                       'Marked at ${DateFormat('hh:mm a').format(dt)}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Color(0xFF7BD0FF),
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
@@ -2670,9 +2881,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                         ),
                       ],
                     ),
-                    // Action to Undo / Switch / Delete
+                    // Action to Delete attendance
                     GestureDetector(
-                      onTap: () => _unmarkAttendance(
+                      onTap: () => _confirmDeleteSessionAttendance(
+                        context,
                         sub.id,
                         sub.name,
                         scheduledEntry?.periodNumber,
@@ -2680,27 +2892,29 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                       ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 7,
+                          horizontal: 10,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white12),
+                          border: Border.all(
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                          ),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.restart_alt_rounded,
-                              color: Colors.white70,
+                              Icons.delete_outline_rounded,
+                              color: Color(0xFFEF4444),
                               size: 13,
                             ),
                             SizedBox(width: 4),
                             Text(
-                              'Undo',
+                              'Delete',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: Color(0xFFEF4444),
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -2715,7 +2929,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Unmarked Session',
                       style: TextStyle(
                         color: Colors.white38,
@@ -2751,17 +2965,17 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.close_rounded,
                                   color: Color(0xFFEF4444),
                                   size: 15,
                                 ),
-                                const SizedBox(width: 5),
+                                SizedBox(width: 5),
                                 Text(
                                   selectedHours > 1
-                                      ? 'BUNK (${selectedHours}h)'
-                                      : 'BUNK',
-                                  style: const TextStyle(
+                                      ? 'ABSENT (${selectedHours}h)'
+                                      : 'ABSENT',
+                                  style: TextStyle(
                                     color: Color(0xFFEF4444),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -2772,7 +2986,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
 
                         // ATTEND Button
                         GestureDetector(
@@ -2806,17 +3020,17 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen>
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.check_rounded,
                                   color: Colors.white,
                                   size: 15,
                                 ),
-                                const SizedBox(width: 5),
+                                SizedBox(width: 5),
                                 Text(
                                   selectedHours > 1
                                       ? 'ATTEND (${selectedHours}h)'
                                       : 'ATTEND',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,

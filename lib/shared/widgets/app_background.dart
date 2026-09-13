@@ -50,6 +50,9 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = ref.watch(accentColorProvider);
+    final hsl = HSLColor.fromColor(accentColor);
+    final secondaryGlow = hsl.withHue((hsl.hue + 30) % 360).toColor();
+    final tertiaryGlow = hsl.withHue((hsl.hue + 60) % 360).toColor();
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.darkBgBase : AppTheme.lightBgBase,
@@ -100,7 +103,7 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
                     ),
                   ),
 
-                  // Glow Blob 2: Luminous Purple (Bottom-Right Drift)
+                  // Glow Blob 2: Dynamic Tertiary Glow (Bottom-Right Drift)
                   Positioned(
                     bottom: -110 + dy2,
                     right: -110 + dx2,
@@ -111,17 +114,17 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF8151EB).withValues(
+                            tertiaryGlow.withValues(
                               alpha: isDark ? 0.18 : 0.10,
                             ),
-                            const Color(0xFF8151EB).withValues(alpha: 0.0),
+                            tertiaryGlow.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
                     ),
                   ),
 
-                  // Glow Blob 3: Sky Cyan (Center-Left Drift)
+                  // Glow Blob 3: Dynamic Secondary Glow (Center-Left Drift)
                   Positioned(
                     top: 280 + dy3,
                     left: -40 + dx3,
@@ -132,17 +135,17 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF7BD0FF).withValues(
+                            secondaryGlow.withValues(
                               alpha: isDark ? 0.14 : 0.08,
                             ),
-                            const Color(0xFF7BD0FF).withValues(alpha: 0.0),
+                            secondaryGlow.withValues(alpha: 0.0),
                           ],
                         ),
                       ),
                     ),
                   ),
 
-                  // Glow Blob 4: Emerald / Teal Soft Focus (Mid-Right Drift)
+                  // Glow Blob 4: Primary Dynamic Accent Soft Focus (Mid-Right Drift)
                   Positioned(
                     top: 450 + dy4,
                     right: -60 + dx4,
@@ -153,10 +156,10 @@ class _AppBackgroundState extends ConsumerState<AppBackground>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF10B981).withValues(
+                            accentColor.withValues(
                               alpha: isDark ? 0.12 : 0.06,
                             ),
-                            const Color(0xFF10B981).withValues(alpha: 0.0),
+                            accentColor.withValues(alpha: 0.0),
                           ],
                         ),
                       ),

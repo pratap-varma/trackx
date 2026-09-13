@@ -314,15 +314,14 @@ class _CalendarIntegrationSheetState
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 6,
                                             vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF5B5FEF).withValues(alpha: 0.25),
+                                          ),                                          decoration: BoxDecoration(
+                                            color: context.accentColor.withValues(alpha: 0.25),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
-                                          child: const Text(
+                                          child: Text(
                                             'PRIMARY',
                                             style: TextStyle(
-                                              color: Color(0xFFC0C1FF),
+                                              color: context.accentColor,
                                               fontSize: 9,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -346,12 +345,12 @@ class _CalendarIntegrationSheetState
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                ],
+                                  ],
                               ),
                             ),
                             Checkbox(
                               value: cal.isSelected,
-                              activeColor: const Color(0xFF5B5FEF),
+                              activeColor: context.accentColor,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -378,8 +377,8 @@ class _CalendarIntegrationSheetState
                   ),
                   child: Text(
                     _statusMessage!,
-                    style: const TextStyle(
-                      color: AppTheme.accentPurple,
+                    style: TextStyle(
+                      color: context.accentColor,
                       fontSize: 12,
                     ),
                   ),
@@ -387,11 +386,11 @@ class _CalendarIntegrationSheetState
               ],
               const SizedBox(height: 24),
               if (_isLoading)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.all(8.0),
                     child: CircularProgressIndicator(
-                      color: AppTheme.accentPurple,
+                      color: context.accentColor,
                     ),
                   ),
                 )

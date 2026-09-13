@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
+import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 import 'package:trackx/features/timetable/providers/timetable_provider.dart';
@@ -34,6 +36,191 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
     super.dispose();
   }
 
+  void _showSwapPeriodsSheet(
+    BuildContext context,
+    String activeSemId,
+    int day,
+    int sourcePeriod,
+    List<TimetableEntry> allEntries,
+    List<Subject> subjects,
+  ) {
+    HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final cardBg = context.cardColor;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Swap Period $sourcePeriod With',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Select another period to swap times and schedule slots:',
+                style: TextStyle(color: subtextColor, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.45,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: 6,
+                  itemBuilder: (context, idx) {
+                    final targetPeriod = idx + 1;
+                    if (targetPeriod == sourcePeriod) {
+                      return const SizedBox.shrink();
+                    }
+                    final targetEntry = allEntries
+                        .where(
+                          (e) =>
+                              e.dayOfWeek == day &&
+                              e.periodNumber == targetPeriod,
+                        )
+                        .firstOrNull;
+                    final targetSub = targetEntry != null
+                        ? subjects
+                            .where((s) => s.id == targetEntry.subjectId)
+                            .firstOrNull
+                        : null;
+                    final subName = targetSub?.name ?? 'Free Period';
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF131A2B)
+                            : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : Colors.black.withValues(alpha: 0.06),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: Container(
+                          width: 34,
+                          height: 34,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: context.accentColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'P$targetPeriod',
+                            style: TextStyle(
+                              color: context.accentColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          subName,
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: targetEntry != null
+                            ? Text(
+                                '${targetEntry.startTimeDisplay} - ${targetEntry.endTimeDisplay}',
+                                style: TextStyle(
+                                  color: subtextColor,
+                                  fontSize: 11,
+                                ),
+                              )
+                            : Text(
+                                'No class scheduled',
+                                style: TextStyle(
+                                  color: subtextColor,
+                                  fontSize: 11,
+                                ),
+                              ),
+                        trailing: Icon(
+                          Icons.swap_vert_rounded,
+                          color: context.accentColor,
+                          size: 20,
+                        ),
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          final error = await ref
+                              .read(timetableRepositoryProvider.notifier)
+                              .swapPeriods(
+                                semesterId: activeSemId,
+                                dayOfWeek: day,
+                                periodA: sourcePeriod,
+                                periodB: targetPeriod,
+                              );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  error ??
+                                      'Swapped Period $sourcePeriod with Period $targetPeriod',
+                                ),
+                                duration: const Duration(milliseconds: 1500),
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.only(
+                                  bottom: 90,
+                                  left: 16,
+                                  right: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showEditSheet(
     String activeSemId,
     int day,
@@ -59,9 +246,9 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final dropdownBg = isDark ? const Color(0xFF131A2B) : Colors.white;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final dropdownBg = context.cardColor;
 
     showModalBottomSheet(
       context: context,
@@ -315,9 +502,9 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
     final allEntries = ref.watch(activeSemesterTimetableProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -445,11 +632,11 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppTheme.accentPurple.withValues(alpha: 0.2)
+                            ? context.accentColor.withValues(alpha: 0.2)
                             : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04)),
                         border: Border.all(
                           color: isSelected
-                              ? AppTheme.accentPurple
+                              ? context.accentColor
                               : (isDark ? Colors.white12 : Colors.black12),
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -457,7 +644,7 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                       child: Text(
                         weekdays[index],
                         style: TextStyle(
-                          color: isSelected ? (isDark ? Colors.white : AppTheme.accentPurple) : subtextColor,
+                          color: isSelected ? (isDark ? Colors.white : context.accentColor) : subtextColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -554,7 +741,23 @@ class _TimetableScreenState extends ConsumerState<TimetableScreen> {
                                         )
                                         .setEnabled(entry.id, val);
                                   },
-                                  activeThumbColor: AppTheme.accentPurple,
+                                  activeThumbColor: context.accentColor,
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.swap_vert_rounded,
+                                    color: context.accentColor,
+                                    size: 19,
+                                  ),
+                                  tooltip: 'Swap Period',
+                                  onPressed: () => _showSwapPeriodsSheet(
+                                    context,
+                                    activeSem.id,
+                                    selectedDay,
+                                    period,
+                                    allEntries,
+                                    subjects,
+                                  ),
                                 ),
                                 IconButton(
                                   icon: const Icon(

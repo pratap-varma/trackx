@@ -13,6 +13,7 @@ import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/shared/widgets/ai_thinking_indicator.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
@@ -40,6 +41,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
   void _previewAttachment(String path) {
     final isPdf = path.toLowerCase().endsWith('.pdf');
+    final textColor = context.textColor;
+    final mutedTextColor = context.mutedTextColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -55,8 +60,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                   Expanded(
                     child: Text(
                       path,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -64,9 +69,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close,
-                      color: Colors.white54,
+                      color: mutedTextColor,
                       size: 20,
                     ),
                     onPressed: () => Navigator.pop(context),
@@ -78,10 +83,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 height: 220,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.04)
+                      : Colors.black.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.06),
                   ),
                 ),
                 child: Center(
@@ -98,7 +107,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             Text(
                               '[PDF Preview]',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
+                                color: mutedTextColor,
                                 fontSize: 12,
                               ),
                             ),
@@ -107,16 +116,16 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.photo_rounded,
-                              color: Color(0xFF7BD0FF),
+                              color: context.accentColor,
                               size: 56,
                             ),
                             const SizedBox(height: 10),
                             Text(
                               '[Image Preview]',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
+                                color: mutedTextColor,
                                 fontSize: 12,
                               ),
                             ),
@@ -132,13 +141,17 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   }
 
   void _showAttachmentOptions(StateSetter setSheetState) {
+    final textColor = context.textColor;
+    final mutedTextColor = context.mutedTextColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
         child: Column(
@@ -150,16 +163,18 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Attach Document or Photo',
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -174,7 +189,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               (
                 'Upload Image (.PNG / .JPG)',
                 Icons.photo_rounded,
-                const Color(0xFF7BD0FF),
+                context.accentColor,
               ),
               (
                 'Resource Reference Note',
@@ -198,10 +213,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: isDark
+                        ? const Color(0xFF1B243B)
+                        : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.06),
                     ),
                   ),
                   child: Row(
@@ -211,15 +230,15 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       Expanded(
                         child: Text(
                           item.$1,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontSize: 13,
                           ),
                         ),
                       ),
                       Icon(
                         Icons.add_rounded,
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: mutedTextColor,
                         size: 18,
                       ),
                     ],
@@ -248,6 +267,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
       _attachedFilePaths = [];
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -265,9 +289,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0E1628),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                decoration: BoxDecoration(
+                  color: context.cardColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
@@ -280,7 +304,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.15)
+                                : Colors.black.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -288,8 +314,8 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                       const SizedBox(height: 20),
                       Text(
                         existing == null ? 'New Note' : 'Edit Note',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -320,44 +346,48 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.04)
+                                : Colors.black.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.08),
                             ),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               isExpanded: true,
                               value: _selectedSubjectId,
-                              hint: const Text(
+                              hint: Text(
                                 'Link to Subject (optional)',
                                 style: TextStyle(
-                                  color: Colors.white38,
+                                  color: mutedTextColor,
                                   fontSize: 13,
                                 ),
                               ),
-                              dropdownColor: const Color(0xFF1B1F2C),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              dropdownColor: context.cardColor,
+                              style: TextStyle(
+                                color: textColor,
                                 fontSize: 13,
                               ),
                               icon: Icon(
                                 Icons.expand_more_rounded,
-                                color: Colors.white.withValues(alpha: 0.3),
+                                color: mutedTextColor,
                               ),
                               items: [
-                                const DropdownMenuItem(
+                                DropdownMenuItem(
                                   value: null,
                                   child: Text(
                                     'None',
-                                    style: TextStyle(color: Colors.white38),
+                                    style: TextStyle(color: mutedTextColor),
                                   ),
                                 ),
                                 ...subjects.map(
                                   (s) => DropdownMenuItem(
                                     value: s.id,
-                                    child: Text(s.name),
+                                    child: Text(s.name, style: TextStyle(color: textColor)),
                                   ),
                                 ),
                               ],
@@ -370,10 +400,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
                       // Attachments
                       if (_attachedFilePaths.isNotEmpty) ...[
-                        const Text(
+                        Text(
                           'Attachments',
                           style: TextStyle(
-                            color: Colors.white54,
+                            color: subtextColor,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -385,30 +415,32 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                           children: _attachedFilePaths.map((path) {
                             final isPdf = path.toLowerCase().endsWith('.pdf');
                             return Chip(
-                              backgroundColor: Colors.white.withValues(
-                                alpha: 0.05,
-                              ),
+                              backgroundColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.black.withValues(alpha: 0.05),
                               side: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.1),
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.black.withValues(alpha: 0.1),
                               ),
                               avatar: Icon(
                                 isPdf ? Icons.picture_as_pdf : Icons.photo,
                                 size: 14,
                                 color: isPdf
                                     ? const Color(0xFFEF4444)
-                                    : const Color(0xFF7BD0FF),
+                                    : context.accentColor,
                               ),
                               label: Text(
                                 path,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: textColor,
                                   fontSize: 10,
                                 ),
                               ),
-                              deleteIcon: const Icon(
+                              deleteIcon: Icon(
                                 Icons.cancel,
                                 size: 14,
-                                color: Colors.white38,
+                                color: mutedTextColor,
                               ),
                               onDeleted: () => setSheetState(
                                 () => _attachedFilePaths.remove(path),
@@ -416,7 +448,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             );
                           }).toList(),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                       ],
 
                       Row(
@@ -425,15 +457,20 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                             child: OutlinedButton.icon(
                               onPressed: () =>
                                   _showAttachmentOptions(setSheetState),
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.attach_file_rounded,
                                 size: 16,
+                                color: subtextColor,
                               ),
-                              label: const Text('Attach File'),
+                              label: Text(
+                                'Attach File',
+                                style: TextStyle(color: subtextColor),
+                              ),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white60,
                                 side: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.12),
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.12)
+                                      : Colors.black.withValues(alpha: 0.12),
                                 ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
@@ -490,24 +527,22 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                   vertical: 14,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFF5B5FEF),
-                                      Color(0xFF8151EB),
+                                      context.accentColor,
+                                      context.tertiaryColor,
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(
-                                        0xFF5B5FEF,
-                                      ).withValues(alpha: 0.3),
+                                      color: context.accentColor.withValues(alpha: 0.3),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
                                     'Save Note',
                                     style: TextStyle(
@@ -545,7 +580,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(
+      builder: (ctx) => Center(
         child: AiThinkingIndicator(
           label: 'Crafting AI Flashcards...',
         ),
@@ -582,6 +617,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   Widget build(BuildContext context) {
     final activeSem = ref.watch(activeSemesterProvider);
     final notes = ref.watch(notesProvider);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     if (activeSem == null) {
       return AppBackground(
@@ -593,27 +631,27 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               child: GlassContainer(
                 borderRadius: 20,
                 padding: const EdgeInsets.all(24),
-                child: const Column(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.sticky_note_2_outlined,
-                      color: Colors.white24,
+                      color: mutedTextColor,
                       size: 48,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       'No Active Semester',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Please activate a semester in Profile settings first.',
-                      style: TextStyle(color: Colors.white54, fontSize: 13),
+                      style: TextStyle(color: subtextColor, fontSize: 13),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -649,9 +687,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.white,
+              color: textColor,
               size: 18,
             ),
             onPressed: () {
@@ -665,18 +703,18 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'My Notes',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: textColor,
                   fontSize: 18,
                 ),
               ),
               Text(
                 '${semesterNotes.length} notes this semester',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: mutedTextColor,
                   fontSize: 11,
                 ),
               ),
@@ -690,9 +728,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                 child: GlassContainer(
                   borderRadius: 12,
                   padding: const EdgeInsets.all(8),
-                  child: const Icon(
+                  child: Icon(
                     Icons.add_rounded,
-                    color: Colors.white,
+                    color: textColor,
                     size: 20,
                   ),
                 ),
@@ -722,13 +760,13 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                           Icon(
                             Icons.sticky_note_2_outlined,
                             size: 56,
-                            color: Colors.white.withValues(alpha: 0.12),
+                            color: mutedTextColor.withValues(alpha: 0.4),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             query.isEmpty ? 'No Notes Yet' : 'No Results Found',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -739,7 +777,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                 ? 'Tap + to capture your first note.'
                                 : 'Try a different search term.',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.35),
+                              color: mutedTextColor,
                               fontSize: 13,
                             ),
                           ),
@@ -754,18 +792,17 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                   vertical: 14,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFF5B5FEF),
-                                      Color(0xFF8151EB),
+                                      context.accentColor,
+                                      context.tertiaryColor,
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(
-                                        0xFF5B5FEF,
-                                      ).withValues(alpha: 0.35),
+                                      color: context.accentColor
+                                          .withValues(alpha: 0.35),
                                       blurRadius: 16,
                                       offset: const Offset(0, 4),
                                     ),
@@ -833,7 +870,7 @@ class _NoteCard extends StatelessWidget {
   static const _tagColors = [
     Color(0xFF5B5FEF),
     Color(0xFF10B981),
-    Color(0xFF7BD0FF),
+    Color(0xFF3B82F6),
     Color(0xFFF59E0B),
     Color(0xFF8151EB),
     Color(0xFFEF4444),
@@ -841,6 +878,11 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GestureDetector(
@@ -865,8 +907,8 @@ class _NoteCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       note.title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -882,7 +924,7 @@ class _NoteCard extends StatelessWidget {
                           : Icons.star_border_rounded,
                       color: note.isFavorite
                           ? const Color(0xFFF59E0B)
-                          : Colors.white24,
+                          : mutedTextColor,
                       size: 20,
                     ),
                   ),
@@ -891,7 +933,7 @@ class _NoteCard extends StatelessWidget {
                     onTap: onDelete,
                     child: Icon(
                       Icons.delete_outline_rounded,
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.6),
                       size: 18,
                     ),
                   ),
@@ -901,8 +943,8 @@ class _NoteCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   note.content,
-                  style: const TextStyle(
-                    color: Colors.white54,
+                  style: TextStyle(
+                    color: subtextColor,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -925,10 +967,14 @@ class _NoteCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.black.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.black.withValues(alpha: 0.08),
                           ),
                         ),
                         child: Row(
@@ -939,13 +985,13 @@ class _NoteCard extends StatelessWidget {
                               size: 12,
                               color: isPdf
                                   ? const Color(0xFFEF4444)
-                                  : const Color(0xFF7BD0FF),
+                                  : context.accentColor,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               path,
-                              style: const TextStyle(
-                                color: Colors.white54,
+                              style: TextStyle(
+                                color: subtextColor,
                                 fontSize: 10,
                               ),
                             ),
@@ -986,7 +1032,12 @@ class _NoteCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 12),
-              const Divider(color: Colors.white10, height: 1),
+              Divider(
+                color: isDark
+                    ? Colors.white10
+                    : Colors.black.withValues(alpha: 0.06),
+                height: 1,
+              ),
               const SizedBox(height: 10),
               // AI Flashcards Action Button
               Align(
@@ -998,25 +1049,25 @@ class _NoteCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.15),
+                      color: context.accentColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                        color: context.accentColor.withValues(alpha: 0.4),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.auto_awesome_rounded,
                           size: 14,
-                          color: Color(0xFFC0C1FF),
+                          color: context.accentColor,
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
                           'Study Flashcards',
                           style: TextStyle(
-                            color: Color(0xFFC0C1FF),
+                            color: context.accentColor,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),

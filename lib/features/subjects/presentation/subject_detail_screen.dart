@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
+import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
@@ -17,6 +18,7 @@ import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/shared/widgets/ai_thinking_indicator.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class SubjectDetailScreen extends ConsumerStatefulWidget {
   final String subjectId;
@@ -51,13 +53,14 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(
+      builder: (ctx) => Center(
         child: AiThinkingIndicator(
           label: 'Crafting AI Flashcards...',
         ),
       ),
     );
 
+    bool dialogPopped = false;
     try {
       final deck = await ref.read(flashcardsProvider.notifier).generateFromNote(
             note: note,
@@ -66,6 +69,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           );
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
+        dialogPopped = true;
         final savedDeck = await FlashcardPreviewEditorSheet.show(
           context,
           deck: deck,
@@ -76,10 +80,17 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
+        if (!dialogPopped) {
+          Navigator.pop(context);
+          dialogPopped = true;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to generate flashcards: $e')),
         );
+      }
+    } finally {
+      if (mounted && !dialogPopped) {
+        Navigator.pop(context);
       }
     }
   }
@@ -112,8 +123,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0E1628),
+                decoration: BoxDecoration(
+                  color: context.cardColor,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: SingleChildScrollView(
@@ -132,7 +143,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       Row(
                         children: [
                           Container(
@@ -141,13 +152,13 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.edit_note_rounded,
                               color: Color(0xFFC0C1FF),
                               size: 22,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,16 +167,16 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                   existing == null
                                       ? 'Take Subject Note'
                                       : 'Edit Note',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                SizedBox(height: 2),
                                 Text(
                                   'Linked to $subjectName',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Color(0xFF7BD0FF),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -176,23 +187,23 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       GlassTextField(
                         controller: _noteTitleController,
                         labelText: 'Title (e.g., Unit 2 Important Theorems)',
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassTextField(
                         controller: _noteContentController,
                         labelText: 'Write your notes or key points...',
                         maxLines: 5,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassTextField(
                         controller: _noteTagsController,
                         labelText: 'Tags (comma separated, e.g. Exam, Formula)',
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       Row(
                         children: [
                           Expanded(
@@ -208,10 +219,10 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text('Cancel'),
+                              child: Text('Cancel'),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: GestureDetector(
                               onTap: () {
@@ -295,7 +306,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                 child: Center(
                                   child: Text(
                                     existing != null ? 'Update Note' : 'Save Note',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
@@ -323,8 +334,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
+        decoration: BoxDecoration(
+          color: context.cardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
@@ -341,8 +352,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'Delete Note?',
               style: TextStyle(
                 color: Colors.white,
@@ -350,13 +361,13 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 fontSize: 18,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Are you sure you want to remove "${note.title}"?',
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: TextStyle(color: Colors.white54, fontSize: 13),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
@@ -372,10 +383,10 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text('Cancel'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -385,7 +396,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       ScaffoldMessenger.of(context).clearSnackBars();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('Note deleted.'),
+                          content: Text('Note deleted.'),
                           duration: const Duration(milliseconds: 2500),
                           behavior: SnackBarBehavior.floating,
                           margin: const EdgeInsets.only(
@@ -415,7 +426,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Delete',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
@@ -441,7 +452,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Override Target',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -449,7 +460,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 'Set a custom attendance target for this subject.',
                 style: TextStyle(
@@ -458,13 +469,13 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               GlassTextField(
                 controller: _overrideController,
                 labelText: 'Target (%)',
                 keyboardType: TextInputType.number,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
@@ -480,10 +491,10 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text('Cancel'),
+                      child: Text('Cancel'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
@@ -510,12 +521,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                          gradient: LinearGradient(
+                            colors: [context.accentColor, context.tertiaryColor],
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             'Save',
                             style: TextStyle(
@@ -536,14 +547,151 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     );
   }
 
-  void _confirmDeleteRecord(BuildContext context, dynamic rec) {
+  void _showRecordOptions(BuildContext context, AttendanceRecord rec) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final isPresent = rec.status.toLowerCase() == 'present';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Attendance Record Options',
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Logged as ${rec.status.toUpperCase()} on ${DateFormat('EEE, MMM d, yyyy').format(rec.date)}${rec.periodNumber != null ? ' (Period ${rec.periodNumber})' : ''}',
+              style: TextStyle(color: subtextColor, fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981))
+                      .withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPresent ? Icons.close_rounded : Icons.check_rounded,
+                  color: isPresent ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                isPresent ? 'Change to Absent' : 'Change to Present',
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              subtitle: Text(
+                'Switch status of this entry',
+                style: TextStyle(color: subtextColor, fontSize: 12),
+              ),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final newStatus = isPresent ? 'absent' : 'present';
+                await ref.read(attendanceRepositoryProvider.notifier).editAttendance(
+                  rec.id,
+                  newStatus,
+                  DateTime.now(),
+                  force: true,
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Attendance changed to ${newStatus.toUpperCase()}.'),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              },
+            ),
+            const Divider(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 20,
+                ),
+              ),
+              title: const Text(
+                'Delete Record',
+                style: TextStyle(
+                  color: Color(0xFFEF4444),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              subtitle: Text(
+                'Permanently remove this attendance log',
+                style: TextStyle(color: subtextColor, fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _confirmDeleteRecord(context, rec);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteRecord(BuildContext context, dynamic rec) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final dateFormatted = DateFormat('EEE, MMM d, yyyy').format(rec.date);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
         child: Column(
@@ -554,24 +702,39 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Delete Record?',
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFEF4444),
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Delete Attendance Record?',
               style: TextStyle(
-                color: Colors.white,
+                color: textColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'This attendance log will be permanently removed.',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
+            Text(
+              'Permanently delete the ${rec.status.toUpperCase()} log for $dateFormatted${rec.periodNumber != null ? ' (Period ${rec.periodNumber})' : ''}?',
+              style: TextStyle(color: subtextColor, fontSize: 13),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -581,9 +744,11 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(ctx),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white60,
+                      foregroundColor: subtextColor,
                       side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.12),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -603,11 +768,11 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           .deleteAttendance(rec.id);
                       if (ctx.mounted) {
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(ctx).clearSnackBars();
-                        ScaffoldMessenger.of(ctx).showSnackBar(
+                        ScaffoldMessenger.of(context).clearSnackBars();
+                        ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: const Text('Attendance record deleted.'),
-                            duration: const Duration(milliseconds: 2000),
+                            duration: const Duration(milliseconds: 3000),
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.only(
                               bottom: 24,
@@ -667,7 +832,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             leading: IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.arrow_back_ios_new,
                 color: Colors.white,
                 size: 18,
@@ -675,7 +840,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               onPressed: () => context.pop(),
             ),
           ),
-          body: const Center(
+          body: Center(
             child: Text(
               'Subject not found',
               style: TextStyle(color: Colors.white),
@@ -719,6 +884,11 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       _ => const Color(0xFFEF4444),
     };
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -726,17 +896,17 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new,
-              color: Colors.white,
+              color: textColor,
               size: 18,
             ),
             onPressed: () => context.pop(),
           ),
           title: Text(
             sub.name,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -746,7 +916,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             IconButton(
               icon: const Icon(
                 Icons.edit_note_rounded,
-                color: Color(0xFFC0C1FF),
+                color: Color(0xFF5B5FEF),
                 size: 24,
               ),
               onPressed: () => _showAddNoteSheet(
@@ -758,7 +928,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             IconButton(
               icon: Icon(
                 Icons.tune_rounded,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: mutedTextColor,
                 size: 20,
               ),
               onPressed: () => _showOverrideDialog(subStats.target),
@@ -786,6 +956,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                             progress: (pct / 100).clamp(0.0, 1.0),
                             color: pctColor,
                             subjectColor: subjectColor,
+                            isDark: isDark,
                           ),
                           child: Center(
                             child: Text(
@@ -808,8 +979,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               sub.facultyName.isNotEmpty
                                     ? sub.facultyName
                                     : 'Instructor Not Set',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -840,18 +1011,21 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                   subStats.presentCount.toString(),
                                   'Present',
                                   const Color(0xFF10B981),
+                                  mutedTextColor,
                                 ),
                                 const SizedBox(width: 16),
                                 _miniStat(
                                   subStats.absentCount.toString(),
                                   'Absent',
                                   const Color(0xFFEF4444),
+                                  mutedTextColor,
                                 ),
                                 const SizedBox(width: 16),
                                 _miniStat(
                                   '${subStats.totalCount}',
                                   'Total',
-                                  Colors.white54,
+                                  subtextColor,
+                                  mutedTextColor,
                                 ),
                               ],
                             ),
@@ -863,7 +1037,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   const SizedBox(height: 16),
                   Container(
                     height: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.06),
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -871,23 +1047,23 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     children: [
                       Text(
                         'Target: ${subStats.target.toInt()}%',
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: mutedTextColor,
                           fontSize: 12,
                         ),
                       ),
                       if (subStats.safeBunks > 0)
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.check_circle_outline_rounded,
                               color: Color(0xFF10B981),
                               size: 14,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
-                              'Can bunk ${subStats.safeBunks} more',
-                              style: const TextStyle(
+                              'Can miss ${subStats.safeBunks} more',
+                              style: TextStyle(
                                 color: Color(0xFF10B981),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -898,15 +1074,15 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       else if (subStats.requiredRecovery > 0)
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.warning_amber_rounded,
                               color: Color(0xFFEF4444),
                               size: 14,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               'Need ${subStats.requiredRecovery} more',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Color(0xFFEF4444),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -915,7 +1091,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           ],
                         )
                       else
-                        const Text(
+                        Text(
                           'At threshold',
                           style: TextStyle(color: Colors.white38, fontSize: 12),
                         ),
@@ -924,7 +1100,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             // Quick Mark Attendance Card for Today
             Builder(
@@ -948,7 +1124,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       ? (isPresentToday
                           ? const Color(0xFF10B981).withValues(alpha: 0.4)
                           : const Color(0xFFEF4444).withValues(alpha: 0.4))
-                      : Colors.white.withValues(alpha: 0.08),
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.08)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -965,16 +1143,16 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                 ? (isPresentToday
                                     ? const Color(0xFF10B981)
                                     : const Color(0xFFEF4444))
-                                : const Color(0xFF7BD0FF),
+                                : const Color(0xFF3B82F6),
                           ),
                           const SizedBox(width: 10),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "Today's Attendance",
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -990,7 +1168,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                       ? (isPresentToday
                                           ? const Color(0xFF10B981)
                                           : const Color(0xFFEF4444))
-                                      : Colors.white54,
+                                      : subtextColor,
                                   fontSize: 11,
                                   fontWeight: isMarkedToday
                                       ? FontWeight.bold
@@ -1005,6 +1183,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                         GestureDetector(
                           onTap: () async {
                             HapticFeedback.mediumImpact();
+                            final backup = todayRecord;
                             await ref
                                 .read(attendanceRepositoryProvider.notifier)
                                 .deleteAttendance(todayRecord.id);
@@ -1012,11 +1191,20 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               ScaffoldMessenger.of(context).clearSnackBars();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: const Text("Cleared today's attendance record."),
-                                  duration: const Duration(milliseconds: 1500),
+                                  content: const Text("Today's attendance record deleted."),
+                                  duration: const Duration(milliseconds: 3000),
                                   behavior: SnackBarBehavior.floating,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  action: SnackBarAction(
+                                    label: 'UNDO',
+                                    textColor: const Color(0xFF7BD0FF),
+                                    onPressed: () async {
+                                      await ref
+                                          .read(attendanceRepositoryProvider.notifier)
+                                          .insertRecord(backup);
+                                    },
                                   ),
                                 ),
                               );
@@ -1024,21 +1212,34 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 10,
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.white12),
-                            ),
-                            child: const Text(
-                              'Undo',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                              border: Border.all(
+                                color: const Color(0xFFEF4444).withValues(alpha: 0.3),
                               ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Color(0xFFEF4444),
+                                  size: 13,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Delete',
+                                  style: TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         )
@@ -1163,18 +1364,18 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 borderColor: const Color(0xFF10B981).withValues(alpha: 0.3),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.calendar_view_month_rounded,
+                        const Icon(Icons.calendar_view_month_rounded,
                             size: 16, color: Color(0xFF10B981)),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Text(
                           'View Subject Heatmap Activity',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: textColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1182,7 +1383,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       ],
                     ),
                     Icon(Icons.chevron_right_rounded,
-                        size: 18, color: Colors.white54),
+                        size: 18, color: mutedTextColor),
                   ],
                 ),
               ),
@@ -1198,20 +1399,20 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                        color: context.accentColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.sticky_note_2_rounded,
-                        color: Color(0xFFC0C1FF),
+                        color: context.accentColor,
                         size: 16,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Subject Notes (${subjectNotes.length})',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -1229,13 +1430,13 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                      gradient: LinearGradient(
+                        colors: [context.accentColor, context.tertiaryColor],
                       ),
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.3),
+                          color: context.accentColor.withValues(alpha: 0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -1274,12 +1475,12 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.15),
+                        color: context.accentColor.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.note_add_outlined,
-                        color: Color(0xFF7BD0FF),
+                        color: context.accentColor,
                         size: 22,
                       ),
                     ),
@@ -1288,19 +1489,19 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'No notes for this subject yet',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: textColor,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          Text(
                             'Tap "Take Note" to write lecture summaries or key formulas.',
                             style: TextStyle(
-                              color: Colors.white54,
+                              color: subtextColor,
                               fontSize: 11,
                             ),
                           ),
@@ -1344,8 +1545,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                   Expanded(
                                     child: Text(
                                       note.title,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: textColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -1371,7 +1572,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                         : Icons.star_border_rounded,
                                     color: note.isFavorite
                                         ? const Color(0xFFF59E0B)
-                                        : Colors.white30,
+                                        : mutedTextColor,
                                     size: 18,
                                   ),
                                 ),
@@ -1384,7 +1585,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                   ),
                                   child: const Icon(
                                     Icons.edit_outlined,
-                                    color: Color(0xFF7BD0FF),
+                                    color: Color(0xFF5B5FEF),
                                     size: 17,
                                   ),
                                 ),
@@ -1392,9 +1593,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                 GestureDetector(
                                   onTap: () =>
                                       _confirmDeleteNote(context, note),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.delete_outline_rounded,
-                                    color: Colors.white30,
+                                    color: mutedTextColor,
                                     size: 17,
                                   ),
                                 ),
@@ -1406,8 +1607,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           const SizedBox(height: 6),
                           Text(
                             note.content,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: subtextColor,
                               fontSize: 12.5,
                               height: 1.35,
                             ),
@@ -1431,18 +1632,18 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF5B5FEF)
+                                        color: context.accentColor
                                             .withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(
-                                          color: const Color(0xFF5B5FEF)
+                                          color: context.accentColor
                                               .withValues(alpha: 0.3),
                                         ),
                                       ),
                                       child: Text(
                                         '#$tag',
-                                        style: const TextStyle(
-                                          color: Color(0xFFC0C1FF),
+                                        style: TextStyle(
+                                          color: context.accentColor,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -1455,15 +1656,20 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               const SizedBox.shrink(),
                             Text(
                               formattedDate,
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              style: TextStyle(
+                                color: mutedTextColor,
                                 fontSize: 10.5,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 10),
-                        const Divider(color: Colors.white10, height: 1),
+                        Divider(
+                          color: isDark
+                              ? Colors.white10
+                              : Colors.black.withValues(alpha: 0.06),
+                          height: 1,
+                        ),
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
@@ -1475,27 +1681,27 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF5B5FEF)
+                                color: context.accentColor
                                     .withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: const Color(0xFF5B5FEF)
+                                  color: context.accentColor
                                       .withValues(alpha: 0.4),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     Icons.auto_awesome_rounded,
                                     size: 12,
-                                    color: Color(0xFFC0C1FF),
+                                    color: context.accentColor,
                                   ),
-                                  SizedBox(width: 4),
+                                  const SizedBox(width: 4),
                                   Text(
                                     'Study Flashcards',
                                     style: TextStyle(
-                                      color: Color(0xFFC0C1FF),
+                                      color: context.accentColor,
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1516,10 +1722,10 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Attendance Log',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -1530,7 +1736,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     final fColor = switch (f) {
                       'present' => const Color(0xFF10B981),
                       'absent' => const Color(0xFFEF4444),
-                      _ => Colors.white,
+                      _ => textColor,
                     };
                     return GestureDetector(
                       onTap: () => setState(() => _filter = f),
@@ -1549,7 +1755,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           border: Border.all(
                             color: isActive
                                 ? fColor.withValues(alpha: 0.3)
-                                : Colors.white.withValues(alpha: 0.06),
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.black.withValues(alpha: 0.06)),
                           ),
                         ),
                         child: Text(
@@ -1557,7 +1765,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                               ? 'All'
                               : f[0].toUpperCase() + f.substring(1),
                           style: TextStyle(
-                            color: isActive ? fColor : Colors.white30,
+                            color: isActive ? fColor : mutedTextColor,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1578,7 +1786,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                     children: [
                       Icon(
                         Icons.event_busy_outlined,
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: mutedTextColor.withValues(alpha: 0.4),
                         size: 40,
                       ),
                       const SizedBox(height: 12),
@@ -1586,8 +1794,8 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                         _filter == 'all'
                             ? 'No attendance logged yet'
                             : 'No $_filter records',
-                        style: const TextStyle(
-                          color: Colors.white60,
+                        style: TextStyle(
+                          color: subtextColor,
                           fontSize: 13,
                         ),
                       ),
@@ -1595,12 +1803,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   ),
                 ),
               )
-            else
-              ...filteredRecords.map((rec) {
-                final isEditable = AttendanceRepository.canEditAttendance(
-                  rec,
-                  DateTime.now(),
-                );
+            else              ...filteredRecords.map((rec) {
                 final isPresent = rec.status == 'present';
                 final statusColor = isPresent
                     ? const Color(0xFF10B981)
@@ -1615,109 +1818,116 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: GlassContainer(
-                    borderRadius: 14,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      children: [
-                        // Status dot
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: statusColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: statusColor.withValues(alpha: 0.4),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                dateFormatted,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13.5,
+                  child: InkWell(
+                    onTap: () => _showRecordOptions(context, rec),
+                    borderRadius: BorderRadius.circular(14),
+                    child: GlassContainer(
+                      borderRadius: 14,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          // Status dot
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: statusColor.withValues(alpha: 0.4),
+                                  blurRadius: 4,
                                 ),
-                              ),
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time_rounded,
-                                    size: 11,
-                                    color: const Color(0xFF7BD0FF),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  dateFormatted,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.5,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Marked at $timeFormatted',
-                                    style: const TextStyle(
-                                      color: Color(0xFF7BD0FF),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                                ),
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time_rounded,
+                                      size: 11,
+                                      color: context.accentColor,
                                     ),
-                                  ),
-                                  if (rec.periodNumber != null) ...[
-                                    const SizedBox(width: 6),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      '• Period ${rec.periodNumber}',
-                                      style: const TextStyle(
-                                        color: Colors.white38,
+                                      'Marked at $timeFormatted',
+                                      style: TextStyle(
+                                        color: context.accentColor,
                                         fontSize: 11,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
+                                    if (rec.periodNumber != null) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '• Period ${rec.periodNumber}',
+                                        style: TextStyle(
+                                          color: mutedTextColor,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            rec.status.toUpperCase(),
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (isEditable)
                           GestureDetector(
-                            onTap: () => _confirmDeleteRecord(context, rec),
-                            child: Icon(
-                              Icons.delete_outline_rounded,
-                              color: Colors.white.withValues(alpha: 0.25),
-                              size: 18,
+                            onTap: () => _showRecordOptions(context, rec),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                rec.status.toUpperCase(),
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          )
-                        else
-                          Icon(
-                            Icons.lock_outline_rounded,
-                            color: Colors.white.withValues(alpha: 0.12),
-                            size: 15,
                           ),
-                      ],
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            message: 'Delete record',
+                            child: InkWell(
+                              onTap: () => _confirmDeleteRecord(context, rec),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: const Color(0xFFEF4444).withValues(alpha: 0.75),
+                                  size: 19,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -1728,7 +1938,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     );
   }
 
-  static Widget _miniStat(String value, String label, Color color) {
+  static Widget _miniStat(String value, String label, Color color, Color mutedColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1740,7 +1950,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
             fontSize: 16,
           ),
         ),
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9)),
+        Text(label, style: TextStyle(color: mutedColor, fontSize: 9)),
       ],
     );
   }
@@ -1750,11 +1960,13 @@ class _AttendanceRingPainter extends CustomPainter {
   final double progress;
   final Color color;
   final Color subjectColor;
+  final bool isDark;
 
   _AttendanceRingPainter({
     required this.progress,
     required this.color,
     required this.subjectColor,
+    required this.isDark,
   });
 
   @override
@@ -1766,7 +1978,7 @@ class _AttendanceRingPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = const Color(0xFF1F2A3C)
+        ..color = isDark ? const Color(0xFF1F2A3C) : const Color(0xFFE2E8F0)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8,
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackx/core/config/ai_config.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +10,7 @@ import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/ai_assistant/domain/services/ai_document_analyzer_service.dart';
 import 'package:trackx/features/ai_assistant/data/services/ai_context_builder.dart';
 import 'package:trackx/features/ai_assistant/data/services/gemini_provider.dart';
-import 'package:trackx/features/ai_assistant/data/services/offline_fallback_provider.dart';
+import 'package:trackx/features/ai_assistant/presentation/screens/ai_assistant_settings_screen.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_request.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_response.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
@@ -22,6 +23,7 @@ import 'package:trackx/features/semesters/data/semester_repository.dart';
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
+import 'package:trackx/features/calendar/providers/calendar_provider.dart';
 import 'package:trackx/theme/app_theme.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 
@@ -34,9 +36,11 @@ class AIChatScreen extends ConsumerStatefulWidget {
 
 class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   final _textController = TextEditingController();
+  final _scrollController = ScrollController();
   final _docAnalyzer = AiDocumentAnalyzerService();
   final List<Map<String, dynamic>> _messages = [];
   bool _hasInitializedGreeting = false;
+  bool _isBriefExpanded = false;
 
   int _weekdayToInt(String weekday) {
     final day = weekday.trim().toLowerCase();
@@ -148,9 +152,9 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
   void _showAttachmentOptions() {
     HapticFeedback.lightImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final sheetBg = context.cardColor;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
     final iconBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0);
 
     showModalBottomSheet(
@@ -388,6 +392,20 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           });
         });
       }
+    } else if (act.contains('Holidays in Calendar') || act.contains('Mark Holidays')) {
+      if (analysisResult != null && analysisResult.detectedHolidays.isNotEmpty) {
+        final count = await ref
+            .read(calendarRepositoryProvider.notifier)
+            .batchAddCustomHolidays(analysisResult.detectedHolidays);
+        setState(() {
+          _messages.add({
+            'isBot': true,
+            'text':
+                '✅ Successfully marked $count college holidays on your Calendar and Attendance Schedule!',
+            'actions': ['View Attendance', 'View Planner'],
+          });
+        });
+      }
     } else if (act.contains('Tasks to Planner') || act.contains('Tasks')) {
       if (analysisResult != null && analysisResult.detectedTasks.isNotEmpty) {
         for (final t in analysisResult.detectedTasks) {
@@ -467,6 +485,26 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           'actions': ['View Planner'],
         });
       });
+    } else if (act.type == 'DeclareHoliday' || act.type == 'MarkHoliday') {
+      final title = act.parameters['title'] as String? ?? act.title;
+      final dateStr = act.parameters['date'] as String? ?? act.parameters['dueDate']?.toString();
+      final date = dateStr != null ? DateTime.tryParse(dateStr) ?? DateTime.now() : DateTime.now();
+      await ref.read(calendarRepositoryProvider.notifier).addCustomHoliday(date: date, title: title);
+      setState(() {
+        _messages.add({
+          'isBot': true,
+          'text': '✅ Marked "$title" as a holiday on ${DateFormat('MMM dd, yyyy').format(date)} across your Calendar & Attendance schedule!',
+          'actions': ['View Attendance', 'View Calendar'],
+        });
+      });
+    } else if (act.type == 'OpenAiSettings' ||
+        act.title.toLowerCase().contains('settings')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const AiAssistantSettingsScreen(),
+        ),
+      );
     } else if (act.type == 'OpenAttendance' ||
         act.title.toLowerCase().contains('attendance')) {
       ref.read(navIndexProvider.notifier).state = 1;
@@ -504,7 +542,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       actions = ['Setup Profile'];
     } else if (stats.allSubjectStats.isEmpty) {
       greeting =
-          'Welcome to TrackX AI! No attendance data yet. Add your subjects and attendance to get personalized insights.';
+          'Welcome to TrackX AI! Ask me any general knowledge question, study advice, coding problem, or add your timetable to get schedule insights.';
       actions = ['Add Subject', 'Import Timetable'];
     } else if (exams.isNotEmpty) {
       final nextExam = exams.first;
@@ -513,16 +551,28 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           ? 'today'
           : (daysLeft == 1 ? 'tomorrow' : 'in $daysLeft days');
       greeting =
-          'Good day, ${profile.name}! Your ${nextExam.title} exam is $timeStr. Would you like me to schedule a revision session?';
+          'Good day, ${profile.name}! Your ${nextExam.title} exam is $timeStr. How can I assist you with your preparation or questions today?';
       actions = ['Schedule Study Block', 'View Exam Details'];
     } else {
       greeting =
-          'Hello ${profile.name}! Your overall attendance is at ${stats.overallPercentage.toStringAsFixed(0)}%. How can I help optimize your schedule today?';
+          'Hello ${profile.name}! How can I help you today? Ask me any question, study guidance, or academic schedule query.';
       actions = ['Attendance Summary', 'Plan Study Week'];
     }
 
     setState(() {
       _messages.add({'isBot': true, 'text': greeting, 'actions': actions});
+    });
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -537,10 +587,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       _messages.add({'isBot': false, 'text': text});
       _messages.add({
         'isBot': true,
-        'text': '🤖 Gemini is analyzing your academic data...',
+        'text': 'Gemini is thinking...',
         'isLoading': true,
       });
     });
+    _scrollToBottom();
 
     try {
       final settings = ref.read(aiSettingsProvider);
@@ -556,6 +607,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 '⚠️ AI Assistant features are currently disabled. Please enable them in Privacy settings.',
           });
         });
+        _scrollToBottom();
         return;
       }
 
@@ -568,14 +620,12 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                 '⚠️ You have reached your daily limit of ${usageSummary.maxDailyRequests} requests. Please retry tomorrow.',
           });
         });
+        _scrollToBottom();
         return;
       }
 
-      final bool useOffline =
-          settings.provider == 'Offline only' || settings.provider == 'Offline';
-      final provider = useOffline
-          ? OfflineFallbackProvider()
-          : GeminiAiProvider(overrideApiKey: settings.customApiKey);
+      // Live Online Gemini Provider
+      final provider = GeminiAiProvider(overrideApiKey: settings.customApiKey);
 
       final authState = ref.read(authRepositoryProvider);
       final profile = authState.userProfile;
@@ -587,6 +637,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             'text': '⚠️ User profile is not loaded.',
           });
         });
+        _scrollToBottom();
         return;
       }
 
@@ -637,17 +688,12 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         userPrompt: text,
         context: aiContext.toMap(),
         conversationId: 'default',
-        modelId: useOffline ? 'offline' : 'gemini-1.5-flash',
+        modelId: AiConfig.geminiModel,
         createdAt: DateTime.now(),
       );
 
       final response = await provider.generate(request);
-
-      if (useOffline) {
-        await usageNotifier.incrementOfflineFallback();
-      } else {
-        await usageNotifier.incrementRequests();
-      }
+      await usageNotifier.incrementRequests();
 
       ref.read(activityLoggerProvider).logEvent('ai_query_sent', parameters: {
         'prompt_length': text.length,
@@ -671,6 +717,7 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           'limitations': response.limitations,
         });
       });
+      _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -680,12 +727,14 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
           'text': '⚠️ An error occurred while contacting Gemini: $e',
         });
       });
+      _scrollToBottom();
     }
   }
 
   @override
   void dispose() {
     _textController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -694,10 +743,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
     final stats = ref.watch(statsProvider);
     final exams = ref.watch(examsProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
+    final settings = ref.watch(aiSettingsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
     final cardBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFFFFFFF);
     final cardBorder = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06);
     final botBubbleBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
@@ -723,27 +773,69 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
             ),
           ),
         ),
-        title: Text(
-          'TrackX AI',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: textColor,
-            fontSize: 20,
-          ),
+        title: Column(
+          children: [
+            Text(
+              'TrackX AI',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: textColor,
+                fontSize: 18,
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF10B981),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                const Text(
+                  'Gemini Flash • Live Online',
+                  style: TextStyle(
+                    color: Color(0xFF10B981),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(
-              Icons.notifications_none_rounded,
+              Icons.refresh_rounded,
               color: textColor,
               size: 22,
             ),
+            tooltip: 'New Chat',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No new AI alerts right now.')),
-              );
+              setState(() {
+                _messages.clear();
+                _initDynamicGreeting();
+              });
             },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.tune_rounded,
+              color: textColor,
+              size: 22,
+            ),
+            tooltip: 'AI Settings',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AiAssistantSettingsScreen(),
+              ),
+            ),
           ),
         ],
       ),
@@ -751,310 +843,29 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
         children: [
           Expanded(
             child: ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(18, 10, 18, 20),
               children: [
-                // 1. Morning Brief Card
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Color(0xFFC0C1FF),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'MORNING BRIEF',
-                                style: TextStyle(
-                                  color: Color(0xFFC0C1FF),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Color(0xFFC0C1FF),
-                            size: 16,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        stats.allSubjectStats.isEmpty
-                            ? 'Welcome to TrackX! Complete your profile and add your subjects to get personalized academic insights.'
-                            : 'Overall attendance is ${stats.overallPercentage.toStringAsFixed(0)}% across ${subjects.length} enrolled subjects.',
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(
-                            stats.allSubjectStats.isEmpty
-                                ? Icons.info_outline_rounded
-                                : (stats.overallPercentage >= stats.globalTarget
-                                      ? Icons.trending_up_rounded
-                                      : Icons.warning_amber_rounded),
-                            color: stats.allSubjectStats.isEmpty
-                                ? subtextColor
-                                : (stats.overallPercentage >= stats.globalTarget
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFFFF8B94)),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              stats.allSubjectStats.isEmpty
-                                  ? 'No attendance data yet. Add your subjects and attendance to get personalized insights.'
-                                  : (stats.overallPercentage >=
-                                            stats.globalTarget
-                                        ? 'Attendance is above your ${stats.globalTarget.toStringAsFixed(0)}% target'
-                                        : 'Attendance is below your ${stats.globalTarget.toStringAsFixed(0)}% target'),
-                              style: TextStyle(
-                                color: stats.allSubjectStats.isEmpty
-                                    ? subtextColor
-                                    : (stats.overallPercentage >=
-                                              stats.globalTarget
-                                          ? const Color(0xFF10B981)
-                                          : const Color(0xFFFF8B94)),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
+                if (settings.customApiKey.isEmpty)
+                  _buildApiKeyBanner(textColor, subtextColor, isDark),
 
-                // 2. Exam Prep Card
-                if (exams.isNotEmpty) ...[
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: cardBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.school_outlined,
-                                    color: Color(0xFFC0C1FF),
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Exam: ${exams.first.title}',
-                                      style: TextStyle(
-                                        color: textColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Date: ${DateFormat('MMM dd').format(exams.first.examDate)} • Progress: ${exams.first.preparationProgress.toStringAsFixed(0)}%',
-                                      style: TextStyle(
-                                        color: subtextColor,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF5B5FEF,
-                                ).withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${exams.first.preparationProgress.toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                  color: Color(0xFFC0C1FF),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Suggested: Review core study notes for ${exams.first.title}.',
-                          style: TextStyle(
-                            color: isDark ? Colors.white70 : const Color(0xFF475569),
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        ElevatedButton(
-                          onPressed: () {
-                            ref.read(navIndexProvider.notifier).state =
-                                2; // Jump to Planner
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5B5FEF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Schedule Study Block',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                if (_messages.length <= 1) ...[
+                  _buildGeminiWelcomeHero(textColor, subtextColor, isDark),
                   const SizedBox(height: 14),
+                  _buildQuickPromptChips(isDark, textColor, subtextColor),
+                  const SizedBox(height: 16),
+                  _buildCollapsibleAcademicBrief(
+                    stats: stats,
+                    exams: exams,
+                    subjects: subjects,
+                    cardBg: cardBg,
+                    cardBorder: cardBorder,
+                    textColor: textColor,
+                    subtextColor: subtextColor,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 16),
                 ],
-
-                // 3. Attendance Monitor Card
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: stats.allSubjectStats.isEmpty
-                          ? cardBorder
-                          : const Color(0xFFFF8B94).withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: stats.allSubjectStats.isEmpty
-                                  ? const Color(0xFF7BD0FF)
-                                  : const Color(0xFFFF8B94),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'ATTENDANCE MONITOR',
-                            style: TextStyle(
-                              color: stats.allSubjectStats.isEmpty
-                                  ? const Color(0xFF7BD0FF)
-                                  : const Color(0xFFFF8B94),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        stats.allSubjectStats.isEmpty
-                            ? 'No attendance data yet. Add your subjects and attendance to get personalized insights.'
-                            : (stats.overallPercentage >= stats.globalTarget
-                                  ? 'Attendance is safely above ${stats.globalTarget.toStringAsFixed(0)}% across enrolled subjects.'
-                                  : 'One or more subjects require attendance to maintain your ${stats.globalTarget.toStringAsFixed(0)}% target.'),
-                        style: TextStyle(
-                          color: isDark ? Colors.white70 : const Color(0xFF475569),
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      OutlinedButton(
-                        onPressed: () {
-                          ref.read(navIndexProvider.notifier).state =
-                              1; // Jump to Attendance Log
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: isDark ? Colors.white70 : const Color(0xFF475569),
-                          side: BorderSide(
-                            color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                        ),
-                        child: const Text(
-                          'View Attendance Log',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
 
                 // Chat Messages
                 ..._messages.map((msg) {
@@ -1130,13 +941,11 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
                                       ],
                                     )
                                   else
-                                    Text(
+                                    _buildFormattedText(
                                       text,
-                                      style: TextStyle(
-                                        color: textColor,
-                                        fontSize: 14,
-                                        height: 1.4,
-                                      ),
+                                      textColor,
+                                      subtextColor,
+                                      isDark,
                                     ),
 
                                   // Sources References
@@ -1462,4 +1271,458 @@ class _AIChatScreenState extends ConsumerState<AIChatScreen> {
       ),
     );
   }
+
+  Widget _buildApiKeyBanner(Color textColor, Color subtextColor, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5B5FEF).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF5B5FEF).withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.key_rounded,
+              color: Color(0xFFC0C1FF),
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Setup Google Gemini API Key',
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Add your free Gemini API key to chat and ask any questions.',
+                  style: TextStyle(color: subtextColor, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AiAssistantSettingsScreen(),
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5B5FEF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Add Key',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGeminiWelcomeHero(Color textColor, Color subtextColor, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: Column(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF5B5FEF), Color(0xFF7BD0FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF5B5FEF).withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'How can I help you today?',
+            style: TextStyle(
+              color: textColor,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Ask any general knowledge, code, study guidance, or timetable question.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: subtextColor,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickPromptChips(bool isDark, Color textColor, Color subtextColor) {
+    final prompts = [
+      {'icon': '🎓', 'text': 'Can I bunk tomorrow?'},
+      {'icon': '📅', 'text': 'What classes do I have today?'},
+      {'icon': '📚', 'text': 'Create a study schedule for my exams'},
+      {'icon': '💡', 'text': 'Explain binary search algorithm with code'},
+      {'icon': '✍️', 'text': 'Help me write an essay on artificial intelligence'},
+      {'icon': '⚡', 'text': 'How do I calculate required attendance recovery?'},
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: prompts.map((p) {
+        return InkWell(
+          onTap: () => _sendMessage(p['text']!),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(p['icon']!, style: const TextStyle(fontSize: 13)),
+                const SizedBox(width: 8),
+                Text(
+                  p['text']!,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCollapsibleAcademicBrief({
+    required dynamic stats,
+    required dynamic exams,
+    required dynamic subjects,
+    required Color cardBg,
+    required Color cardBorder,
+    required Color textColor,
+    required Color subtextColor,
+    required bool isDark,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cardBorder),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: _isBriefExpanded,
+          onExpansionChanged: (expanded) {
+            setState(() => _isBriefExpanded = expanded);
+          },
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF5B5FEF).withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.insights_rounded,
+              color: Color(0xFFC0C1FF),
+              size: 18,
+            ),
+          ),
+          title: Text(
+            'Academic Snapshot',
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 13.5,
+            ),
+          ),
+          subtitle: Text(
+            stats.allSubjectStats.isEmpty
+                ? 'No subjects enrolled yet'
+                : '${stats.overallPercentage.toStringAsFixed(0)}% Overall • ${exams.length} Upcoming Exams',
+            style: TextStyle(color: subtextColor, fontSize: 11),
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+                  Text(
+                    stats.allSubjectStats.isEmpty
+                        ? 'Add your subjects and attendance to get personalized insights.'
+                        : 'Attendance is ${stats.overallPercentage >= stats.globalTarget ? 'safely above' : 'below'} your ${stats.globalTarget.toStringAsFixed(0)}% target across ${subjects.length} enrolled subjects.',
+                    style: TextStyle(color: textColor, fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => ref.read(navIndexProvider.notifier).state = 1,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDark ? Colors.white70 : const Color(0xFF475569),
+                            side: BorderSide(
+                              color: isDark ? Colors.white12 : Colors.black12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          child: const Text('View Attendance', style: TextStyle(fontSize: 12)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => ref.read(navIndexProvider.notifier).state = 2,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDark ? Colors.white70 : const Color(0xFF475569),
+                            side: BorderSide(
+                              color: isDark ? Colors.white12 : Colors.black12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          child: const Text('View Planner', style: TextStyle(fontSize: 12)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormattedText(String content, Color textColor, Color subtextColor, bool isDark) {
+    final lines = content.split('\n');
+    final List<Widget> children = [];
+    bool inCodeBlock = false;
+    final List<String> codeLines = [];
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      if (line.trim().startsWith('```')) {
+        if (inCodeBlock) {
+          children.add(
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.black45 : const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Text(
+                codeLines.join('\n'),
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: Color(0xFFC0C1FF),
+                ),
+              ),
+            ),
+          );
+          codeLines.clear();
+          inCodeBlock = false;
+        } else {
+          inCodeBlock = true;
+        }
+        continue;
+      }
+
+      if (inCodeBlock) {
+        codeLines.add(line);
+        continue;
+      }
+
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        children.add(const SizedBox(height: 6));
+        continue;
+      }
+
+      // Headers (### Header)
+      if (trimmed.startsWith('### ') || trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
+        final title = trimmed.replaceFirst(RegExp(r'^#+\s*'), '');
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Text(
+              title,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Bullet points
+      if (trimmed.startsWith('• ') || trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+        final bulletText = trimmed.substring(2).trim();
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '• ',
+                  style: TextStyle(
+                    color: Color(0xFFC0C1FF),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Expanded(
+                  child: _buildRichInlineText(bulletText, textColor),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Regular paragraph line
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: _buildRichInlineText(line, textColor),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
+  }
+
+  Widget _buildRichInlineText(String text, Color defaultColor) {
+    final List<InlineSpan> spans = [];
+    final regex = RegExp(r'(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)');
+    int lastIndex = 0;
+
+    for (final match in regex.allMatches(text)) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: TextStyle(color: defaultColor, fontSize: 13.5, height: 1.4),
+        ));
+      }
+      final matchedText = match.group(0)!;
+      if (matchedText.startsWith('**') && matchedText.endsWith('**')) {
+        spans.add(TextSpan(
+          text: matchedText.substring(2, matchedText.length - 2),
+          style: TextStyle(
+            color: defaultColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 13.5,
+            height: 1.4,
+          ),
+        ));
+      } else if (matchedText.startsWith('*') && matchedText.endsWith('*')) {
+        spans.add(TextSpan(
+          text: matchedText.substring(1, matchedText.length - 1),
+          style: TextStyle(
+            color: defaultColor,
+            fontStyle: FontStyle.italic,
+            fontSize: 13.5,
+            height: 1.4,
+          ),
+        ));
+      } else if (matchedText.startsWith('`') && matchedText.endsWith('`')) {
+        spans.add(TextSpan(
+          text: matchedText.substring(1, matchedText.length - 1),
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            color: Color(0xFFC0C1FF),
+            backgroundColor: Colors.black26,
+            fontSize: 12.5,
+          ),
+        ));
+      }
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: TextStyle(color: defaultColor, fontSize: 13.5, height: 1.4),
+      ));
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+    );
+  }
 }
+

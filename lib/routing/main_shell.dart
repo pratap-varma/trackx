@@ -8,7 +8,6 @@ import 'package:trackx/shared/widgets/floating_dock.dart';
 import 'package:trackx/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:trackx/features/attendance/presentation/attendance_screen.dart';
 import 'package:trackx/features/planner/presentation/screens/planner_screen.dart';
-import 'package:trackx/features/ai_assistant/presentation/screens/ai_chat_screen.dart';
 import 'package:trackx/features/profile/presentation/profile_screen.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -48,7 +47,6 @@ class _MainShellState extends ConsumerState<MainShell> {
       DockItem(icon: Icons.home_rounded, label: 'Home'),
       DockItem(icon: Icons.assignment_outlined, label: 'Attendance'),
       DockItem(icon: Icons.calendar_today_rounded, label: 'Planner'),
-      DockItem(icon: Icons.smart_toy_outlined, label: 'AI'),
       DockItem(icon: Icons.person_outline_rounded, label: 'Profile'),
     ];
 
@@ -56,7 +54,6 @@ class _MainShellState extends ConsumerState<MainShell> {
       DashboardScreen(),
       AttendanceScreen(),
       PlannerScreen(),
-      AIChatScreen(),
       ProfileScreen(),
     ];
 

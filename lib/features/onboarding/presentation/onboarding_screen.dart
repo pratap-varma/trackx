@@ -198,10 +198,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             ),
                             Text(
                               '${_selectedTarget.toInt()}%',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.accentPurple,
+                                color: context.accentColor,
                               ),
                             ),
                           ],
@@ -211,7 +211,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           min: 1.0,
                           max: 100.0,
                           divisions: 99,
-                          activeColor: AppTheme.accentPurple,
+                          activeColor: context.accentColor,
                           inactiveColor: Colors.white10,
                           onChanged: (val) {
                             setState(() {
@@ -238,13 +238,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isActive
-                                      ? AppTheme.accentPurple.withValues(
+                                      ? context.accentColor.withValues(
                                           alpha: 0.2,
                                         )
                                       : Colors.white.withValues(alpha: 0.05),
                                   border: Border.all(
                                     color: isActive
-                                        ? AppTheme.accentPurple
+                                        ? context.accentColor
                                         : Colors.white12,
                                   ),
                                   borderRadius: BorderRadius.circular(10),

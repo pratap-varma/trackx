@@ -54,7 +54,7 @@ class SemesterComparisonScreen extends StatelessWidget {
                   ),
                   _semLabel('SEM 1', const Color(0xFF7BD0FF)),
                   const SizedBox(width: 8),
-                  _semLabel('SEM 2', const Color(0xFF5B5FEF)),
+                  _semLabel('SEM 2', context.accentColor),
                   const SizedBox(width: 8),
                   _semLabel('Δ', context.mutedTextColor),
                 ],
@@ -76,7 +76,7 @@ class SemesterComparisonScreen extends StatelessWidget {
             _comparisonCard(
               context,
               icon: Icons.grade_outlined,
-              iconColor: const Color(0xFF5B5FEF),
+              iconColor: context.accentColor,
               metric: 'SGPA',
               sem1: '8.21',
               sem2: '8.65',
@@ -120,7 +120,7 @@ class SemesterComparisonScreen extends StatelessWidget {
               context,
               icon: Icons.dangerous_outlined,
               iconColor: const Color(0xFFEF4444),
-              metric: 'Bunks Left',
+              metric: 'Absences Left',
               sem1: '4',
               sem2: '7',
               trend: '+3',
@@ -139,12 +139,12 @@ class SemesterComparisonScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.12),
+                      color: context.accentColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.auto_awesome_rounded,
-                      color: Color(0xFFC0C1FF),
+                      color: context.accentColor,
                       size: 18,
                     ),
                   ),

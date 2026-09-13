@@ -6,19 +6,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 
+import 'package:trackx/core/services/widget_data_service.dart';
+
 // Provider for dynamic accent color
 final accentColorProvider = StateNotifierProvider<AccentColorNotifier, Color>((
   ref,
 ) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return AccentColorNotifier(prefs);
+  return AccentColorNotifier(prefs, ref);
 });
 
 class AccentColorNotifier extends StateNotifier<Color> {
   final SharedPreferences _prefs;
+  final Ref _ref;
   static const String _keyAccent = 'theme_accent_color_val';
 
-  AccentColorNotifier(this._prefs) : super(const Color(0xFF5B5FEF)) {
+  AccentColorNotifier(this._prefs, this._ref) : super(const Color(0xFF5B5FEF)) {
     final val = _prefs.getInt(_keyAccent);
     if (val != null) {
       state = Color(val);
@@ -28,6 +31,9 @@ class AccentColorNotifier extends StateNotifier<Color> {
   Future<void> setAccent(Color color) async {
     state = color;
     await _prefs.setInt(_keyAccent, color.toARGB32());
+    try {
+      await _ref.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 }
 
@@ -67,11 +73,15 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
         await authRepo.saveFullProfile(currentProfile.copyWith(themeMode: modeStr));
       }
     } catch (_) {}
+
+    try {
+      await _ref.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 }
 
 class AppTheme {
-  // Luminous Intelligence Color Palette
+  // Luminous Intelligence Color Palette Defaults
   static const Color primary = Color(0xFFC0C1FF);
   static const Color primaryContainer = Color(0xFF5B5FEF);
   static const Color secondary = Color(0xFF7BD0FF);
@@ -79,10 +89,11 @@ class AppTheme {
   static const Color tertiaryContainer = Color(0xFF8151EB);
 
   static const Color accentPurple = Color(0xFF5B5FEF);
-  static const Color accentBlue = Color(0xFF7BD0FF);
+  static const Color accentBlue = Color(0xFF3B82F6);
   static const Color accentGreen = Color(0xFF10B981);
-  static const Color accentPink = Color(0xFF8151EB);
+  static const Color accentPink = Color(0xFFEC4899);
   static const Color accentOrange = Color(0xFFF59E0B);
+  static const Color accentViolet = Color(0xFF8151EB);
   static const Color accentRed = Color(0xFFEF4444);
 
   // Dark Mode Ambient Surfaces
@@ -195,28 +206,100 @@ class AppTheme {
       isTest = false;
     }
 
+    final HSLColor hsl = HSLColor.fromColor(accentColor);
+    final Color secondaryColor = hsl.withHue((hsl.hue + 25) % 360).toColor();
+    final Color tertiaryColor = hsl.withHue((hsl.hue + 55) % 360).toColor();
+
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      primaryColor: accentColor,
       scaffoldBackgroundColor: isDark ? darkBgBase : lightBgBase,
       colorScheme: isDark
           ? ColorScheme.dark(
               primary: accentColor,
-              primaryContainer: const Color(0xFF5B5FEF),
-              secondary: const Color(0xFF7BD0FF),
-              tertiary: const Color(0xFF8151EB),
+              primaryContainer: accentColor.withValues(alpha: 0.25),
+              secondary: secondaryColor,
+              tertiary: tertiaryColor,
               surface: darkBgBase,
+              surfaceContainer: darkSurfaceContainer,
+              surfaceContainerHigh: darkSurfaceHigh,
               error: accentRed,
             )
           : ColorScheme.light(
               primary: accentColor,
               primaryContainer: accentColor.withValues(alpha: 0.15),
-              secondary: const Color(0xFF3B82F6),
-              tertiary: const Color(0xFF7C3AED),
+              secondary: secondaryColor,
+              tertiary: tertiaryColor,
               surface: lightBgBase,
+              surfaceContainer: lightSurfaceContainer,
+              surfaceContainerHigh: lightSurfaceHigh,
               error: accentRed,
             ),
       textTheme: _buildTextTheme(brightness, isTest),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accentColor,
+          foregroundColor: Colors.white,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: accentColor,
+          foregroundColor: Colors.white,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accentColor,
+          side: BorderSide(color: accentColor),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: accentColor,
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? accentColor : null,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? accentColor.withValues(alpha: 0.5)
+              : null,
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? accentColor : null,
+        ),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? accentColor : null,
+        ),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: accentColor,
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: accentColor,
+        foregroundColor: Colors.white,
+      ),
+      tabBarTheme: TabBarThemeData(
+        indicatorColor: accentColor,
+        labelColor: isDark ? Colors.white : accentColor,
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: accentColor,
+        thumbColor: accentColor,
+        overlayColor: accentColor.withValues(alpha: 0.2),
+      ),
+      chipTheme: ChipThemeData(
+        selectedColor: accentColor,
+        checkmarkColor: Colors.white,
+      ),
     );
   }
 
@@ -227,11 +310,32 @@ class AppTheme {
 extension ThemeContextExtension on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
+  Color get accentColor => Theme.of(this).colorScheme.primary;
+  Color get primaryColor => Theme.of(this).colorScheme.primary;
+  Color get primaryContainer => Theme.of(this).colorScheme.primaryContainer;
+  Color get secondaryColor => Theme.of(this).colorScheme.secondary;
+  Color get tertiaryColor => Theme.of(this).colorScheme.tertiary;
+  LinearGradient get accentGradient => LinearGradient(
+        colors: [Theme.of(this).colorScheme.primary, Theme.of(this).colorScheme.tertiary],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+
   Color get textColor => isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
   Color get subtextColor => isDark ? const Color(0xFFDEE2F4).withValues(alpha: 0.70) : const Color(0xFF475569);
   Color get mutedTextColor => isDark ? const Color(0xFFDEE2F4).withValues(alpha: 0.45) : const Color(0xFF94A3B8);
-  Color get subtleBorderColor => isDark ? const Color(0x1FDEE2F4) : const Color(0x1F000000);
-  Color get glassFillColor => isDark ? AppTheme.darkGlassBg : AppTheme.lightGlassBg;
-  Color get glassBorderColor => isDark ? AppTheme.darkGlassBorder : AppTheme.lightGlassBorder;
+  Color get subtleBorderColor =>
+      isDark ? const Color(0x1FDEE2F4) : const Color(0x1F000000);
+  Color get glassFillColor =>
+      isDark ? AppTheme.darkGlassBg : AppTheme.lightGlassBg;
+  Color get glassBorderColor =>
+      isDark ? AppTheme.darkGlassBorder : AppTheme.lightGlassBorder;
+  Color get cardColor =>
+      isDark ? AppTheme.darkSurfaceContainer : AppTheme.lightSurfaceContainer;
+  Color get dividerColor =>
+      isDark ? Colors.white10 : Colors.black12;
+  Color get iconColor =>
+      isDark ? Colors.white : const Color(0xFF0F172A);
+  Color get scaffoldBackgroundColor =>
+      isDark ? AppTheme.darkBgBase : AppTheme.lightBgBase;
 }
-

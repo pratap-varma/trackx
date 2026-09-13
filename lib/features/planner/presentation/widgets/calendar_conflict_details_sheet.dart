@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:trackx/features/planner/domain/models/calendar_conflict_model.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class CalendarConflictDetailsSheet extends StatelessWidget {
   final List<CalendarConflict> conflicts;
@@ -32,6 +33,9 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
     final dateFormat = DateFormat('EEEE, MMMM d');
     final formattedDate = dateFormat.format(date);
     final timeFormat = DateFormat('h:mm a');
+    final isDark = context.isDark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -53,7 +57,7 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -82,8 +86,8 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                           conflicts.isEmpty
                               ? 'Schedule Overview'
                               : '${conflicts.length} Schedule ${conflicts.length == 1 ? 'Conflict' : 'Conflicts'}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
@@ -91,8 +95,8 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           formattedDate,
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: subtextColor,
                             fontSize: 12,
                           ),
                         ),
@@ -107,29 +111,29 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Column(
+                  child: Column(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.check_circle_outline_rounded,
                         color: Color(0xFF10B981),
                         size: 36,
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       Text(
                         'Your schedule looks clear.',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: textColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'No overlapping classes, tasks, or calendar events.',
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                        style: TextStyle(color: subtextColor, fontSize: 12),
                       ),
                     ],
                   ),
@@ -140,7 +144,7 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
+                      color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: const Color(0xFFEF4444).withValues(alpha: 0.3),
@@ -181,8 +185,8 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               'Overlap: ${conflict.overlapMinutes} min',
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: subtextColor,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -191,6 +195,7 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: 14),
                         _buildEventBlock(
+                          context: context,
                           item: conflict.firstEvent,
                           timeFormat: timeFormat,
                         ),
@@ -207,6 +212,7 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         _buildEventBlock(
+                          context: context,
                           item: conflict.secondEvent,
                           timeFormat: timeFormat,
                         ),
@@ -219,8 +225,8 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.1),
-                    foregroundColor: Colors.white,
+                    backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.06),
+                    foregroundColor: textColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -241,16 +247,18 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
   }
 
   Widget _buildEventBlock({
+    required BuildContext context,
     required ConflictScheduleItem item,
     required DateFormat timeFormat,
   }) {
+    final isDark = context.isDark;
     final timeStr =
         '${timeFormat.format(item.startDateTime.toLocal())} – ${timeFormat.format(item.endDateTime.toLocal())}';
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -263,8 +271,8 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
               children: [
                 Text(
                   item.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.textColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -272,7 +280,7 @@ class CalendarConflictDetailsSheet extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '$timeStr ${item.subtitle != null ? '• ${item.subtitle}' : ''}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  style: TextStyle(color: context.subtextColor, fontSize: 11),
                 ),
               ],
             ),

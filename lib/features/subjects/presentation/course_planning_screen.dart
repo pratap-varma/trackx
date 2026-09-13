@@ -426,8 +426,8 @@ class _CoursePlanningScreenState extends ConsumerState<CoursePlanningScreen> {
                                     ),
                                     Text(
                                       course.status,
-                                      style: const TextStyle(
-                                        color: AppTheme.accentPurple,
+                                      style: TextStyle(
+                                        color: context.accentColor,
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
                                       ),

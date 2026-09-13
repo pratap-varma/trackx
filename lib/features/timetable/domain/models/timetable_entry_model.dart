@@ -9,6 +9,7 @@ class TimetableEntry {
   final int endTime; // Minutes from midnight (e.g. 615 for 10:15 AM)
   final String? room;
   final String? notes;
+  final String? originalSubjectId;
   final bool isEnabled;
   final int createdAt;
   final int updatedAt;
@@ -24,10 +25,14 @@ class TimetableEntry {
     required this.endTime,
     this.room,
     this.notes,
+    this.originalSubjectId,
     required this.isEnabled,
     required this.createdAt,
     required this.updatedAt,
   });
+
+  bool get isSubstituted =>
+      originalSubjectId != null && originalSubjectId != subjectId;
 
   bool get isValidRange => startTime < endTime;
 
@@ -83,6 +88,7 @@ class TimetableEntry {
     int? endTime,
     String? room,
     String? notes,
+    String? originalSubjectId,
     bool? isEnabled,
     int? createdAt,
     int? updatedAt,
@@ -98,6 +104,7 @@ class TimetableEntry {
       endTime: endTime ?? this.endTime,
       room: room ?? this.room,
       notes: notes ?? this.notes,
+      originalSubjectId: originalSubjectId ?? this.originalSubjectId,
       isEnabled: isEnabled ?? this.isEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -116,6 +123,7 @@ class TimetableEntry {
       'endTime': endTime,
       'room': room,
       'notes': notes,
+      if (originalSubjectId != null) 'originalSubjectId': originalSubjectId,
       'isEnabled': isEnabled,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -134,6 +142,7 @@ class TimetableEntry {
       endTime: map['endTime'] ?? 615,
       room: map['room'],
       notes: map['notes'],
+      originalSubjectId: map['originalSubjectId'] as String?,
       isEnabled: map['isEnabled'] ?? true,
       createdAt: map['createdAt'] ?? 0,
       updatedAt: map['updatedAt'] ?? 0,

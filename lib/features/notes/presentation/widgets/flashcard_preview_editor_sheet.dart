@@ -6,6 +6,7 @@ import 'package:trackx/features/notes/providers/flashcard_provider.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:uuid/uuid.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class FlashcardPreviewEditorSheet extends ConsumerStatefulWidget {
   final FlashcardDeck initialDeck;
@@ -81,14 +82,14 @@ class _FlashcardPreviewEditorSheetState
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) => AlertDialog(
-          backgroundColor: const Color(0xFF0E1628),
+          backgroundColor: context.cardColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
               color: Colors.white.withValues(alpha: 0.1),
             ),
           ),
-          title: const Text(
+          title: Text(
             'Edit Flashcard',
             style: TextStyle(
               color: Colors.white,
@@ -105,26 +106,26 @@ class _FlashcardPreviewEditorSheetState
                   labelText: 'Question',
                   maxLines: 2,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 GlassTextField(
                   controller: aCtrl,
                   labelText: 'Answer',
                   maxLines: 3,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 GlassTextField(
                   controller: expCtrl,
                   labelText: 'Explanation / Memory Aid (Optional)',
                   maxLines: 2,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Difficulty:',
                       style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     ...['Easy', 'Medium', 'Hard'].map((d) {
                       final isSelected = diff == d;
                       return Padding(
@@ -139,7 +140,7 @@ class _FlashcardPreviewEditorSheetState
                             ),
                           ),
                           selected: isSelected,
-                          selectedColor: const Color(0xFF5B5FEF),
+                          selectedColor: context.accentColor,
                           backgroundColor: Colors.white.withValues(alpha: 0.05),
                           onSelected: (_) => setDlgState(() => diff = d),
                         ),
@@ -153,7 +154,7 @@ class _FlashcardPreviewEditorSheetState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+              child: Text('Cancel', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -169,9 +170,9 @@ class _FlashcardPreviewEditorSheetState
                 Navigator.pop(ctx);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5B5FEF),
+                backgroundColor: context.accentColor,
               ),
-              child: const Text('Save Card', style: TextStyle(color: Colors.white)),
+              child: Text('Save Card', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -215,13 +216,13 @@ class _FlashcardPreviewEditorSheetState
       ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
+        decoration: BoxDecoration(
+          color: context.cardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Container(
               width: 40,
               height: 4,
@@ -237,21 +238,21 @@ class _FlashcardPreviewEditorSheetState
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                      color: context.accentColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.auto_awesome_rounded,
-                      color: Color(0xFFC0C1FF),
+                      color: context.accentColor,
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Review AI Flashcards',
                           style: TextStyle(
                             color: Colors.white,
@@ -261,7 +262,7 @@ class _FlashcardPreviewEditorSheetState
                         ),
                         Text(
                           '${_cards.length} cards generated • Tap card to edit',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white54,
                             fontSize: 12,
                           ),
@@ -271,7 +272,7 @@ class _FlashcardPreviewEditorSheetState
                   ),
                   IconButton(
                     onPressed: _addNewCard,
-                    icon: const Icon(Icons.add_circle_outline_rounded,
+                    icon: Icon(Icons.add_circle_outline_rounded,
                         color: Color(0xFF7BD0FF)),
                     tooltip: 'Add Custom Card',
                   ),
@@ -285,14 +286,14 @@ class _FlashcardPreviewEditorSheetState
                 labelText: 'Deck Title',
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Expanded(
               child: _cards.isEmpty
                   ? Center(
                       child: TextButton.icon(
                         onPressed: _addNewCard,
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('Add your first flashcard'),
+                        icon: Icon(Icons.add_rounded),
+                        label: Text('Add your first flashcard'),
                       ),
                     )
                   : ListView.builder(
@@ -320,20 +321,20 @@ class _FlashcardPreviewEditorSheetState
                                       ),
                                       child: Text(
                                         '#${index + 1}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Colors.white70,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         card.question.isNotEmpty
                                             ? card.question
                                             : '[Blank Question - Tap to edit]',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -343,12 +344,12 @@ class _FlashcardPreviewEditorSheetState
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.edit_outlined,
+                                      icon: Icon(Icons.edit_outlined,
                                           size: 16, color: Color(0xFF7BD0FF)),
                                       onPressed: () => _editCard(index),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline_rounded,
+                                      icon: Icon(Icons.delete_outline_rounded,
                                           size: 16, color: Color(0xFFEF4444)),
                                       onPressed: () {
                                         setState(() {
@@ -358,7 +359,7 @@ class _FlashcardPreviewEditorSheetState
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 6),
+                                SizedBox(height: 6),
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   width: double.infinity,
@@ -370,7 +371,7 @@ class _FlashcardPreviewEditorSheetState
                                     card.answer.isNotEmpty
                                         ? card.answer
                                         : '[Blank Answer - Tap to edit]',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white60,
                                       fontSize: 12,
                                     ),
@@ -391,17 +392,17 @@ class _FlashcardPreviewEditorSheetState
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _commitDeck,
-                  icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+                  icon: Icon(Icons.check_circle_rounded, color: Colors.white),
                   label: Text(
                     'Save Deck (${_cards.length} Cards)',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5B5FEF),
+                    backgroundColor: context.accentColor,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),

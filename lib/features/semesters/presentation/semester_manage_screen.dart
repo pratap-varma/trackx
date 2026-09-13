@@ -36,7 +36,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: Container(
           decoration: BoxDecoration(
-            color: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+            color: context.cardColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: ctx.subtleBorderColor),
           ),
@@ -97,15 +97,13 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                      gradient: LinearGradient(
+                        colors: [context.accentColor, context.tertiaryColor],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(
-                            0xFF5B5FEF,
-                          ).withValues(alpha: 0.35),
+                          color: context.accentColor.withValues(alpha: 0.35),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -139,7 +137,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
       builder: (ctx) => SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+            color: context.cardColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: ctx.subtleBorderColor),
           ),
@@ -246,7 +244,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
       builder: (ctx) => SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+            color: context.cardColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: ctx.subtleBorderColor),
           ),
@@ -436,15 +434,13 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                          gradient: LinearGradient(
+                            colors: [context.accentColor, context.tertiaryColor],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(
-                                0xFF5B5FEF,
-                              ).withValues(alpha: 0.35),
+                              color: context.accentColor.withValues(alpha: 0.35),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -475,7 +471,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                     borderRadius: 20,
                     padding: const EdgeInsets.all(18),
                     borderColor: sem.isActive
-                        ? const Color(0xFF5B5FEF).withValues(alpha: 0.4)
+                        ? context.accentColor.withValues(alpha: 0.4)
                         : context.subtleBorderColor,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,18 +484,14 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                               height: 44,
                               decoration: BoxDecoration(
                                 color: sem.isActive
-                                    ? const Color(
-                                        0xFF5B5FEF,
-                                      ).withValues(alpha: 0.15)
+                                    ? context.accentColor.withValues(alpha: 0.15)
                                     : (context.isDark
                                         ? Colors.white.withValues(alpha: 0.05)
                                         : Colors.black.withValues(alpha: 0.05)),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: sem.isActive
-                                      ? const Color(
-                                          0xFF5B5FEF,
-                                        ).withValues(alpha: 0.4)
+                                      ? context.accentColor.withValues(alpha: 0.4)
                                       : context.subtleBorderColor,
                                 ),
                               ),
@@ -508,7 +500,7 @@ class _SemesterManageScreenState extends ConsumerState<SemesterManageScreen> {
                                     ? Icons.radio_button_checked_rounded
                                     : Icons.calendar_today_outlined,
                                 color: sem.isActive
-                                    ? const Color(0xFF5B5FEF)
+                                    ? context.accentColor
                                     : context.mutedTextColor,
                                 size: 20,
                               ),

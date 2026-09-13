@@ -188,9 +188,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: CircularProgressIndicator(color: AppTheme.accentPurple)),
+                loading: () => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator(color: context.accentColor)),
                 ),
                 error: (e, _) => GlassContainer(
                   padding: const EdgeInsets.all(16),
@@ -280,10 +280,10 @@ class AdminDashboardScreen extends ConsumerWidget {
                         children: logs.take(4).map((log) => _buildLogTile(context, log)).toList(),
                       );
                     },
-                    loading: () => const Center(
+                    loading: () => Center(
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: CircularProgressIndicator(color: AppTheme.accentPurple),
+                        padding: const EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(color: context.accentColor),
                       ),
                     ),
                     error: (_, _) => const SizedBox.shrink(),

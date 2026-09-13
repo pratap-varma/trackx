@@ -29,7 +29,7 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0E1628),
+        backgroundColor: context.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           '$actionText Account?',
@@ -492,8 +492,8 @@ class _AdminUserDetailScreenState extends ConsumerState<AdminUserDetailScreen> {
               ],
             );
           },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.accentPurple),
+          loading: () => Center(
+            child: CircularProgressIndicator(color: context.accentColor),
           ),
           error: (e, _) => Center(
             child: Text('Error: $e', style: const TextStyle(color: Colors.redAccent)),

@@ -38,6 +38,8 @@ class SemesterStats {
   final String? highestRiskSubjectName;
   final List<SubjectStats> subjectsBelowTarget;
   final List<SubjectStats> allSubjectStats;
+  final int overallSafeBunks;
+  final int overallRequiredRecovery;
 
   SemesterStats({
     required this.totalPresent,
@@ -47,6 +49,8 @@ class SemesterStats {
     this.highestRiskSubjectName,
     required this.subjectsBelowTarget,
     required this.allSubjectStats,
+    this.overallSafeBunks = 0,
+    this.overallRequiredRecovery = 0,
   });
 }
 
@@ -67,6 +71,8 @@ final statsProvider = Provider<SemesterStats>((ref) {
       globalTarget: globalTarget,
       subjectsBelowTarget: [],
       allSubjectStats: [],
+      overallSafeBunks: 0,
+      overallRequiredRecovery: 0,
     );
   }
 
@@ -125,6 +131,17 @@ final statsProvider = Provider<SemesterStats>((ref) {
       ? 0.0
       : (totalPresent / totalRecorded) * 100.0;
 
+  final overallSafeBunks = AttendanceCalculator.calculateSafeBunks(
+    totalPresent,
+    totalRecorded,
+    globalTarget,
+  );
+  final overallRequiredRecovery = AttendanceCalculator.calculateRequiredRecovery(
+    totalPresent,
+    totalRecorded,
+    globalTarget,
+  );
+
   // Identify subjects below target
   final belowTarget = allStats
       .where((s) => s.percentage < s.target && s.totalCount > 0)
@@ -150,5 +167,7 @@ final statsProvider = Provider<SemesterStats>((ref) {
     highestRiskSubjectName: highestRiskSub,
     subjectsBelowTarget: belowTarget,
     allSubjectStats: allStats,
+    overallSafeBunks: overallSafeBunks,
+    overallRequiredRecovery: overallRequiredRecovery,
   );
 });

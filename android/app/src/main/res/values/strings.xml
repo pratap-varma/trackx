@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TrackX</string>
-    <string name="widget_description">View your attendance, timetable &amp; schedule</string>
+    <string name="widget_name">TrackX Widget</string>
+    <string name="widget_description">Track your college attendance and daily schedule</string>
+    <string name="widget_attendance_label">TrackX Attendance</string>
+    <string name="widget_attendance_desc">Track overall attendance percentage and safe bunk status</string>
+    <string name="widget_schedule_label">TrackX Daily Schedule</string>
+    <string name="widget_schedule_desc">View today\'s classes and next upcoming lecture</string>
+    <string name="widget_exams_label">TrackX Exams &amp; Events</string>
+    <string name="widget_exams_desc">View upcoming exams, deadlines, and countdowns</string>
 </resources>

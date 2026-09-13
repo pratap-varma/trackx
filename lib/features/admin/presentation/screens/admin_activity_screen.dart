@@ -84,10 +84,10 @@ class AdminActivityScreen extends ConsumerWidget {
                   ),
                 );
               },
-              loading: () => const Center(
+              loading: () => Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CircularProgressIndicator(color: AppTheme.accentPurple),
+                  padding: const EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(color: context.accentColor),
                 ),
               ),
               error: (e, _) => GlassContainer(
@@ -197,10 +197,10 @@ class AdminActivityScreen extends ConsumerWidget {
                   }).toList(),
                 );
               },
-              loading: () => const Center(
+              loading: () => Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: CircularProgressIndicator(color: AppTheme.accentPurple),
+                  padding: const EdgeInsets.all(20.0),
+                  child: CircularProgressIndicator(color: context.accentColor),
                 ),
               ),
               error: (e, _) => Center(

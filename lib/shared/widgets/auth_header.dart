@@ -26,7 +26,7 @@ class AuthHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.accentPurple.withValues(alpha: 0.5),
+                      color: context.accentColor.withValues(alpha: 0.5),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),

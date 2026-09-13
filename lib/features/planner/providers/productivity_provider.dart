@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trackx/core/services/activity_logger.dart';
+import 'package:trackx/core/services/widget_data_service.dart';
 import 'package:trackx/features/notifications/services/exam_notification_service.dart';
 import 'package:trackx/features/planner/data/repositories/productivity_repository.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
@@ -38,16 +39,25 @@ class TasksNotifier extends StateNotifier<List<Task>> {
       'category': item.category,
       'priority': item.priority,
     });
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void editTask(Task item) {
     state = state.map((e) => e.id == item.id ? item : e).toList();
     _repo.saveTasks(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void deleteTask(String id) {
     state = state.where((e) => e.id != id).toList();
     _repo.saveTasks(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void toggleTask(String id) {
@@ -71,11 +81,17 @@ class TasksNotifier extends StateNotifier<List<Task>> {
       return e;
     }).toList();
     _repo.saveTasks(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void restore(List<Task> list) {
     state = list.where((t) => !_isPastDay(t.dueDate)).toList();
     _repo.saveTasks(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 }
 
@@ -160,8 +176,9 @@ final assignmentsProvider =
 class ExamsNotifier extends StateNotifier<List<Exam>> {
   final ProductivityRepository _repo;
   final ExamNotificationService? _notificationService;
+  final Ref? _ref;
 
-  ExamsNotifier(this._repo, [this._notificationService]) : super([]) {
+  ExamsNotifier(this._repo, [this._notificationService, this._ref]) : super([]) {
     state = _repo.getExams();
     cleanupExpired();
     _notificationService?.scheduleExamReminders(state);
@@ -180,18 +197,27 @@ class ExamsNotifier extends StateNotifier<List<Exam>> {
     state = [...state, item];
     _repo.saveExams(state);
     _notificationService?.scheduleExamReminders(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void editExam(Exam item) {
     state = state.map((e) => e.id == item.id ? item : e).toList();
     _repo.saveExams(state);
     _notificationService?.scheduleExamReminders(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void deleteExam(String id) {
     _notificationService?.cancelExamReminders(id);
     state = state.where((e) => e.id != id).toList();
     _repo.saveExams(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void updateProgress(String id, double value) {
@@ -201,19 +227,25 @@ class ExamsNotifier extends StateNotifier<List<Exam>> {
         .map((e) => e.id == id ? e.copyWith(preparationProgress: clamped) : e)
         .toList();
     _repo.saveExams(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   void restore(List<Exam> list) {
     state = list.where((ex) => !_isPastDay(ex.examDate)).toList();
     _repo.saveExams(state);
     _notificationService?.scheduleExamReminders(state);
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 }
 
 final examsProvider = StateNotifierProvider<ExamsNotifier, List<Exam>>((ref) {
   final repo = ref.watch(productivityRepositoryProvider);
   final notificationService = ref.watch(examNotificationServiceProvider);
-  return ExamsNotifier(repo, notificationService);
+  return ExamsNotifier(repo, notificationService, ref);
 });
 
 // --- Revision Topics State Notifier ---

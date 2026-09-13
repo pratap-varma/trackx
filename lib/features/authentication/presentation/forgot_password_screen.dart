@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -51,6 +52,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -58,21 +62,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            icon: Icon(Icons.arrow_back_ios_new, color: textColor),
             onPressed: () => context.pop(),
           ),
         ),
         body: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28.0),
-            child: _sent ? _buildSuccessState() : _buildFormState(),
+            child: _sent
+                ? _buildSuccessState(textColor, subtextColor)
+                : _buildFormState(textColor, subtextColor),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormState() {
+  Widget _buildFormState(Color textColor, Color subtextColor) {
     return Form(
       key: _formKey,
       child: Column(
@@ -91,15 +97,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ),
             child: const Icon(
               Icons.lock_reset_rounded,
-              color: Color(0xFFC0C1FF),
+              color: Color(0xFF5B5FEF),
               size: 34,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Reset Password',
             style: TextStyle(
-              color: Colors.white,
+              color: textColor,
               fontSize: 28,
               fontWeight: FontWeight.bold,
               letterSpacing: -0.8,
@@ -109,7 +115,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           Text(
             'Enter your email and we\'ll send a reset link.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: subtextColor,
               fontSize: 13,
             ),
             textAlign: TextAlign.center,
@@ -178,7 +184,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState(Color textColor, Color subtextColor) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -199,10 +205,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ),
         ),
         const SizedBox(height: 28),
-        const Text(
+        Text(
           'Check your inbox',
           style: TextStyle(
-            color: Colors.white,
+            color: textColor,
             fontSize: 26,
             fontWeight: FontWeight.bold,
           ),
@@ -211,7 +217,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         Text(
           'A reset link was sent to\n${_emailController.text.trim()}',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: subtextColor,
             fontSize: 14,
             height: 1.5,
           ),
@@ -223,7 +229,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: OutlinedButton(
             onPressed: () => context.pop(),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFC0C1FF),
+              foregroundColor: const Color(0xFF5B5FEF),
               side: BorderSide(
                 color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
               ),

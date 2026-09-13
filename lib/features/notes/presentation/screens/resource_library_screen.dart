@@ -223,8 +223,8 @@ class _ResourceLibraryScreenState extends ConsumerState<ResourceLibraryScreen> {
                                 ),
                                 child: Text(
                                   res.type,
-                                  style: const TextStyle(
-                                    color: AppTheme.accentPurple,
+                                  style: TextStyle(
+                                    color: context.accentColor,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),

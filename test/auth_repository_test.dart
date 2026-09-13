@@ -104,5 +104,39 @@ void main() {
       expect(authRepo.state.status, AuthStatus.unauthenticated);
       expect(authRepo.state.userProfile, null);
     });
+
+    test('updateProfile persists global attendance target across restarts', () async {
+      final initialProfile = UserProfile(
+        id: 'user_target_test',
+        name: 'Target Student',
+        email: 'target@example.com',
+        branch: 'IT',
+        semester: 3,
+        globalTarget: 75.0,
+        themeMode: 'dark',
+        themeColorPack: 'purple',
+        onboardingCompleted: true,
+        createdTimestamp: 1000,
+        updatedTimestamp: 2000,
+      );
+
+      await persistenceService.saveUserProfile(initialProfile);
+      await persistenceService.saveAuthToken('test-token');
+      final authRepo = AuthRepository(persistenceService);
+      expect(authRepo.state.userProfile?.globalTarget, equals(75.0));
+
+      // User changes target to 80.0
+      await authRepo.updateProfile(
+        'Target Student',
+        'IT',
+        3,
+        80.0,
+      );
+      expect(authRepo.state.userProfile?.globalTarget, equals(80.0));
+
+      // Simulate app restart with a fresh AuthRepository reading persistence
+      final authRepoRestarted = AuthRepository(persistenceService);
+      expect(authRepoRestarted.state.userProfile?.globalTarget, equals(80.0));
+    });
   });
 }

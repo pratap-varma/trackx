@@ -180,7 +180,7 @@ void main() {
       final response = await provider.generate(request);
 
       expect(response.text.isNotEmpty, isTrue);
-      expect(response.sources.isNotEmpty, isTrue);
+      expect(response.suggestedActions.isNotEmpty, isTrue);
       expect(response.limitations.any((l) => l.contains('No Gemini API Key')), isTrue);
     });
 

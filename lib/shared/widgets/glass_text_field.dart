@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class GlassTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -43,7 +44,7 @@ class GlassTextField extends StatelessWidget {
         maxLines: maxLines,
         onChanged: onChanged,
         style: TextStyle(
-          color: isDark ? Colors.white : const Color(0xFF0F172A),
+          color: context.textColor,
           fontSize: 15,
           fontWeight: FontWeight.w500,
         ),

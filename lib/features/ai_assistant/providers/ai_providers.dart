@@ -28,6 +28,7 @@ class AiSettingsState {
   final String activeConversationId;
   final String provider; // Auto, Gemini, OpenAI, Offline
   final String customApiKey;
+  final String groqApiKey;
 
   AiSettingsState({
     required this.enableAi,
@@ -37,6 +38,7 @@ class AiSettingsState {
     required this.activeConversationId,
     required this.provider,
     this.customApiKey = '',
+    this.groqApiKey = '',
   });
 
   AiSettingsState copyWith({
@@ -47,6 +49,7 @@ class AiSettingsState {
     String? activeConversationId,
     String? provider,
     String? customApiKey,
+    String? groqApiKey,
   }) {
     return AiSettingsState(
       enableAi: enableAi ?? this.enableAi,
@@ -56,6 +59,7 @@ class AiSettingsState {
       activeConversationId: activeConversationId ?? this.activeConversationId,
       provider: provider ?? this.provider,
       customApiKey: customApiKey ?? this.customApiKey,
+      groqApiKey: groqApiKey ?? this.groqApiKey,
     );
   }
 }
@@ -69,8 +73,9 @@ class AiSettingsNotifier extends StateNotifier<AiSettingsState> {
           enableAi: _prefs.getBool('ai_setting_enabled') ?? true,
           saveHistory: _prefs.getBool('ai_setting_save_history') ?? true,
           showConsentPreview: _prefs.getBool('ai_setting_show_preview') ?? true,
-          provider: _prefs.getString('ai_setting_provider') ?? 'Auto',
+          provider: _prefs.getString('ai_setting_provider') ?? 'Gemini',
           customApiKey: _prefs.getString('ai_custom_gemini_api_key') ?? '',
+          groqApiKey: _prefs.getString('ai_custom_groq_api_key') ?? '',
           activeConversationId: 'default',
           consentFlags: {
             'attendance': _prefs.getBool('ai_consent_attendance') ?? true,
@@ -109,6 +114,11 @@ class AiSettingsNotifier extends StateNotifier<AiSettingsState> {
     await _prefs.setString('ai_custom_gemini_api_key', key);
   }
 
+  Future<void> setGroqApiKey(String key) async {
+    state = state.copyWith(groqApiKey: key);
+    await _prefs.setString('ai_custom_groq_api_key', key);
+  }
+
   Future<void> toggleConsentFlag(String key) async {
     final flags = Map<String, bool>.from(state.consentFlags);
     flags[key] = !(flags[key] ?? false);
@@ -136,8 +146,8 @@ class AiUsageNotifier extends StateNotifier<AiUsageSummary> {
         AiUsageSummary(
           requestsToday: _prefs.getInt('ai_usage_requests_today') ?? 0,
           requestsThisMonth: _prefs.getInt('ai_usage_requests_month') ?? 0,
-          maxDailyRequests: 20,
-          maxMonthlyRequests: 300,
+          maxDailyRequests: 1000,
+          maxMonthlyRequests: 10000,
           offlineFallbacksCount: _prefs.getInt('ai_usage_offline_count') ?? 0,
         ),
       ) {

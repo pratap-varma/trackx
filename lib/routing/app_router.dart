@@ -42,6 +42,7 @@ import 'package:trackx/features/notes/presentation/screens/resource_library_scre
 import 'package:trackx/features/notes/presentation/screens/flashcard_study_screen.dart';
 import 'package:trackx/features/notes/presentation/screens/flashcards_hub_screen.dart';
 import 'package:trackx/features/profile/presentation/global_search_screen.dart';
+import 'package:trackx/features/profile/presentation/home_widgets_screen.dart';
 
 import 'package:trackx/features/admin/presentation/screens/admin_activity_screen.dart';
 import 'package:trackx/features/admin/presentation/screens/admin_dashboard_screen.dart';
@@ -234,6 +235,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final subjectId = state.uri.queryParameters['subjectId'];
           return AttendanceHeatmapScreen(initialSubjectId: subjectId);
         },
+      ),
+      GoRoute(
+        path: '/widgets',
+        builder: (context, state) => const HomeWidgetsScreen(),
+      ),
+      GoRoute(
+        path: '/home-widgets',
+        builder: (context, state) => const HomeWidgetsScreen(),
       ),
       // Restricted Admin Panel Routes
       GoRoute(

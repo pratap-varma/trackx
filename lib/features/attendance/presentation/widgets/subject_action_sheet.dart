@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/attendance/providers/stats_provider.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 /// A beautiful bottom sheet showing subject attendance stats
 /// matching the Luminous design mockup (Mark Present / Skip Class).
@@ -83,7 +85,19 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
     final onTrack = pct >= target;
     final safeToBunk = safeBunks > 0;
 
-    const primaryBlue = Color(0xFF3B5BDB);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+    final today = DateTime.now();
+    final allRecords = ref.watch(attendanceRepositoryProvider);
+    final todayRecords = allRecords.where((r) =>
+        r.subjectId == sub.id &&
+        r.date.year == today.year &&
+        r.date.month == today.month &&
+        r.date.day == today.day).toList();
+
+    const primaryBlue = Color(0xFF5B5FEF);
     const dangerRed = Color(0xFFEF4444);
     const successGreen = Color(0xFF10B981);
 
@@ -102,9 +116,9 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
         );
       },
       child: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -115,7 +129,9 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -127,8 +143,8 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                 children: [
                   Text(
                     sub.name,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textColor,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
@@ -137,18 +153,18 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on_outlined,
                         size: 13,
-                        color: Colors.white38,
+                        color: mutedTextColor,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         sub.facultyName.isNotEmpty
                             ? sub.facultyName
                             : 'Faculty',
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: mutedTextColor,
                           fontSize: 13,
                         ),
                       ),
@@ -164,10 +180,14 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                       vertical: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: isDark
+                          ? const Color(0xFF131A2B)
+                          : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.07),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.07)
+                            : Colors.black.withValues(alpha: 0.06),
                       ),
                     ),
                     child: Row(
@@ -176,10 +196,10 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'CURRENT ATTENDANCE',
                               style: TextStyle(
-                                color: Colors.white38,
+                                color: mutedTextColor,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.2,
@@ -198,8 +218,8 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                         ),
                         Text(
                           '${pct.toStringAsFixed(0)}%',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             letterSpacing: -1,
@@ -217,10 +237,14 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                         child: Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
+                            color: isDark
+                                ? const Color(0xFF131A2B)
+                                : const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.06),
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.black.withValues(alpha: 0.06),
                             ),
                           ),
                           child: Column(
@@ -257,18 +281,18 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              const Text(
+                              Text(
                                 'If Present',
                                 style: TextStyle(
-                                  color: Colors.white38,
+                                  color: mutedTextColor,
                                   fontSize: 11,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '${pctIfPresent.toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: textColor,
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -282,10 +306,14 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                         child: Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
+                            color: isDark
+                                ? const Color(0xFF131A2B)
+                                : const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.06),
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.black.withValues(alpha: 0.06),
                             ),
                           ),
                           child: Column(
@@ -320,18 +348,18 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              const Text(
+                              Text(
                                 'If Absent',
                                 style: TextStyle(
-                                  color: Colors.white38,
+                                  color: mutedTextColor,
                                   fontSize: 11,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '${pctIfAbsent.toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: textColor,
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -383,7 +411,7 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                safeToBunk ? 'SAFE-TO-BUNK' : 'RECOVERY NEEDED',
+                                safeToBunk ? 'SAFE-TO-MISS' : 'RECOVERY NEEDED',
                                 style: TextStyle(
                                   color: safeToBunk ? primaryBlue : dangerRed,
                                   fontSize: 10,
@@ -396,8 +424,8 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                                 safeToBunk
                                     ? 'You can skip $safeBunks more class${safeBunks != 1 ? "es" : ""} and stay above your ${target.toStringAsFixed(0)}% target.'
                                     : 'Attend ${widget.stats.requiredRecovery} more class${widget.stats.requiredRecovery != 1 ? "es" : ""} to reach ${target.toStringAsFixed(0)}%.',
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: subtextColor,
                                   fontSize: 12,
                                   height: 1.4,
                                 ),
@@ -448,9 +476,11 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                     child: OutlinedButton(
                       onPressed: () => _markAndClose('absent'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white70,
+                        foregroundColor: textColor,
                         side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.12),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.12)
+                              : Colors.black.withValues(alpha: 0.12),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -475,6 +505,74 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                   ),
                   const SizedBox(height: 10),
 
+                  // Delete Today's Attendance (if marked)
+                  if (todayRecords.isNotEmpty) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final backup = List<AttendanceRecord>.from(todayRecords);
+                          for (final r in todayRecords) {
+                            await ref
+                                .read(attendanceRepositoryProvider.notifier)
+                                .deleteAttendance(r.id);
+                          }
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Today's attendance cleared for ${sub.name}."),
+                                duration: const Duration(milliseconds: 3000),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                action: SnackBarAction(
+                                  label: 'UNDO',
+                                  textColor: const Color(0xFF7BD0FF),
+                                  onPressed: () async {
+                                    for (final r in backup) {
+                                      await ref
+                                          .read(attendanceRepositoryProvider.notifier)
+                                          .insertRecord(r);
+                                    }
+                                  },
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: dangerRed,
+                        ),
+                        label: const Text(
+                          "Delete Today's Attendance",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: dangerRed,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: dangerRed,
+                          side: BorderSide(
+                            color: dangerRed.withValues(alpha: 0.4),
+                          ),
+                          backgroundColor:
+                              dangerRed.withValues(alpha: isDark ? 0.12 : 0.08),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
                   // Take Note / Detailed Statistics
                   SizedBox(
                     width: double.infinity,
@@ -486,14 +584,14 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                       icon: const Icon(
                         Icons.edit_note_rounded,
                         size: 18,
-                        color: Color(0xFFC0C1FF),
+                        color: Color(0xFF5B5FEF),
                       ),
                       label: const Text(
                         'Take Note / View Statistics',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Color(0xFFC0C1FF),
+                          color: Color(0xFF5B5FEF),
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
@@ -501,7 +599,7 @@ class _SubjectActionSheetState extends ConsumerState<SubjectActionSheet>
                           color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
                         ),
                         backgroundColor:
-                            const Color(0xFF5B5FEF).withValues(alpha: 0.12),
+                            const Color(0xFF5B5FEF).withValues(alpha: isDark ? 0.12 : 0.08),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -586,8 +684,13 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+
     return Material(
-      color: const Color(0xEA0A1020),
+      color: isDark ? const Color(0xEA0A1020) : const Color(0xEAFFFFFF),
       child: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnim,
@@ -603,7 +706,7 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                     width: 180,
                     height: 180,
                     child: CustomPaint(
-                      painter: _ConcentricRingsPainter(),
+                      painter: _ConcentricRingsPainter(isDark: isDark),
                       child: Center(
                         child: AnimatedBuilder(
                           animation: _checkAnim,
@@ -614,16 +717,18 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                                 width: 72,
                                 height: 72,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1A2A5E),
+                                  color: isDark
+                                      ? const Color(0xFF1A2A5E)
+                                      : const Color(0xFFE8EDFF),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: const Color(0xFF3B5BDB),
+                                    color: const Color(0xFF5B5FEF),
                                     width: 2,
                                   ),
                                 ),
                                 child: const Icon(
                                   Icons.check_rounded,
-                                  color: Color(0xFF3B5BDB),
+                                  color: Color(0xFF5B5FEF),
                                   size: 36,
                                 ),
                               ),
@@ -635,19 +740,19 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                   ),
                 ),
                 const SizedBox(height: 36),
-                const Text(
+                Text(
                   'Attendance Logged!',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "You're on track for your 4.0 goal.",
-                  style: TextStyle(color: Colors.white60, fontSize: 14),
+                  style: TextStyle(color: subtextColor, fontSize: 14),
                 ),
                 const SizedBox(height: 40),
 
@@ -656,10 +761,14 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.black.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.08),
                     ),
                   ),
                   child: Row(
@@ -668,12 +777,14 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.science_outlined,
-                          color: Colors.white54,
+                          color: mutedTextColor,
                           size: 22,
                         ),
                       ),
@@ -684,16 +795,16 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                           children: [
                             Text(
                               widget.subjectName,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
                             ),
                             Text(
                               widget.subjectCode,
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              style: TextStyle(
+                                color: mutedTextColor,
                                 fontSize: 12,
                               ),
                             ),
@@ -706,7 +817,7 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                           Text(
                             '${widget.newPercentage.toStringAsFixed(0)}%',
                             style: const TextStyle(
-                              color: Color(0xFF3B5BDB),
+                              color: Color(0xFF5B5FEF),
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
@@ -740,7 +851,7 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
                   child: ElevatedButton(
                     onPressed: widget.onDismiss,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B5BDB),
+                      backgroundColor: const Color(0xFF5B5FEF),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -774,12 +885,17 @@ class _AttendanceLoggedOverlayState extends State<AttendanceLoggedOverlay>
 }
 
 class _ConcentricRingsPainter extends CustomPainter {
+  final bool isDark;
+
+  _ConcentricRingsPainter({this.isDark = true});
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     for (final radius in [88.0, 72.0, 56.0]) {
       final paint = Paint()
-        ..color = const Color(0xFF1A2A5E).withValues(alpha: 0.5)
+        ..color = (isDark ? const Color(0xFF1A2A5E) : const Color(0xFF5B5FEF))
+            .withValues(alpha: 0.3)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
       canvas.drawCircle(center, radius, paint);
@@ -787,7 +903,8 @@ class _ConcentricRingsPainter extends CustomPainter {
     final bgPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF12215C).withValues(alpha: 0.5),
+          (isDark ? const Color(0xFF12215C) : const Color(0xFFE8EDFF))
+              .withValues(alpha: 0.5),
           Colors.transparent,
         ],
       ).createShader(Rect.fromCircle(center: center, radius: 90));

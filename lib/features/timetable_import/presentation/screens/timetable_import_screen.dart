@@ -124,26 +124,39 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
       _scanningStatus = 'Scanning $sourceName with Vision AI...';
     });
 
-    final settings = ref.read(aiSettingsProvider);
-    final detected = await _ocrService.scanTimetableImage(
-      imageBytes: bytes,
-      apiKey: settings.customApiKey,
-    );
+    try {
+      final settings = ref.read(aiSettingsProvider);
+      final detected = await _ocrService.scanTimetableImage(
+        imageBytes: bytes,
+        apiKey: settings.customApiKey,
+      );
 
-    if (mounted) {
-      setState(() {
-        _entries = detected;
-        _isScanningImage = false;
-      });
+      if (mounted) {
+        setState(() {
+          _entries = detected;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Timetable Scan Failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanningImage = false;
+        });
+      }
     }
   }
 
   void _showMediaSourceSheet() {
     HapticFeedback.lightImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final sheetBg = context.cardColor;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
     final itemBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9);
     final iconBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0);
     final borderColor = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06);
@@ -505,8 +518,8 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
 
     return AppBackground(
       child: Scaffold(
@@ -703,9 +716,9 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                   }),
                   const SizedBox(height: 16),
                   if (_isProcessing)
-                    const Center(
+                    Center(
                       child: CircularProgressIndicator(
-                        color: AppTheme.accentPurple,
+                        color: context.accentColor,
                       ),
                     )
                   else
@@ -732,7 +745,7 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                             height: 240,
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: AppTheme.accentPurple,
+                                color: context.accentColor,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(16),
@@ -752,10 +765,10 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen>
                                       width: 236,
                                       height: 4,
                                       decoration: BoxDecoration(
-                                        color: AppTheme.accentPurple,
+                                        color: context.accentColor,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppTheme.accentPurple
+                                            color: context.accentColor
                                                 .withValues(alpha: 0.8),
                                             blurRadius: 10,
                                             spreadRadius: 2,

@@ -79,7 +79,7 @@ class FloatingDock extends StatelessWidget {
                         Icon(
                           item.icon,
                           color: isActive
-                              ? (isDark ? const Color(0xFFC0C1FF) : primaryColor)
+                              ? primaryColor
                               : (isDark
                                   ? Colors.white.withValues(alpha: 0.45)
                                   : const Color(0xFF64748B)),
@@ -94,7 +94,7 @@ class FloatingDock extends StatelessWidget {
                                 ? FontWeight.bold
                                 : FontWeight.w500,
                             color: isActive
-                                ? (isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A))
+                                ? primaryColor
                                 : (isDark
                                     ? Colors.white.withValues(alpha: 0.45)
                                     : const Color(0xFF64748B)),

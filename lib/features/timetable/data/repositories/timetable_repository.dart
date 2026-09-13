@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackx/core/services/hive_db_service.dart';
 import 'package:trackx/core/services/sync_service.dart';
+import 'package:trackx/core/services/widget_data_service.dart';
 import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/features/timetable/data/services/notification_service.dart';
@@ -134,6 +135,9 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
           _ref?.read(authRepositoryProvider).userProfile?.globalTarget ?? 75.0;
       notifService?.scheduleReminders(state, globalTarget);
     } catch (_) {}
+    try {
+      _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
+    } catch (_) {}
   }
 
   /// Conflict prevention rules:
@@ -230,6 +234,94 @@ class TimetableRepository extends StateNotifier<List<TimetableEntry>> {
       return e;
     }).toList();
     await _save();
+  }
+
+  Future<String?> swapPeriods({
+    required String semesterId,
+    required int dayOfWeek,
+    required int periodA,
+    required int periodB,
+  }) async {
+    if (periodA == periodB) return null;
+
+    final entryA = state.cast<TimetableEntry?>().firstWhere(
+          (e) =>
+              e != null &&
+              e.semesterId == semesterId &&
+              e.dayOfWeek == dayOfWeek &&
+              e.periodNumber == periodA,
+          orElse: () => null,
+        );
+
+    final entryB = state.cast<TimetableEntry?>().firstWhere(
+          (e) =>
+              e != null &&
+              e.semesterId == semesterId &&
+              e.dayOfWeek == dayOfWeek &&
+              e.periodNumber == periodB,
+          orElse: () => null,
+        );
+
+    if (entryA == null && entryB == null) {
+      return 'No classes found in either period.';
+    }
+
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final List<TimetableEntry> updated = [];
+
+    for (final e in state) {
+      if (e.semesterId == semesterId && e.dayOfWeek == dayOfWeek) {
+        if (e.periodNumber == periodA) {
+          if (entryB != null) {
+            updated.add(e.copyWith(
+              periodNumber: periodB,
+              startTime: entryB.startTime,
+              endTime: entryB.endTime,
+              updatedAt: nowMs,
+            ));
+          } else {
+            updated.add(e.copyWith(
+              periodNumber: periodB,
+              updatedAt: nowMs,
+            ));
+          }
+          continue;
+        } else if (e.periodNumber == periodB) {
+          if (entryA != null) {
+            updated.add(e.copyWith(
+              periodNumber: periodA,
+              startTime: entryA.startTime,
+              endTime: entryA.endTime,
+              updatedAt: nowMs,
+            ));
+          } else {
+            updated.add(e.copyWith(
+              periodNumber: periodA,
+              updatedAt: nowMs,
+            ));
+          }
+          continue;
+        }
+      }
+      updated.add(e);
+    }
+
+    state = updated;
+    await _save();
+
+    try {
+      final syncService = _ref?.read(syncServiceProvider);
+      if (entryA != null) {
+        final swappedA = state.firstWhere((e) => e.id == entryA.id);
+        syncService?.addToQueue('timetable', swappedA.id, 'update', swappedA.toMap());
+      }
+      if (entryB != null) {
+        final swappedB = state.firstWhere((e) => e.id == entryB.id);
+        syncService?.addToQueue('timetable', swappedB.id, 'update', swappedB.toMap());
+      }
+    } catch (_) {}
+
+    return null;
   }
 
   Future<void> copyDay(String semesterId, int fromDay, int toDay) async {

@@ -102,7 +102,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                       style: TextStyle(color: context.mutedTextColor, fontSize: 10),
                     ),
                     value: _shareDiagnostics,
-                    activeColor: AppTheme.accentPurple,
+                    activeColor: context.accentColor,
                     onChanged: (val) {
                       if (val != null) {
                         setState(() => _shareDiagnostics = val);

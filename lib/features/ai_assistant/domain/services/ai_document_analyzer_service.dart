@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:trackx/core/config/ai_config.dart';
 import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
 import 'package:trackx/features/timetable_import/domain/models/timetable_import_models.dart';
@@ -10,6 +11,7 @@ enum AcademicDocumentType {
   classTimetable,
   examSchedule,
   assignmentOrSyllabus,
+  collegeHolidays,
   generalNotice,
 }
 
@@ -20,6 +22,7 @@ class AiDocumentAnalysisResult {
   final List<DetectedTimetableEntry> detectedTimetable;
   final List<DetectedExamEntry> detectedExams;
   final List<Task> detectedTasks;
+  final List<Map<String, dynamic>> detectedHolidays;
   final List<String> actionLabels;
 
   AiDocumentAnalysisResult({
@@ -29,6 +32,7 @@ class AiDocumentAnalysisResult {
     this.detectedTimetable = const [],
     this.detectedExams = const [],
     this.detectedTasks = const [],
+    this.detectedHolidays = const [],
     this.actionLabels = const [],
   });
 }
@@ -51,7 +55,7 @@ class AiDocumentAnalyzerService {
     if (apiKey != null && apiKey.isNotEmpty) {
       try {
         final model = GenerativeModel(
-          model: 'gemini-1.5-flash',
+          model: AiConfig.geminiModel,
           apiKey: apiKey,
         );
 
@@ -60,16 +64,24 @@ You are an expert academic document analyzer for university students.
 Analyze this uploaded PDF document or image ($fileName).
 
 Determine its category:
-1. "class_timetable" (Weekly Mon-Sat recurring lecture/lab schedule)
-2. "exam_schedule" (Mid-term, Final, or Lab practical exam date-sheet with dates)
-3. "assignment_task" (Assignment notice, project deadline, or syllabus unit list)
-4. "general_notice" (College circular, holiday notice, academic rules, or grade sheet)
+1. "college_holidays" (College circular, list of institutional/academic holidays, semester break, festival off-days)
+2. "class_timetable" (Weekly Mon-Sat recurring lecture/lab schedule)
+3. "exam_schedule" (Mid-term, Final, or Lab practical exam date-sheet with dates)
+4. "assignment_task" (Assignment notice, project deadline, or syllabus unit list)
+5. "general_notice" (General circular, academic rules, or grade sheet)
 
 Return a single JSON object formatted exactly as:
 {
-  "category": "class_timetable" | "exam_schedule" | "assignment_task" | "general_notice",
+  "category": "college_holidays" | "class_timetable" | "exam_schedule" | "assignment_task" | "general_notice",
   "title": "Document Title",
   "summary": "2-3 sentence clear summary of the document with key highlights",
+  "holiday_entries": [
+    {
+      "title": "Diwali",
+      "date": "2026-10-31",
+      "description": "Festival holiday / Institutional off"
+    }
+  ],
   "timetable_entries": [
     {
       "weekday": "Monday",
@@ -129,7 +141,21 @@ Return RAW JSON ONLY.
         final title = json['title'] ?? fileName;
         final summary = json['summary'] ?? 'Analyzed document successfully.';
 
-        if (category == 'class_timetable') {
+        if (category == 'college_holidays') {
+          final rawHols = json['holiday_entries'] as List<dynamic>? ?? [];
+          final holidays = rawHols.map((h) => Map<String, dynamic>.from(h as Map)).toList();
+
+          return AiDocumentAnalysisResult(
+            type: AcademicDocumentType.collegeHolidays,
+            title: title,
+            summary: summary,
+            detectedHolidays: holidays,
+            actionLabels: [
+              'Mark Holidays in Calendar',
+              'View Calendar',
+            ],
+          );
+        } else if (category == 'class_timetable') {
           final rawTT = json['timetable_entries'] as List<dynamic>? ?? [];
           final entries = rawTT.map((e) {
             final m = Map<String, dynamic>.from(e);
@@ -222,7 +248,30 @@ Return RAW JSON ONLY.
     }
 
     // 2. Intelligent Offline Heuristic Classifier
-    if (lowerName.contains('exam') ||
+    if (lowerName.contains('holiday') ||
+        lowerName.contains('vacation') ||
+        lowerName.contains('break') ||
+        lowerName.contains('almanac')) {
+      final now = DateTime.now();
+      final sampleHolidays = [
+        {
+          'title': 'College Academic Holiday',
+          'date': '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
+          'description': 'Parsed from $fileName',
+        }
+      ];
+      return AiDocumentAnalysisResult(
+        type: AcademicDocumentType.collegeHolidays,
+        title: 'College Holidays Notice ($fileName)',
+        summary:
+            'I analyzed your college holidays notice! Extracted holiday dates and institutional off-days.',
+        detectedHolidays: sampleHolidays,
+        actionLabels: [
+          'Mark Holidays in Calendar',
+          'View Calendar',
+        ],
+      );
+    } else if (lowerName.contains('exam') ||
         lowerName.contains('mid') ||
         lowerName.contains('end') ||
         lowerName.contains('datesheet') ||

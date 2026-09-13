@@ -131,6 +131,8 @@ class GraduationProgressScreen extends ConsumerWidget {
                             painter: _GraduationRingPainter(
                               progress: overallProgress,
                               isDark: context.isDark,
+                              accentColor: context.accentColor,
+                              secondaryColor: context.secondaryColor,
                             ),
                             child: Center(
                               child: Column(
@@ -183,18 +185,18 @@ class GraduationProgressScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.08),
+                      color: context.accentColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                        color: context.accentColor.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.info_outline_rounded,
-                          color: Color(0xFFC0C1FF),
+                          color: context.accentColor,
                           size: 16,
                         ),
                         const SizedBox(width: 10),
@@ -227,7 +229,7 @@ class GraduationProgressScreen extends ConsumerWidget {
                       context,
                       '$activeSems',
                       'Active',
-                      const Color(0xFF5B5FEF),
+                      context.accentColor,
                     ),
                     _statBlock(context, '$remainingSems', 'Remaining', context.mutedTextColor),
                     _statBlock(context, '$totalSemesters', 'Total', context.subtextColor),
@@ -257,7 +259,7 @@ class GraduationProgressScreen extends ConsumerWidget {
                       context,
                       '${activeCredits.toInt()}',
                       'In Progress',
-                      const Color(0xFF5B5FEF),
+                      context.accentColor,
                     ),
                     _statBlock(
                       context,
@@ -308,7 +310,7 @@ class GraduationProgressScreen extends ConsumerWidget {
                       context,
                       '$activeSubs',
                       'Active',
-                      const Color(0xFF5B5FEF),
+                      context.accentColor,
                     ),
                     _statBlock(
                       context,
@@ -483,7 +485,15 @@ class GraduationProgressScreen extends ConsumerWidget {
 class _GraduationRingPainter extends CustomPainter {
   final double progress;
   final bool isDark;
-  _GraduationRingPainter({required this.progress, required this.isDark});
+  final Color accentColor;
+  final Color secondaryColor;
+
+  _GraduationRingPainter({
+    required this.progress,
+    required this.isDark,
+    this.accentColor = const Color(0xFF5B5FEF),
+    this.secondaryColor = const Color(0xFF7BD0FF),
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -520,7 +530,7 @@ class _GraduationRingPainter extends CustomPainter {
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round
       ..shader = SweepGradient(
-        colors: const [Color(0xFF5B5FEF), Color(0xFF10B981), Color(0xFF7BD0FF)],
+        colors: [accentColor, const Color(0xFF10B981), secondaryColor],
         transform: const GradientRotation(-math.pi / 2),
       ).createShader(Rect.fromCircle(center: center, radius: radius));
 
@@ -535,5 +545,8 @@ class _GraduationRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GraduationRingPainter old) =>
-      old.progress != progress || old.isDark != isDark;
+      old.progress != progress ||
+      old.isDark != isDark ||
+      old.accentColor != accentColor ||
+      old.secondaryColor != secondaryColor;
 }

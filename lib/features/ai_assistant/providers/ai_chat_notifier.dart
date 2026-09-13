@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trackx/core/config/ai_config.dart';
 import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/ai_advisor/domain/models/ai_models.dart'
     hide AiRequest;
@@ -9,7 +10,6 @@ import 'package:trackx/features/attendance/data/attendance_repository.dart';
 import 'package:trackx/features/planner/providers/productivity_provider.dart';
 import 'package:trackx/features/ai_assistant/data/services/ai_context_builder.dart';
 import 'package:trackx/features/ai_assistant/data/services/gemini_provider.dart';
-import 'package:trackx/features/ai_assistant/data/services/offline_fallback_provider.dart';
 import 'package:trackx/features/ai_assistant/domain/models/ai_request.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
@@ -84,12 +84,8 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
       return;
     }
 
-    // Setup fallback or Gemini provider
-    final bool useOffline =
-        settings.provider == 'Offline only' || settings.provider == 'Offline';
-    final provider = useOffline
-        ? OfflineFallbackProvider()
-        : GeminiAiProvider(overrideApiKey: settings.customApiKey);
+    // Live Online Gemini Provider
+    final provider = GeminiAiProvider(overrideApiKey: settings.customApiKey);
 
     // Context preparation
     final authState = _ref.read(authRepositoryProvider);
@@ -148,18 +144,13 @@ class AiChatNotifier extends StateNotifier<List<AiMessage>> {
       userPrompt: userMessage,
       context: aiContext.toMap(),
       conversationId: _conversationId,
-      modelId: useOffline ? 'offline' : 'gemini-1.5-flash',
+      modelId: AiConfig.geminiModel,
       createdAt: DateTime.now(),
     );
 
-    // Invoke generation
+    // Invoke generation live online
     final response = await provider.generate(request);
-
-    if (useOffline) {
-      await usageNotifier.incrementOfflineFallback();
-    } else {
-      await usageNotifier.incrementRequests();
-    }
+    await usageNotifier.incrementRequests();
 
     // Map AiResponse back to AiMessage
     final aiMsg = AiMessage(

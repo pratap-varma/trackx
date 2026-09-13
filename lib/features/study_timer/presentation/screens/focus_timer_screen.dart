@@ -132,11 +132,14 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  Color get _modeColor =>
-      _isFocusMode ? const Color(0xFF5B5FEF) : const Color(0xFF10B981);
+  Color _getModeColor(BuildContext context) =>
+      _isFocusMode ? context.accentColor : const Color(0xFF10B981);
 
   @override
   Widget build(BuildContext context) {
+    final modeColor = _getModeColor(context);
+    final secondaryModeColor = _isFocusMode ? context.tertiaryColor : const Color(0xFF059669);
+
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -202,14 +205,14 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                       ),
                       decoration: BoxDecoration(
                         color: isActive
-                            ? _modeColor.withValues(alpha: 0.2)
+                            ? modeColor.withValues(alpha: 0.2)
                             : (context.isDark
                                 ? Colors.white.withValues(alpha: 0.04)
                                 : Colors.black.withValues(alpha: 0.04)),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isActive
-                              ? _modeColor.withValues(alpha: 0.5)
+                              ? modeColor.withValues(alpha: 0.5)
                               : context.subtleBorderColor,
                           width: isActive ? 1.5 : 1,
                         ),
@@ -217,7 +220,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                       child: Text(
                         _modes[i],
                         style: TextStyle(
-                          color: isActive ? _modeColor : context.mutedTextColor,
+                          color: isActive ? modeColor : context.mutedTextColor,
                           fontSize: 11,
                           fontWeight: isActive
                               ? FontWeight.bold
@@ -244,7 +247,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                     child: CustomPaint(
                       painter: _FocusRingPainter(
                         progress: _progress,
-                        color: _modeColor,
+                        color: modeColor,
                         isBreak: !_isFocusMode,
                         isDark: context.isDark,
                       ),
@@ -265,7 +268,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                             Text(
                               _modes[_modeIndex],
                               style: TextStyle(
-                                color: _modeColor,
+                                color: modeColor,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
@@ -292,7 +295,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                   height: 8,
                   decoration: BoxDecoration(
                     color: done
-                        ? _modeColor
+                        ? modeColor
                         : (context.isDark
                             ? Colors.white.withValues(alpha: 0.12)
                             : Colors.black.withValues(alpha: 0.12)),
@@ -340,10 +343,8 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              _modeColor,
-                              _isFocusMode
-                                  ? const Color(0xFF8151EB)
-                                  : const Color(0xFF059669),
+                              modeColor,
+                              secondaryModeColor,
                             ],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
@@ -351,7 +352,7 @@ class _FocusTimerScreenState extends State<FocusTimerScreen>
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
-                              color: _modeColor.withValues(alpha: 0.4),
+                              color: modeColor.withValues(alpha: 0.4),
                               blurRadius: 20,
                               offset: const Offset(0, 6),
                             ),

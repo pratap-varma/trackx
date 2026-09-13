@@ -132,8 +132,8 @@ class _AdminUserListScreenState extends ConsumerState<AdminUserListScreen> {
                     },
                   );
                 },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppTheme.accentPurple),
+                loading: () => Center(
+                  child: CircularProgressIndicator(color: context.accentColor),
                 ),
                 error: (e, _) => Center(
                   child: Padding(

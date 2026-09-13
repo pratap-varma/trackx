@@ -25,8 +25,8 @@ class GlassPrimaryButton extends StatelessWidget {
       gradientColors: onPressed == null
           ? [Colors.white10, Colors.white10]
           : [
-              AppTheme.accentPurple.withValues(alpha: 0.85),
-              AppTheme.accentBlue.withValues(alpha: 0.85),
+              context.accentColor.withValues(alpha: 0.85),
+              context.secondaryColor.withValues(alpha: 0.85),
             ],
       child: Center(
         child: isLoading

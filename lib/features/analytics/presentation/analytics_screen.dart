@@ -22,6 +22,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   Widget build(BuildContext context) {
     final stats = ref.watch(statsProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final accentColor = context.accentColor;
 
     // What-If Calculator simulation logic
     final totalRec = stats.totalRecorded;
@@ -35,9 +38,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          title: Text(
             'Analytics & Intelligence',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
           ),
         ),
         body: ListView(
@@ -51,24 +54,24 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Presence Ratio',
-                          style: TextStyle(fontSize: 12, color: Colors.white60),
+                          style: TextStyle(fontSize: 12, color: subtextColor),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${stats.overallPercentage.toStringAsFixed(1)}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: textColor,
                           ),
                         ),
                         Text(
                           '${stats.totalPresent} present / ${stats.totalRecorded} classes',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white70,
+                            color: subtextColor,
                           ),
                         ),
                       ],
@@ -82,8 +85,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                           ? 0.0
                           : stats.totalPresent / stats.totalRecorded,
                       strokeWidth: 8,
-                      backgroundColor: Colors.white10,
-                      color: AppTheme.accentPurple,
+                      backgroundColor: context.dividerColor,
+                      color: accentColor,
                     ),
                   ),
                 ],
@@ -92,12 +95,12 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             const SizedBox(height: 20),
 
             // Attendance Forecast Simulator
-            const Text(
+            Text(
               'What-If Forecast Simulator',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.white,
+                color: textColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -111,33 +114,33 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: simPercentage >= stats.globalTarget
-                          ? Colors.greenAccent
-                          : Colors.redAccent,
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFEF4444),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Attend next ${_futurePresent.toInt()} classes',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: subtextColor, fontSize: 12),
                   ),
                   Slider(
                     value: _futurePresent,
                     min: 0,
                     max: 20,
                     divisions: 20,
-                    activeColor: AppTheme.accentPurple,
+                    activeColor: accentColor,
                     onChanged: (val) => setState(() => _futurePresent = val),
                   ),
                   Text(
                     'Miss next ${_futureAbsent.toInt()} classes',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: subtextColor, fontSize: 12),
                   ),
                   Slider(
                     value: _futureAbsent,
                     min: 0,
                     max: 20,
                     divisions: 20,
-                    activeColor: AppTheme.accentPurple,
+                    activeColor: accentColor,
                     onChanged: (val) => setState(() => _futureAbsent = val),
                   ),
                 ],
@@ -146,21 +149,21 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             const SizedBox(height: 20),
 
             // Subject Comparison
-            const Text(
+            Text(
               'Subject Comparisons',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Colors.white,
+                color: textColor,
               ),
             ),
             const SizedBox(height: 12),
             if (subjects.isEmpty)
-              const GlassContainer(
+              GlassContainer(
                 child: Center(
                   child: Text(
                     'No subjects added yet.',
-                    style: TextStyle(color: Colors.white60),
+                    style: TextStyle(color: subtextColor),
                   ),
                 ),
               )
@@ -184,9 +187,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                           children: [
                             Text(
                               sub.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: textColor,
                               ),
                             ),
                             Text(
@@ -194,8 +197,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: isAtRisk
-                                    ? Colors.redAccent
-                                    : Colors.greenAccent,
+                                    ? const Color(0xFFEF4444)
+                                    : const Color(0xFF10B981),
                               ),
                             ),
                           ],
@@ -203,17 +206,17 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                         const SizedBox(height: 8),
                         LinearProgressIndicator(
                           value: percent / 100.0,
-                          backgroundColor: Colors.white10,
+                          backgroundColor: context.dividerColor,
                           color: isAtRisk
-                              ? Colors.redAccent
-                              : AppTheme.accentPurple,
+                              ? const Color(0xFFEF4444)
+                              : accentColor,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Target: ${target.toInt()}% ${isAtRisk ? "(At Risk)" : "(On Track)"}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Colors.white54,
+                            color: subtextColor,
                           ),
                         ),
                       ],
@@ -221,7 +224,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   ),
                 );
               }),
-            const SizedBox(height: 100),
           ],
         ),
       ),

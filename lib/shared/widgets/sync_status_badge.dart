@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:trackx/core/services/sync_service.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class SyncStatusBadge extends ConsumerWidget {
   const SyncStatusBadge({super.key});
@@ -18,8 +19,8 @@ class SyncStatusBadge extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
+        decoration: BoxDecoration(
+          color: context.cardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
@@ -37,7 +38,7 @@ class SyncStatusBadge extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Row(
               children: [
                 Container(
@@ -61,7 +62,7 @@ class SyncStatusBadge extends ConsumerWidget {
                     size: 22,
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -71,16 +72,16 @@ class SyncStatusBadge extends ConsumerWidget {
                           : (syncState.pendingCount > 0
                               ? 'Offline Changes Queued'
                               : 'All Changes Synchronized'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       'Last sync: $timeStr',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white54,
                         fontSize: 12,
                       ),
@@ -89,7 +90,7 @@ class SyncStatusBadge extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             GlassContainer(
               tier: GlassTier.subtle,
               borderRadius: 16,
@@ -97,14 +98,14 @@ class SyncStatusBadge extends ConsumerWidget {
               child: Column(
                 children: [
                   _infoRow('Pending Sync Operations', '${syncState.pendingCount}'),
-                  const Divider(color: Colors.white10, height: 16),
+                  Divider(color: Colors.white10, height: 16),
                   _infoRow('Failed Retries', '${syncState.failedCount}'),
-                  const Divider(color: Colors.white10, height: 16),
+                  Divider(color: Colors.white10, height: 16),
                   _infoRow('Storage Strategy', 'Offline-First (Hive ➔ Firestore)'),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -113,13 +114,13 @@ class SyncStatusBadge extends ConsumerWidget {
                   ref.read(syncServiceProvider).triggerSync();
                   Navigator.pop(ctx);
                 },
-                icon: const Icon(Icons.sync_rounded, size: 18),
-                label: const Text(
+                icon: Icon(Icons.sync_rounded, size: 18),
+                label: Text(
                   'Sync Now',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B5FEF),
+                  backgroundColor: context.accentColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -138,10 +139,10 @@ class SyncStatusBadge extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        Text(label, style: TextStyle(color: Colors.white70, fontSize: 13)),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 13,
@@ -157,7 +158,7 @@ class SyncStatusBadge extends ConsumerWidget {
 
     // If completely idle with 0 pending changes, hide or show minimal icon
     if (!syncState.isSyncing && syncState.pendingCount == 0 && syncState.lastError == null) {
-      return const SizedBox.shrink();
+      return SizedBox.shrink();
     }
 
     final isSyncing = syncState.isSyncing;
@@ -203,7 +204,7 @@ class SyncStatusBadge extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(

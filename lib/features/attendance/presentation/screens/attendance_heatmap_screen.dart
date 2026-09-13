@@ -6,6 +6,7 @@ import 'package:trackx/features/attendance/providers/attendance_heatmap_provider
 import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class AttendanceHeatmapScreen extends ConsumerStatefulWidget {
   final String? initialSubjectId;
@@ -31,6 +32,10 @@ class _AttendanceHeatmapScreenState
   Widget build(BuildContext context) {
     final subjects = ref.watch(subjectRepositoryProvider);
     final dataset = ref.watch(attendanceHeatmapProvider(_selectedSubjectId));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     final selectedSubjectName = _selectedSubjectId == null
         ? 'All Subjects'
@@ -46,12 +51,19 @@ class _AttendanceHeatmapScreenState
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: const Text(
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: textColor,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
             'Attendance Heatmap',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 20,
-              color: Colors.white,
+              color: textColor,
             ),
           ),
         ),
@@ -68,11 +80,13 @@ class _AttendanceHeatmapScreenState
                       label: const Text('All Subjects'),
                       selected: _selectedSubjectId == null,
                       selectedColor: const Color(0xFF5B5FEF),
-                      backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.05),
                       labelStyle: TextStyle(
                         color: _selectedSubjectId == null
                             ? Colors.white
-                            : Colors.white70,
+                            : subtextColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -92,11 +106,12 @@ class _AttendanceHeatmapScreenState
                           label: Text(sub.name),
                           selected: isSelected,
                           selectedColor: const Color(0xFF5B5FEF),
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.05),
+                          backgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.black.withValues(alpha: 0.05),
                           labelStyle: TextStyle(
                             color:
-                                isSelected ? Colors.white : Colors.white70,
+                                isSelected ? Colors.white : subtextColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -123,6 +138,8 @@ class _AttendanceHeatmapScreenState
                     value: '${dataset.currentStreak}d',
                     icon: Icons.bolt_rounded,
                     color: const Color(0xFF10B981),
+                    textColor: textColor,
+                    mutedTextColor: mutedTextColor,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -132,6 +149,8 @@ class _AttendanceHeatmapScreenState
                     value: '${dataset.longestStreak}d',
                     icon: Icons.emoji_events_rounded,
                     color: const Color(0xFFF59E0B),
+                    textColor: textColor,
+                    mutedTextColor: mutedTextColor,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -140,7 +159,9 @@ class _AttendanceHeatmapScreenState
                     title: 'OVERALL',
                     value: '${dataset.overallPercentage.toInt()}%',
                     icon: Icons.pie_chart_rounded,
-                    color: const Color(0xFF7BD0FF),
+                    color: const Color(0xFF5B5FEF),
+                    textColor: textColor,
+                    mutedTextColor: mutedTextColor,
                   ),
                 ),
               ],
@@ -154,28 +175,30 @@ class _AttendanceHeatmapScreenState
                 child: GlassContainer(
                   borderRadius: 22,
                   padding: const EdgeInsets.all(32),
-                  borderColor: Colors.white.withValues(alpha: 0.08),
+                  borderColor: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.08),
                   child: Column(
                     children: [
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 48,
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: mutedTextColor,
                       ),
                       const SizedBox(height: 14),
                       Text(
                         'No Attendance Records for $selectedSubjectName',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         'Mark attendance from the Attendance screen or timetable to see your activity grid.',
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                        style: TextStyle(color: subtextColor, fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -191,14 +214,16 @@ class _AttendanceHeatmapScreenState
             GlassContainer(
               borderRadius: 20,
               padding: const EdgeInsets.all(20),
-              borderColor: Colors.white.withValues(alpha: 0.08),
+              borderColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.08),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '$selectedSubjectName Breakdown',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -208,18 +233,27 @@ class _AttendanceHeatmapScreenState
                     label: 'Classes Attended',
                     value: '${dataset.totalClassesAttended}',
                     color: const Color(0xFF10B981),
+                    subtextColor: subtextColor,
                   ),
-                  const Divider(color: Colors.white10, height: 16),
+                  Divider(
+                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                    height: 16,
+                  ),
                   _buildStatRow(
                     label: 'Classes Missed',
                     value: '${dataset.totalClassesMissed}',
                     color: const Color(0xFFEF4444),
+                    subtextColor: subtextColor,
                   ),
-                  const Divider(color: Colors.white10, height: 16),
+                  Divider(
+                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                    height: 16,
+                  ),
                   _buildStatRow(
                     label: 'Total Active Days Logged',
                     value: '${dataset.totalDaysLogged} days',
-                    color: const Color(0xFF7BD0FF),
+                    color: const Color(0xFF5B5FEF),
+                    subtextColor: subtextColor,
                   ),
                 ],
               ),
@@ -235,6 +269,8 @@ class _AttendanceHeatmapScreenState
     required String value,
     required IconData icon,
     required Color color,
+    required Color textColor,
+    required Color mutedTextColor,
   }) {
     return GlassContainer(
       borderRadius: 18,
@@ -248,8 +284,8 @@ class _AttendanceHeatmapScreenState
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white38,
+                style: TextStyle(
+                  color: mutedTextColor,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.8,
@@ -262,7 +298,7 @@ class _AttendanceHeatmapScreenState
           Text(
             value,
             style: TextStyle(
-              color: Colors.white,
+              color: textColor,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -276,13 +312,14 @@ class _AttendanceHeatmapScreenState
     required String label,
     required String value,
     required Color color,
+    required Color subtextColor,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
+          style: TextStyle(color: subtextColor, fontSize: 13),
         ),
         Text(
           value,

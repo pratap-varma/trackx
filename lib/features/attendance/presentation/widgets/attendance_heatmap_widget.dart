@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:trackx/features/attendance/data/attendance_repository.dart';
+import 'package:trackx/features/attendance/domain/attendance_record_model.dart';
 import 'package:trackx/features/attendance/domain/models/attendance_heatmap_models.dart';
+import 'package:trackx/features/subjects/data/subject_repository.dart';
+import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class AttendanceHeatmapWidget extends StatefulWidget {
   final HeatmapDataset dataset;
@@ -80,6 +86,10 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     final totalDays =
         widget.dataset.endDate.difference(widget.dataset.startDate).inDays + 1;
@@ -99,8 +109,8 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
             alignment: Alignment.centerLeft,
             child: Text(
               DateFormat('MMM').format(weekDate),
-              style: const TextStyle(
-                color: Colors.white54,
+              style: TextStyle(
+                color: mutedTextColor,
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
@@ -115,7 +125,9 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
     return GlassContainer(
       borderRadius: 22,
       padding: const EdgeInsets.all(18),
-      borderColor: Colors.white.withValues(alpha: 0.08),
+      borderColor: isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.black.withValues(alpha: 0.08),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -123,18 +135,18 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.calendar_view_month_rounded,
                     size: 16,
                     color: Color(0xFF10B981),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     'ATTENDANCE ACTIVITY',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                       letterSpacing: 1.1,
@@ -159,12 +171,12 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.my_location_rounded,
-                          size: 11, color: Color(0xFFC0C1FF)),
+                          size: 11, color: Color(0xFF5B5FEF)),
                       SizedBox(width: 4),
                       Text(
                         'Today',
                         style: TextStyle(
-                          color: Color(0xFFC0C1FF),
+                          color: Color(0xFF5B5FEF),
                           fontSize: 10.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -187,13 +199,13 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _weekdayLabel('S'),
-                    _weekdayLabel('M'),
-                    _weekdayLabel('T'),
-                    _weekdayLabel('W'),
-                    _weekdayLabel('T'),
-                    _weekdayLabel('F'),
-                    _weekdayLabel('S'),
+                    _weekdayLabel('S', mutedTextColor),
+                    _weekdayLabel('M', mutedTextColor),
+                    _weekdayLabel('T', mutedTextColor),
+                    _weekdayLabel('W', mutedTextColor),
+                    _weekdayLabel('T', mutedTextColor),
+                    _weekdayLabel('F', mutedTextColor),
+                    _weekdayLabel('S', mutedTextColor),
                   ],
                 ),
               ),
@@ -240,17 +252,23 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
                                         margin: const EdgeInsets.only(right: 4),
                                         decoration: BoxDecoration(
                                           color: isFuture
-                                              ? Colors.white
-                                                  .withValues(alpha: 0.02)
-                                              : summary.statusColor,
+                                              ? (isDark
+                                                  ? Colors.white.withValues(alpha: 0.02)
+                                                  : Colors.black.withValues(alpha: 0.02))
+                                              : (summary.status == DayAttendanceStatus.noClasses
+                                                  ? (isDark
+                                                      ? Colors.white.withValues(alpha: 0.05)
+                                                      : Colors.black.withValues(alpha: 0.05))
+                                                  : summary.statusColor),
                                           borderRadius:
                                               BorderRadius.circular(4),
                                           border: Border.all(
                                             color: isToday
-                                                ? const Color(0xFF7BD0FF)
+                                                ? const Color(0xFF5B5FEF)
                                                 : (summary.totalClasses > 0
-                                                    ? Colors.white.withValues(
-                                                        alpha: 0.15)
+                                                    ? (isDark
+                                                        ? Colors.white.withValues(alpha: 0.15)
+                                                        : Colors.black.withValues(alpha: 0.1))
                                                     : Colors.transparent),
                                             width: isToday ? 1.5 : 0.5,
                                           ),
@@ -288,18 +306,18 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
             children: [
               Text(
                 '${widget.dataset.totalDaysLogged} active days logged',
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                style: TextStyle(color: mutedTextColor, fontSize: 11),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _legendItem(const Color(0xFF10B981), '100%'),
+                  _legendItem(const Color(0xFF10B981), '100%', subtextColor),
                   const SizedBox(width: 8),
-                  _legendItem(const Color(0xFF3B82F6), 'Partial'),
+                  _legendItem(const Color(0xFF3B82F6), 'Partial', subtextColor),
                   const SizedBox(width: 8),
-                  _legendItem(const Color(0xFFEF4444), 'Missed'),
+                  _legendItem(const Color(0xFFEF4444), 'Missed', subtextColor),
                   const SizedBox(width: 8),
-                  _legendItem(const Color(0xFF8151EB), 'Off/Event'),
+                  _legendItem(const Color(0xFF8151EB), 'Off/Event', subtextColor),
                 ],
               ),
             ],
@@ -309,14 +327,14 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
     );
   }
 
-  Widget _weekdayLabel(String label) {
+  Widget _weekdayLabel(String label, Color color) {
     return Container(
       height: 20,
       alignment: Alignment.center,
       child: Text(
         label,
-        style: const TextStyle(
-          color: Colors.white38,
+        style: TextStyle(
+          color: color,
           fontSize: 9.5,
           fontWeight: FontWeight.bold,
         ),
@@ -324,7 +342,7 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
     );
   }
 
-  Widget _legendItem(Color color, String label) {
+  Widget _legendItem(Color color, String label, Color textColor) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -339,28 +357,197 @@ class _AttendanceHeatmapWidgetState extends State<AttendanceHeatmapWidget> {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 10),
+          style: TextStyle(color: textColor, fontSize: 10),
         ),
       ],
     );
   }
 }
 
-class _DayAttendanceBreakdownSheet extends StatelessWidget {
+class _DayAttendanceBreakdownSheet extends ConsumerWidget {
   final DayAttendanceSummary summary;
 
   const _DayAttendanceBreakdownSheet({required this.summary});
 
+  void _confirmDeleteDayRecord(
+    BuildContext context,
+    WidgetRef ref,
+    AttendanceRecord rec,
+    String subjectName,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final dateFormatted = DateFormat('EEE, MMM d, yyyy').format(rec.date);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFEF4444),
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Delete Attendance Record?',
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Permanently delete the ${rec.status.toUpperCase()} record for $subjectName on $dateFormatted${rec.periodNumber != null ? ' (Period ${rec.periodNumber})' : ''}?',
+              style: TextStyle(color: subtextColor, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: subtextColor,
+                      side: BorderSide(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final backup = rec;
+                      await ref
+                          .read(attendanceRepositoryProvider.notifier)
+                          .deleteAttendance(rec.id);
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).clearSnackBars();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Attendance for $subjectName deleted.'),
+                            duration: const Duration(milliseconds: 3000),
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.only(
+                              bottom: 24,
+                              left: 16,
+                              right: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            action: SnackBarAction(
+                              label: 'UNDO',
+                              textColor: const Color(0xFF7BD0FF),
+                              onPressed: () async {
+                                await ref
+                                    .read(attendanceRepositoryProvider.notifier)
+                                    .insertRecord(backup);
+                              },
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allRecords = ref.watch(attendanceRepositoryProvider);
+    final allSubjects = ref.watch(subjectRepositoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+
+    // Filter live records matching this calendar day
+    final liveRecords = allRecords.where((r) {
+      return r.date.year == summary.date.year &&
+          r.date.month == summary.date.month &&
+          r.date.day == summary.date.day;
+    }).toList();
+
     final formattedDate =
         DateFormat('EEEE, MMMM d, yyyy').format(summary.date);
-    final percentage = summary.percentage.toInt();
+    final totalClasses = liveRecords.length;
+    final presentClasses = liveRecords
+        .where((r) => r.status.toLowerCase() == 'present')
+        .length;
+    final double percentage =
+        totalClasses > 0 ? (presentClasses / totalClasses) * 100 : 0.0;
+
+    final Color statusColor = percentage >= 75
+        ? const Color(0xFF10B981)
+        : (percentage >= 60
+            ? const Color(0xFFF59E0B)
+            : const Color(0xFFEF4444));
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E1628),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
       child: Column(
@@ -372,7 +559,9 @@ class _DayAttendanceBreakdownSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -387,40 +576,40 @@ class _DayAttendanceBreakdownSheet extends StatelessWidget {
                   children: [
                     Text(
                       formattedDate,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      summary.totalClasses > 0
-                          ? '${summary.presentClasses} attended of ${summary.totalClasses} classes'
+                      totalClasses > 0
+                          ? '$presentClasses attended of $totalClasses classes'
                           : 'No recorded attendance for this day',
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: subtextColor,
                         fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (summary.totalClasses > 0)
+              if (totalClasses > 0)
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: summary.statusColor.withValues(alpha: 0.15),
+                    color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: summary.statusColor.withValues(alpha: 0.4),
+                      color: statusColor.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Text(
-                    '$percentage%',
+                    '${percentage.toInt()}%',
                     style: TextStyle(
-                      color: summary.statusColor,
+                      color: statusColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -429,10 +618,13 @@ class _DayAttendanceBreakdownSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          const Divider(color: Colors.white10, height: 1),
+          Divider(
+            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+            height: 1,
+          ),
           const SizedBox(height: 16),
 
-          if (summary.records.isEmpty)
+          if (liveRecords.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
@@ -441,40 +633,55 @@ class _DayAttendanceBreakdownSheet extends StatelessWidget {
                     Icon(
                       Icons.event_busy_rounded,
                       size: 40,
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: mutedTextColor,
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'No classes logged on this day',
-                      style: TextStyle(color: Colors.white54, fontSize: 13),
+                      style: TextStyle(color: subtextColor, fontSize: 13),
                     ),
                   ],
                 ),
               ),
             )
           else
-            ...summary.records.map((r) {
+            ...liveRecords.map((r) {
               final isPresent = r.status.toLowerCase() == 'present';
               final isAbsent = r.status.toLowerCase() == 'absent';
-              final statusColor = isPresent
+              final itemColor = isPresent
                   ? const Color(0xFF10B981)
                   : (isAbsent
                       ? const Color(0xFFEF4444)
                       : const Color(0xFF8151EB));
+
+              final subject = allSubjects
+                  .cast<Subject?>()
+                  .firstWhere((s) => s?.id == r.subjectId, orElse: () => null);
+              final subjectName = subject?.name ?? r.subjectId.toUpperCase();
+
+              final markedTimestamp =
+                  r.updatedAt > 0 ? r.updatedAt : r.createdAt;
+              final markedTime = markedTimestamp > 0
+                  ? DateTime.fromMillisecondsSinceEpoch(markedTimestamp)
+                  : r.date;
+              final timeFormatted =
+                  DateFormat('hh:mm a').format(markedTime);
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: GlassContainer(
                   borderRadius: 14,
                   padding: const EdgeInsets.all(14),
-                  borderColor: Colors.white.withValues(alpha: 0.08),
+                  borderColor: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.08),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: statusColor.withValues(alpha: 0.15),
+                          color: itemColor.withValues(alpha: 0.15),
                         ),
                         child: Icon(
                           isPresent
@@ -482,7 +689,7 @@ class _DayAttendanceBreakdownSheet extends StatelessWidget {
                               : (isAbsent
                                   ? Icons.close_rounded
                                   : Icons.event_available_rounded),
-                          color: statusColor,
+                          color: itemColor,
                           size: 16,
                         ),
                       ),
@@ -492,21 +699,36 @@ class _DayAttendanceBreakdownSheet extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              r.subjectId.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              subjectName,
+                              style: TextStyle(
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13.5,
                               ),
                             ),
-                            if (r.periodNumber != null)
-                              Text(
-                                'Slot / Period ${r.periodNumber}',
-                                style: const TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 11,
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Text(
+                                  timeFormatted,
+                                  style: TextStyle(
+                                    color: context.accentColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
+                                if (r.periodNumber != null) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '• Period ${r.periodNumber}',
+                                    style: TextStyle(
+                                      color: mutedTextColor,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -514,15 +736,37 @@ class _DayAttendanceBreakdownSheet extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.12),
+                          color: itemColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           r.status.toUpperCase(),
                           style: TextStyle(
-                            color: statusColor,
+                            color: itemColor,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Tooltip(
+                        message: 'Delete attendance',
+                        child: InkWell(
+                          onTap: () => _confirmDeleteDayRecord(
+                            context,
+                            ref,
+                            r,
+                            subjectName,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6.0),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              color: const Color(0xFFEF4444)
+                                  .withValues(alpha: 0.75),
+                              size: 19,
+                            ),
                           ),
                         ),
                       ),

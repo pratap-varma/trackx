@@ -44,7 +44,7 @@ class _FutureSemesterPlannerScreenState
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+          backgroundColor: context.cardColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: ctx.subtleBorderColor),
@@ -126,7 +126,7 @@ class _FutureSemesterPlannerScreenState
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+          backgroundColor: context.cardColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: ctx.subtleBorderColor),
@@ -379,9 +379,9 @@ class _FutureSemesterPlannerScreenState
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.add_circle,
-                          color: AppTheme.accentPurple,
+                          color: context.accentColor,
                           size: 36,
                         ),
                         onPressed: _showAddSubjectDialog,

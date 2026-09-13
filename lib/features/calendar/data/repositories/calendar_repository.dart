@@ -434,6 +434,78 @@ class CalendarRepository extends StateNotifier<List<CalendarEvent>> {
     state = List<CalendarEvent>.from(state);
   }
 
+  /// Add a named custom holiday
+  Future<void> addCustomHoliday({
+    required DateTime date,
+    required String title,
+    String description = '',
+  }) async {
+    final k = _dateKey(date);
+    _customHolidays.add(k);
+    _ignoredHolidays.remove(k);
+
+    final event = CalendarEvent(
+      id: 'custom_hol_${DateTime.now().millisecondsSinceEpoch}_$k',
+      calendarId: 'custom_college_holidays',
+      calendarName: 'College Holidays',
+      title: title,
+      description: description,
+      startDateTime: DateTime(date.year, date.month, date.day),
+      endDateTime: DateTime(date.year, date.month, date.day, 23, 59, 59),
+      isAllDay: true,
+      eventType: 'holiday',
+    );
+
+    final filtered = state.where((e) => !(e.occursOn(date) && e.title.toLowerCase() == title.toLowerCase())).toList();
+    state = [...filtered, event];
+    await _save();
+  }
+
+  /// Batch add multiple custom holidays (e.g. parsed from college calendar notice)
+  Future<int> batchAddCustomHolidays(List<Map<String, dynamic>> holidayItems) async {
+    int addedCount = 0;
+    final List<CalendarEvent> newEvents = [];
+
+    for (final item in holidayItems) {
+      final dateRaw = item['date'];
+      final title = item['title']?.toString() ?? 'College Holiday';
+      final desc = item['description']?.toString() ?? '';
+
+      DateTime? date;
+      if (dateRaw is DateTime) {
+        date = dateRaw;
+      } else if (dateRaw is String) {
+        date = DateTime.tryParse(dateRaw);
+      }
+
+      if (date != null) {
+        final k = _dateKey(date);
+        _customHolidays.add(k);
+        _ignoredHolidays.remove(k);
+
+        final event = CalendarEvent(
+          id: 'custom_hol_${DateTime.now().millisecondsSinceEpoch}_${addedCount}_$k',
+          calendarId: 'custom_college_holidays',
+          calendarName: 'College Holidays',
+          title: title,
+          description: desc,
+          startDateTime: DateTime(date.year, date.month, date.day),
+          endDateTime: DateTime(date.year, date.month, date.day, 23, 59, 59),
+          isAllDay: true,
+          eventType: 'holiday',
+        );
+        newEvents.add(event);
+        addedCount++;
+      }
+    }
+
+    if (newEvents.isNotEmpty) {
+      state = [...state, ...newEvents];
+      await _save();
+    }
+    return addedCount;
+  }
+
   /// Direct state updates for testing
   void setEvents(List<CalendarEvent> events) {
     state = events;

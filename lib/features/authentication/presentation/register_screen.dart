@@ -5,6 +5,7 @@ import 'package:trackx/features/authentication/data/auth_repository.dart';
 import 'package:trackx/features/authentication/domain/auth_state.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -61,6 +62,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     final authState = ref.watch(authRepositoryProvider);
     final isLoading = authState.status == AuthStatus.loading;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     return AppBackground(
       child: Scaffold(
@@ -69,7 +73,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            icon: Icon(Icons.arrow_back_ios_new, color: textColor),
             onPressed: () => context.pop(),
           ),
         ),
@@ -109,10 +113,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Create Account',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.8,
@@ -122,7 +126,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Text(
                     'Join TrackX and take control of your academics',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: subtextColor,
                       fontSize: 13,
                     ),
                     textAlign: TextAlign.center,
@@ -154,7 +158,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: Colors.white38,
+                        color: mutedTextColor,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -238,7 +242,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Text(
                         'Already have an account? ',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
+                          color: subtextColor,
                           fontSize: 13,
                         ),
                       ),
@@ -247,7 +251,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         child: const Text(
                           'Sign In',
                           style: TextStyle(
-                            color: Color(0xFFC0C1FF),
+                            color: Color(0xFF5B5FEF),
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),

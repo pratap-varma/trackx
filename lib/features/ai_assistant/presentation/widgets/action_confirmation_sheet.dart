@@ -377,7 +377,7 @@ class _ActionConfirmationSheetState
                               );
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentPurple,
+                        backgroundColor: context.accentColor,
                       ),
                       child: const Text('Confirm', style: TextStyle(color: Colors.white)),
                     ),

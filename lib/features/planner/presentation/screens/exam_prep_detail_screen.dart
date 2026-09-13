@@ -6,6 +6,7 @@ import 'package:trackx/features/subjects/data/subject_repository.dart';
 import 'package:trackx/features/subjects/domain/subject_model.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class ExamPrepDetailScreen extends ConsumerStatefulWidget {
   const ExamPrepDetailScreen({super.key});
@@ -31,8 +32,8 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
     _testsController.text = exam.practiceTestCount.toString();
     String currentConf = exam.confidence;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
 
     showDialog(
       context: context,
@@ -146,9 +147,9 @@ class _ExamPrepDetailScreenState extends ConsumerState<ExamPrepDetailScreen> {
     final exams = ref.watch(examsProvider);
     final subjects = ref.watch(subjectRepositoryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white70 : const Color(0xFF475569);
-    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     return AppBackground(
       child: Scaffold(

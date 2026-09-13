@@ -3,23 +3,118 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:http/http.dart' as http;
+import 'package:trackx/core/config/ai_config.dart';
 import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/timetable_import/domain/models/timetable_import_models.dart';
 
 class OcrService {
+  /// Call Groq Vision API (primary - fast, free, works on college WiFi)
+  /// Uses llama-4-scout or llama-3.2-vision models
+  Future<String> callGroqVision({
+    required String groqApiKey,
+    required String prompt,
+    required Uint8List imageBytes,
+    String mimeType = 'image/jpeg',
+    String? modelOverride,
+  }) async {
+    final base64Image = base64Encode(imageBytes);
+    final dataUrl = 'data:$mimeType;base64,$base64Image';
+
+    final groqModels = [
+      if (modelOverride != null) modelOverride,
+      'llama-3.2-11b-vision',
+      'llama-3.2-90b-vision',
+    ];
+
+    String? lastError;
+    for (final model in groqModels) {
+      try {
+        final uri = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
+        final body = jsonEncode({
+          'model': model,
+          'messages': [
+            {
+              'role': 'user',
+              'content': [
+                {
+                  'type': 'image_url',
+                  'image_url': {'url': dataUrl},
+                },
+                {
+                  'type': 'text',
+                  'text': prompt,
+                },
+              ],
+            },
+          ],
+          'max_tokens': 4096,
+          'temperature': 0.1,
+        });
+
+        final res = await http.post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $groqApiKey',
+          },
+          body: body,
+        ).timeout(const Duration(seconds: 15));
+
+        if (res.statusCode == 200) {
+          final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+          final choices = decoded['choices'] as List?;
+          if (choices != null && choices.isNotEmpty) {
+            final message = choices[0]['message'] as Map<String, dynamic>?;
+            final text = message?['content'] as String?;
+            if (text != null && text.trim().isNotEmpty) {
+              return text.trim();
+            }
+          }
+        } else if (res.statusCode == 429) {
+          throw Exception("quota_limit_429");
+        } else {
+          try {
+            final err = jsonDecode(res.body);
+            final errMsg = err['error']?['message']?.toString() ?? '';
+            if (errMsg.toLowerCase().contains('quota') || errMsg.toLowerCase().contains('rate limit')) {
+              throw Exception("quota_limit_429");
+            }
+            lastError = errMsg.isNotEmpty ? errMsg : 'HTTP ${res.statusCode}';
+          } catch (e) {
+            if (e.toString().contains('quota_limit_429')) rethrow;
+            lastError = 'HTTP ${res.statusCode}: ${res.body}';
+          }
+        }
+      } catch (e) {
+        if (e.toString().contains('quota_limit_429')) rethrow;
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('429') || errStr.contains('quota') || errStr.contains('rate limit')) {
+          throw Exception("quota_limit_429");
+        }
+        lastError = e.toString();
+      }
+    }
+    throw Exception('Groq API failed: $lastError');
+  }
+
   /// Helper to call Gemini Vision with automatic model fallback & direct REST fallback
+
   Future<String> _callGeminiVision({
     required String apiKey,
     required String prompt,
     required Uint8List imageBytes,
+    String? modelOverride,
   }) async {
+    // Models to try in order - all are real, GA Gemini vision-capable models
     final candidateModels = [
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-latest',
+      if (modelOverride != null) modelOverride,
+      AiConfig.geminiModel,
+      'gemini-3.6-flash',
       'gemini-2.0-flash',
-      'gemini-2.5-flash',
+      'gemini-1.5-flash',
       'gemini-1.5-pro',
-    ];
+      'gemini-1.5-flash-latest',
+    ].where((m) => !m.contains('2.5')).toSet().toList();
 
     String mimeType = 'image/jpeg';
     if (imageBytes.length >= 8 &&
@@ -51,12 +146,16 @@ class OcrService {
             TextPart(prompt),
             DataPart(mimeType, imageBytes),
           ]),
-        ]);
+        ]).timeout(const Duration(seconds: 15));
 
         if (response.text != null && response.text!.trim().isNotEmpty) {
           return response.text!.trim();
         }
       } catch (e) {
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('429') || errStr.contains('quota') || errStr.contains('rate limit') || errStr.contains('overloaded') || errStr.contains('limit exceeded')) {
+          throw Exception("quota_limit_429");
+        }
         lastErrorMessage = e.toString();
       }
     }
@@ -79,45 +178,59 @@ class OcrService {
       ]
     });
 
+    // Try both v1 and v1beta endpoints for each model
+    final restEndpoints = [
+      'https://generativelanguage.googleapis.com/v1/models',
+      'https://generativelanguage.googleapis.com/v1beta/models',
+    ];
+
     for (final modelName in candidateModels) {
-      try {
-        final uri = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey',
-        );
+      for (final baseUrl in restEndpoints) {
+        try {
+          final uri = Uri.parse('$baseUrl/$modelName:generateContent?key=$apiKey');
 
-        final res = await http.post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: requestBody,
-        );
+          final res = await http.post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          ).timeout(const Duration(seconds: 15));
 
-        if (res.statusCode == 200) {
-          final decoded = jsonDecode(res.body) as Map<String, dynamic>;
-          final candidates = decoded['candidates'] as List?;
-          if (candidates != null && candidates.isNotEmpty) {
-            final content = candidates[0]['content'] as Map<String, dynamic>?;
-            final parts = content?['parts'] as List?;
-            if (parts != null && parts.isNotEmpty) {
-              final text = parts[0]['text'] as String?;
-              if (text != null && text.trim().isNotEmpty) {
-                return text.trim();
+          if (res.statusCode == 200) {
+            final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+            final candidates = decoded['candidates'] as List?;
+            if (candidates != null && candidates.isNotEmpty) {
+              final content = candidates[0]['content'] as Map<String, dynamic>?;
+              final parts = content?['parts'] as List?;
+              if (parts != null && parts.isNotEmpty) {
+                final text = parts[0]['text'] as String?;
+                if (text != null && text.trim().isNotEmpty) {
+                  return text.trim();
+                }
               }
             }
-          }
-        } else {
-          try {
-            final errObj = jsonDecode(res.body);
-            if (errObj is Map && errObj['error'] != null) {
-              lastErrorMessage = errObj['error']['message']?.toString() ?? res.body;
-            } else {
+          } else if (res.statusCode == 429) {
+            throw Exception("quota_limit_429");
+          } else {
+            try {
+              final errObj = jsonDecode(res.body);
+              final errMsg = errObj['error']?['message']?.toString() ?? '';
+              if (errMsg.toLowerCase().contains('quota') || errMsg.toLowerCase().contains('rate limit') || errMsg.toLowerCase().contains('overloaded') || errMsg.toLowerCase().contains('limit exceeded')) {
+                throw Exception("quota_limit_429");
+              }
+              lastErrorMessage = errMsg.isNotEmpty ? errMsg : res.body;
+            } catch (e) {
+              if (e.toString().contains('quota_limit_429')) rethrow;
               lastErrorMessage = 'HTTP ${res.statusCode}: ${res.body}';
             }
-          } catch (_) {
-            lastErrorMessage = 'HTTP ${res.statusCode}: ${res.body}';
           }
+        } catch (e) {
+          if (e.toString().contains('quota_limit_429')) rethrow;
+          final errStr = e.toString().toLowerCase();
+          if (errStr.contains('429') || errStr.contains('quota') || errStr.contains('rate limit') || errStr.contains('overloaded') || errStr.contains('limit exceeded')) {
+            throw Exception("quota_limit_429");
+          }
+          lastErrorMessage = e.toString();
         }
-      } catch (e) {
-        lastErrorMessage = e.toString();
       }
     }
 
@@ -391,16 +504,21 @@ Return ONLY raw JSON array.
     return _generateMockExamFallback();
   }
 
-  /// Scan an attendance screenshot/photo using Gemini Vision
+  /// Scan an attendance screenshot/photo using Groq Vision (primary) or Gemini (fallback)
   Future<List<DetectedAttendanceEntry>> scanAttendanceScreenshot({
     required Uint8List imageBytes,
     String? apiKey,
+    String? groqApiKey,
   }) async {
     ActivityLogger().logEvent('ai_attendance_ocr_used', parameters: {'feature': 'attendance_screenshot_ocr'});
-    final effectiveKey = _resolveApiKey(apiKey);
-    if (effectiveKey.isEmpty) {
+
+    // If no keys at all, throw early
+    final effectiveGeminiKey = _resolveApiKey(apiKey);
+    final effectiveGroqKey = groqApiKey?.trim() ?? '';
+
+    if (effectiveGeminiKey.isEmpty && effectiveGroqKey.isEmpty) {
       throw Exception(
-        'Gemini API Key is missing. Please configure your Gemini API Key in Profile -> AI Assistant & Gemini Key to scan attendance screenshots.',
+        'No AI API Key configured. Please add a Groq API Key (recommended) or Gemini API Key in Profile → AI Settings.',
       );
     }
 
@@ -442,11 +560,69 @@ Rules:
 - Return ONLY the raw JSON. Do not write introductory or concluding text.
 ''';
 
-      final rawText = await _callGeminiVision(
-        apiKey: effectiveKey,
-        prompt: prompt,
-        imageBytes: imageBytes,
-      );
+      // Determine mime type (needed if we fall back to Groq)
+      String mimeType = 'image/jpeg';
+      if (imageBytes.length >= 8 &&
+          imageBytes[0] == 0x89 &&
+          imageBytes[1] == 0x50 &&
+          imageBytes[2] == 0x4E &&
+          imageBytes[3] == 0x47) {
+        mimeType = 'image/png';
+      }
+
+      final stopwatch = Stopwatch()..start();
+      print('[DEBUG LOG] AI Analysis starting...');
+      String rawText = '';
+      bool success = false;
+
+      // 1. Try Gemini first (primary provider)
+      if (effectiveGeminiKey.isNotEmpty) {
+        try {
+          final verifiedGeminiModel = await AiModelManager.getActiveGeminiModel(effectiveGeminiKey);
+          print('[DEBUG LOG] Using verified Gemini model: $verifiedGeminiModel');
+          rawText = await _callGeminiVision(
+            apiKey: effectiveGeminiKey,
+            prompt: prompt,
+            imageBytes: imageBytes,
+            modelOverride: verifiedGeminiModel,
+          );
+          print('[DEBUG LOG] AI Analysis took (Gemini): ${stopwatch.elapsedMilliseconds}ms');
+          success = true;
+        } catch (e) {
+          print('[DEBUG LOG] Gemini vision call failed in: ${stopwatch.elapsedMilliseconds}ms. Error: $e');
+          if (e.toString().contains('quota_limit_429') && effectiveGroqKey.isEmpty) {
+            rethrow;
+          }
+        }
+      }
+
+      // 2. Try Groq fallback if Gemini failed/unconfigured, and we have a verified Groq vision model
+      if (!success && effectiveGroqKey.isNotEmpty) {
+        final verifiedGroqModel = await AiModelManager.getActiveGroqModel(effectiveGroqKey);
+        if (verifiedGroqModel != null) {
+          print('[DEBUG LOG] Using verified Groq model fallback: $verifiedGroqModel');
+          try {
+            rawText = await callGroqVision(
+              groqApiKey: effectiveGroqKey,
+              prompt: prompt,
+              imageBytes: imageBytes,
+              mimeType: mimeType,
+              modelOverride: verifiedGroqModel,
+            );
+            print('[DEBUG LOG] AI Analysis took (Groq Fallback): ${stopwatch.elapsedMilliseconds}ms');
+            success = true;
+          } catch (e) {
+            print('[DEBUG LOG] Groq vision fallback failed in: ${stopwatch.elapsedMilliseconds}ms. Error: $e');
+            rethrow;
+          }
+        } else {
+          print('[DEBUG LOG] Groq fallback skipped: No supported vision model found in account.');
+        }
+      }
+
+      if (!success) {
+        throw Exception('All configured vision models failed or returned quota limit.');
+      }
 
       String cleaned = rawText.trim();
       if (cleaned.startsWith('```json')) {

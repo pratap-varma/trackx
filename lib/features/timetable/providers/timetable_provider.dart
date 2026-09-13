@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:trackx/features/calendar/providers/calendar_provider.dart';
 import 'package:trackx/features/semesters/data/semester_repository.dart';
+import 'package:trackx/features/timetable/data/repositories/class_substitute_repository.dart';
 import 'package:trackx/features/timetable/data/repositories/timetable_repository.dart';
 import 'package:trackx/features/timetable/domain/models/timetable_entry_model.dart';
 import 'package:trackx/features/attendance/data/attendance_repository.dart';
@@ -24,7 +26,7 @@ final activeSemesterTimetableProvider = Provider<List<TimetableEntry>>((ref) {
   return entries.where((e) => e.semesterId == activeSem.id).toList();
 });
 
-// Returns today's active timetable entries, sorted by startTime
+// Returns today's active timetable entries, sorted by startTime (reflecting any daily swaps/proxy substitutions)
 final todayTimetableProvider = Provider<List<TimetableEntry>>((ref) {
   final entries = ref.watch(activeSemesterTimetableProvider);
   final now = ref.watch(currentTimeProvider);
@@ -36,8 +38,22 @@ final todayTimetableProvider = Provider<List<TimetableEntry>>((ref) {
   final overrideDay = ref.watch(dayOfWeekOverrideProvider(now));
   final effectiveDayOfWeek = overrideDay ?? now.weekday;
 
+  final substitutes = ref.watch(classSubstituteRepositoryProvider);
+  final dateKey = DateFormat('yyyyMMdd').format(now);
+
   final today = entries
       .where((e) => e.dayOfWeek == effectiveDayOfWeek && e.isEnabled)
+      .map((e) {
+        final swapKey = '${dateKey}_${e.id}';
+        final subId = substitutes[swapKey];
+        if (subId != null && subId.isNotEmpty) {
+          return e.copyWith(
+            subjectId: subId,
+            originalSubjectId: e.subjectId,
+          );
+        }
+        return e;
+      })
       .toList();
   today.sort((a, b) => a.startTime.compareTo(b.startTime));
   return today;

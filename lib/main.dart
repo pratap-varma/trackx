@@ -16,6 +16,8 @@ import 'package:trackx/core/services/db_migration_service.dart';
 import 'package:trackx/core/services/hive_db_service.dart';
 import 'package:trackx/core/services/sync_service.dart';
 import 'package:trackx/core/services/widget_data_service.dart';
+import 'package:trackx/features/attendance/providers/stats_provider.dart';
+import 'package:trackx/features/timetable/providers/timetable_provider.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -68,6 +70,7 @@ class _TrackXAppState extends ConsumerState<TrackXApp>
       ref.read(examsProvider);
       try {
         await ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+        ref.read(widgetDataServiceProvider).startPeriodicSync(ref);
       } catch (_) {}
     });
   }
@@ -75,6 +78,9 @@ class _TrackXAppState extends ConsumerState<TrackXApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    try {
+      ref.read(widgetDataServiceProvider).stopPeriodicSync();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -94,6 +100,20 @@ class _TrackXAppState extends ConsumerState<TrackXApp>
 
   @override
   Widget build(BuildContext context) {
+    // Automatically keep home screen widgets in sync whenever any relevant data changes
+    ref.listen(statsProvider, (prev, next) {
+      ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+    });
+    ref.listen(todayTimetableProvider, (prev, next) {
+      ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+    });
+    ref.listen(examsProvider, (prev, next) {
+      ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+    });
+    ref.listen(tasksProvider, (prev, next) {
+      ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+    });
+
     final router = ref.watch(appRouterProvider);
     final accentColor = ref.watch(accentColorProvider);
     final themeMode = ref.watch(themeModeProvider);

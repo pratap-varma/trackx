@@ -236,6 +236,11 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final searchResults = _performSearch();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+
     final categories = [
       'All',
       'Semester',
@@ -253,9 +258,17 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
-          title: const Text(
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: textColor,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
             'Global search',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: textColor, fontSize: 18),
           ),
         ),
         body: Column(
@@ -273,13 +286,13 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: textColor),
                   autofocus: true,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Search semesters, subjects, exams, tasks...',
-                    hintStyle: TextStyle(color: Colors.white38),
+                    hintStyle: TextStyle(color: mutedTextColor),
                     border: InputBorder.none,
-                    icon: Icon(Icons.search, color: Colors.white38),
+                    icon: Icon(Icons.search, color: mutedTextColor),
                   ),
                   onChanged: (val) {
                     setState(() {
@@ -307,13 +320,23 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                       label: Text(
                         cat,
                         style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white70,
+                          color: isSelected ? Colors.white : subtextColor,
                           fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
-                      backgroundColor: Colors.white.withValues(alpha: 0.05),
-                      selectedColor: Colors.tealAccent,
-                      checkmarkColor: Colors.black,
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.black.withValues(alpha: 0.05),
+                      selectedColor: context.accentColor,
+                      checkmarkColor: Colors.white,
+                      side: BorderSide(
+                        color: isSelected
+                            ? context.accentColor
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.black.withValues(alpha: 0.06)),
+                      ),
                       onSelected: (selected) {
                         setState(() {
                           _selectedFilter = cat;
@@ -332,17 +355,17 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                   ? Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Icon(
                             Icons.search_rounded,
-                            color: Colors.white38,
+                            color: mutedTextColor,
                             size: 48,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
                             'Type to search across TrackX data offline',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: mutedTextColor,
                               fontSize: 12,
                             ),
                           ),
@@ -350,10 +373,10 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                       ),
                     )
                   : searchResults.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'No matching records found.',
-                        style: TextStyle(color: Colors.white38),
+                        style: TextStyle(color: subtextColor),
                       ),
                     )
                   : ListView.builder(
@@ -377,14 +400,14 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.08,
-                                      ),
+                                      color: isDark
+                                          ? const Color(0xFF1B243B)
+                                          : const Color(0xFFF1F5F9),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       _getIconForCategory(res.category),
-                                      color: AppTheme.accentPurple,
+                                      color: context.accentColor,
                                       size: 18,
                                     ),
                                   ),
@@ -396,17 +419,17 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                                       children: [
                                         Text(
                                           res.title,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                            color: textColor,
                                             fontSize: 13,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           res.matchedIn,
-                                          style: const TextStyle(
-                                            color: Colors.white60,
+                                          style: TextStyle(
+                                            color: subtextColor,
                                             fontSize: 11,
                                           ),
                                         ),
@@ -414,9 +437,9 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
                                     ),
                                   ),
                                   if (res.route != null)
-                                    const Icon(
+                                    Icon(
                                       Icons.arrow_forward_ios,
-                                      color: Colors.white38,
+                                      color: mutedTextColor,
                                       size: 12,
                                     ),
                                 ],

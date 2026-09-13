@@ -52,14 +52,59 @@
             </intent-filter>
         </receiver>
 
-        <!-- Home Screen App Widget -->
+        <!-- 1. TrackX Attendance Widget -->
+        <receiver android:name=".AttendanceWidgetProvider"
+            android:label="@string/widget_attendance_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_attendance_info" />
+        </receiver>
+
+        <!-- 2. TrackX Daily Schedule Widget -->
+        <receiver android:name=".ScheduleWidgetProvider"
+            android:label="@string/widget_schedule_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_schedule_info" />
+        </receiver>
+
+        <!-- 3. TrackX Exams & Events Widget -->
+        <receiver android:name=".ExamsWidgetProvider"
+            android:label="@string/widget_exams_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget_exams_info" />
+        </receiver>
+
+        <!-- 4. TrackX Overview Combined Widget -->
         <receiver android:name=".TrackXWidgetProvider"
+            android:label="TrackX Overview"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/trackx_widget_info" />
+        </receiver>
+
+        <!-- 5. Background Periodic Widget Refresh Alarm Receiver -->
+        <receiver android:name=".WidgetRefreshReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.trackx.ACTION_REFRESH_WIDGETS" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
         </receiver>
 
         <!-- Don't delete the meta-data below.

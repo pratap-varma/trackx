@@ -15,6 +15,7 @@ import 'package:trackx/features/timetable/providers/timetable_provider.dart';
 import 'package:trackx/features/notes/providers/flashcard_provider.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/sync_status_badge.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -27,16 +28,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
-  void _showBunkCalculatorSheet(
-    int safeBunks,
-    String subjectName,
-    double target,
-  ) {
+  void _showBunkCalculatorSheet(SemesterStats stats) {
     HapticFeedback.lightImpact();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final sheetBg = context.cardColor;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final target = stats.globalTarget;
+    final safeBunks = stats.overallSafeBunks;
+    final recovery = stats.overallRequiredRecovery;
+    final isDeficit = recovery > 0;
 
     showModalBottomSheet(
       context: context,
@@ -53,14 +53,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.verified_user_outlined,
-                  color: Color(0xFF7BD0FF),
+                  color: isDeficit ? const Color(0xFFFF8B94) : const Color(0xFF7BD0FF),
                   size: 22,
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Bunk Risk Calculator',
+                  'Overall Attendance Margin',
                   style: TextStyle(
                     color: textColor,
                     fontWeight: FontWeight.bold,
@@ -70,10 +70,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ],
             ),
             const SizedBox(height: 16),
-            Text(
-              'You can safely skip $safeBunks more classes in $subjectName while remaining above your target threshold of ${target.toInt()}%.',
-              style: TextStyle(color: subtextColor, fontSize: 13),
-            ),
+            if (stats.totalRecorded == 0)
+              Text(
+                'No attendance records found yet. Start logging your classes to calculate your overall safe-to-miss margin.',
+                style: TextStyle(color: subtextColor, fontSize: 13, height: 1.4),
+              )
+            else if (isDeficit)
+              Text(
+                'Your overall attendance is ${stats.overallPercentage.toStringAsFixed(1)}% (below your ${target.toInt()}% target). You must attend $recovery consecutive classes across all subjects to recover to your target threshold.',
+                style: TextStyle(color: subtextColor, fontSize: 13, height: 1.4),
+              )
+            else
+              Text(
+                'Your overall attendance is ${stats.overallPercentage.toStringAsFixed(1)}%. You can safely miss $safeBunks classes across all subjects while remaining at or above your ${target.toInt()}% target threshold.',
+                style: TextStyle(color: subtextColor, fontSize: 13, height: 1.4),
+              ),
+            if (stats.subjectsBelowTarget.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF8B94).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFF8B94).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFFF8B94),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Attention needed in: ${stats.subjectsBelowTarget.map((s) => '${s.subject.name} (${s.percentage.toInt()}%)').join(', ')}',
+                        style: const TextStyle(
+                          color: Color(0xFFFF8B94),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -84,7 +128,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       1; // Jump to Attendance
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B5FEF),
+                  backgroundColor: context.accentColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -105,10 +149,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
   void _showSubjectsAttendanceSheet(SemesterStats stats) {
     HapticFeedback.lightImpact();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white70 : const Color(0xFF475569);
+    final sheetBg = context.cardColor;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
 
     showModalBottomSheet(
       context: context,
@@ -255,13 +298,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     final pct = stats.overallPercentage;
     final target = stats.globalTarget;
-    final activeClass = currentClass ?? nextClass;
-    final activeSubject = activeClass != null
-        ? subjects.cast<Subject?>().firstWhere(
-            (s) => s?.id == activeClass.subjectId,
-            orElse: () => null,
-          )
-        : null;
 
     final currentSubject = currentClass != null
         ? subjects.cast<Subject?>().firstWhere(
@@ -277,34 +313,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           )
         : null;
 
-    SubjectStats? focusSubjectStats;
-    if (activeSubject != null) {
-      focusSubjectStats = stats.allSubjectStats.cast<SubjectStats?>().firstWhere(
-            (s) => s?.subject.id == activeSubject.id,
-            orElse: () => null,
-          );
-    }
-    if (focusSubjectStats == null && stats.highestRiskSubjectName != null) {
-      focusSubjectStats = stats.allSubjectStats.cast<SubjectStats?>().firstWhere(
-            (s) => s?.subject.name == stats.highestRiskSubjectName,
-            orElse: () => null,
-          );
-    }
-    if (focusSubjectStats == null && stats.allSubjectStats.isNotEmpty) {
-      focusSubjectStats = stats.allSubjectStats.first;
-    }
-
-    final safeBunks = focusSubjectStats?.safeBunks ?? 0;
-    final requiredRecovery = focusSubjectStats?.requiredRecovery ?? 0;
+    final safeBunks = stats.overallSafeBunks;
+    final requiredRecovery = stats.overallRequiredRecovery;
     final isDeficit = requiredRecovery > 0;
-    final bunkFocusName = focusSubjectStats?.subject.name ?? 'your classes';
-    final bunkTarget = focusSubjectStats?.target ?? target;
 
     super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -373,7 +390,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 18, vertical: 14),
                     borderColor: dueCount > 0
-                        ? const Color(0xFF5B5FEF).withValues(alpha: 0.5)
+                        ? context.accentColor.withValues(alpha: 0.5)
                         : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
                     child: Row(
                       children: [
@@ -381,7 +398,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: (dueCount > 0
-                                    ? const Color(0xFF5B5FEF)
+                                    ? context.accentColor
                                     : const Color(0xFF10B981))
                                 .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
@@ -391,7 +408,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                 ? Icons.alarm_rounded
                                 : Icons.check_circle_outline_rounded,
                             color: dueCount > 0
-                                ? const Color(0xFFC0C1FF)
+                                ? context.accentColor
                                 : const Color(0xFF10B981),
                             size: 18,
                           ),
@@ -489,6 +506,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      if (currentClass.isSubstituted) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.swap_horiz_rounded,
+                                color: Color(0xFFF59E0B),
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Builder(
+                                builder: (context) {
+                                  final orig = subjects
+                                      .cast<Subject?>()
+                                      .firstWhere(
+                                        (s) => s?.id == currentClass.originalSubjectId,
+                                        orElse: () => null,
+                                      );
+                                  return Text(
+                                    'Proxy / Swapped ${orig != null ? "for ${orig.name}" : ""}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFF59E0B),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       Row(
                         children: [
@@ -623,7 +685,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                                     ? (isPresent
                                         ? const Color(0xFF10B981)
                                         : const Color(0xFFEF4444))
-                                    : const Color(0xFF5B5FEF),
+                                    : context.accentColor,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
@@ -687,6 +749,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      if (nextClass.isSubstituted) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.swap_horiz_rounded,
+                                color: Color(0xFFF59E0B),
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Builder(
+                                builder: (context) {
+                                  final orig = subjects
+                                      .cast<Subject?>()
+                                      .firstWhere(
+                                        (s) => s?.id == nextClass.originalSubjectId,
+                                        orElse: () => null,
+                                      );
+                                  return Text(
+                                    'Proxy / Swapped ${orig != null ? "for ${orig.name}" : ""}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFF59E0B),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       Row(
                         children: [
@@ -909,8 +1016,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFC0C1FF),
-                            side: const BorderSide(color: Color(0xFF5B5FEF)),
+                            foregroundColor: context.accentColor,
+                            side: BorderSide(color: context.accentColor),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -965,7 +1072,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       width: 140,
                       height: 140,
                       child: CustomPaint(
-                        painter: _AttendanceGaugePainter(percentage: pct / 100, isDark: isDark),
+                        painter: _AttendanceGaugePainter(
+                          percentage: pct / 100,
+                          isDark: isDark,
+                          primaryColor: context.accentColor,
+                          secondaryColor: context.secondaryColor,
+                        ),
                         child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -999,10 +1111,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
           const SizedBox(height: 14),
 
-          // 4. SAFE-TO-BUNK STATUS CARD (Interactive)
+          // 4. SAFE-TO-MISS STATUS CARD (Interactive)
           GestureDetector(
-            onTap: () =>
-                _showBunkCalculatorSheet(safeBunks, bunkFocusName, target),
+            onTap: () => _showBunkCalculatorSheet(stats),
             child: GlassContainer(
               borderRadius: 20,
               padding: const EdgeInsets.all(20),
@@ -1021,7 +1132,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'SAFE-TO-BUNK STATUS',
+                            'SAFE-TO-MISS STATUS',
                             style: TextStyle(
                               color: Color(0xFF7BD0FF),
                               fontSize: 11,
@@ -1046,34 +1157,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
                       ),
-                      children: isDeficit 
-                        ? [
-                            const TextSpan(text: 'You need to attend '),
-                            TextSpan(
-                              text: '$requiredRecovery more',
-                              style: const TextStyle(
-                                color: Color(0xFFFF8B94),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const TextSpan(text: ' classes'),
-                          ]
-                        : [
-                            const TextSpan(text: 'You can skip '),
-                            TextSpan(
-                              text: '$safeBunks more',
-                              style: const TextStyle(
-                                color: Color(0xFF7BD0FF),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const TextSpan(text: ' classes'),
-                          ],
+                      children: stats.totalRecorded == 0
+                          ? const [
+                              TextSpan(text: 'No attendance recorded yet'),
+                            ]
+                          : isDeficit
+                              ? [
+                                  const TextSpan(text: 'You need to attend '),
+                                  TextSpan(
+                                    text: '$requiredRecovery more',
+                                    style: const TextStyle(
+                                      color: Color(0xFFFF8B94),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' classes'),
+                                ]
+                              : [
+                                  const TextSpan(text: 'You can skip '),
+                                  TextSpan(
+                                    text: '$safeBunks more',
+                                    style: const TextStyle(
+                                      color: Color(0xFF7BD0FF),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' classes'),
+                                ],
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'in $bunkFocusName to stay above the ${bunkTarget.toInt()}% threshold.',
+                    stats.totalRecorded == 0
+                        ? 'Log your classes to track your overall safe-to-miss margin.'
+                        : isDeficit
+                            ? 'overall to reach your ${target.toInt()}% threshold.'
+                            : 'overall to stay above your ${target.toInt()}% threshold.',
                     style: TextStyle(
                       color: subtextColor,
                       fontSize: 13,
@@ -1086,7 +1205,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(6),
                           child: LinearProgressIndicator(
-                            value: isDeficit ? (requiredRecovery / 10.0).clamp(0.0, 1.0) : (safeBunks / 10.0).clamp(0.0, 1.0),
+                            value: stats.totalRecorded == 0
+                                ? 0.0
+                                : isDeficit
+                                    ? (requiredRecovery / 10.0).clamp(0.0, 1.0)
+                                    : (safeBunks / 10.0).clamp(0.0, 1.0),
                             backgroundColor: isDark
                                 ? Colors.white.withValues(alpha: 0.08)
                                 : Colors.black.withValues(alpha: 0.08),
@@ -1099,94 +1222,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        isDeficit ? 'Deficit' : 'Buffer',
+                        stats.totalRecorded == 0
+                            ? 'No Data'
+                            : isDeficit
+                                ? 'Deficit'
+                                : 'Buffer',
                         style: TextStyle(color: mutedTextColor, fontSize: 11),
                       ),
                     ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // 5. AI SMART BRIEF CARD (Interactive)
-          GestureDetector(
-            onTap: () =>
-                ref.read(navIndexProvider.notifier).state = 3, // Jump to AI
-            child: GlassContainer(
-              tier: GlassTier.standard,
-              borderRadius: 20,
-              borderColor: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.insights_rounded,
-                      color: Color(0xFFC0C1FF),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'AI SMART BRIEF ⚡',
-                          style: TextStyle(
-                            color: Color(0xFFC0C1FF),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        RichText(
-                          text: TextSpan(
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : const Color(0xFF475569),
-                              fontSize: 13,
-                              height: 1.4,
-                            ),
-                            children: stats.totalRecorded == 0
-                                ? const [
-                                    TextSpan(
-                                      text:
-                                          'Your schedule is clear! Add your timetable to get daily AI insights, class reminders, and attendance forecasts.',
-                                    ),
-                                  ]
-                                : [
-                                    const TextSpan(
-                                      text:
-                                          'Based on your attendance trend, prioritizing ',
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          stats.highestRiskSubjectName ??
-                                          bunkFocusName,
-                                      style: const TextStyle(
-                                        color: Color(0xFFD0BCFF),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const TextSpan(
-                                      text:
-                                          ' will help maintain your academic target margin.',
-                                    ),
-                                  ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),
@@ -1201,7 +1244,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 width: 3,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5B5FEF),
+                  color: context.accentColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1332,8 +1375,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 class _AttendanceGaugePainter extends CustomPainter {
   final double percentage;
   final bool isDark;
+  final Color primaryColor;
+  final Color secondaryColor;
 
-  _AttendanceGaugePainter({required this.percentage, this.isDark = true});
+  _AttendanceGaugePainter({
+    required this.percentage,
+    this.isDark = true,
+    this.primaryColor = const Color(0xFF5B5FEF),
+    this.secondaryColor = const Color(0xFF7BD0FF),
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1356,8 +1406,8 @@ class _AttendanceGaugePainter extends CustomPainter {
     );
 
     final fgPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF5B5FEF), Color(0xFF7BD0FF)],
+      ..shader = LinearGradient(
+        colors: [primaryColor, secondaryColor],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
@@ -1376,6 +1426,9 @@ class _AttendanceGaugePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AttendanceGaugePainter oldDelegate) {
-    return oldDelegate.percentage != percentage || oldDelegate.isDark != isDark;
+    return oldDelegate.percentage != percentage ||
+        oldDelegate.isDark != isDark ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.secondaryColor != secondaryColor;
   }
 }

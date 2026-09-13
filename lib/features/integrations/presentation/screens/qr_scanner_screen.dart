@@ -200,8 +200,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             ),
             const SizedBox(height: 24),
             if (_isValidating)
-              const Center(
-                child: CircularProgressIndicator(color: AppTheme.accentPurple),
+              Center(
+                child: CircularProgressIndicator(color: context.accentColor),
               )
             else if (_error != null)
               Container(

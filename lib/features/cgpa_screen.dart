@@ -63,7 +63,7 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
       isScrollControlled: true,
       builder: (ctx) {
         String localGrade = _gradeLetter;
-        final sheetBg = ctx.isDark ? const Color(0xFF0E1628) : Colors.white;
+        final sheetBg = context.cardColor;
         return StatefulBuilder(
           builder: (ctx, setSheet) => Padding(
             padding: EdgeInsets.only(
@@ -536,14 +536,12 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                   ),
                   SliderTheme(
                     data: SliderThemeData(
-                      activeTrackColor: const Color(0xFF5B5FEF),
+                      activeTrackColor: context.accentColor,
                       inactiveTrackColor: context.isDark
                           ? Colors.white.withValues(alpha: 0.08)
                           : Colors.black.withValues(alpha: 0.08),
-                      thumbColor: context.isDark ? Colors.white : AppTheme.accentPurple,
-                      overlayColor: const Color(
-                        0xFF5B5FEF,
-                      ).withValues(alpha: 0.15),
+                      thumbColor: context.isDark ? Colors.white : context.accentColor,
+                      overlayColor: context.accentColor.withValues(alpha: 0.15),
                       trackHeight: 4,
                     ),
                     child: Slider(
@@ -574,14 +572,12 @@ class _CgpaScreenState extends ConsumerState<CgpaScreen> {
                   ),
                   SliderTheme(
                     data: SliderThemeData(
-                      activeTrackColor: const Color(0xFF8151EB),
+                      activeTrackColor: context.tertiaryColor,
                       inactiveTrackColor: context.isDark
                           ? Colors.white.withValues(alpha: 0.08)
                           : Colors.black.withValues(alpha: 0.08),
-                      thumbColor: context.isDark ? Colors.white : AppTheme.accentPurple,
-                      overlayColor: const Color(
-                        0xFF8151EB,
-                      ).withValues(alpha: 0.15),
+                      thumbColor: context.isDark ? Colors.white : context.tertiaryColor,
+                      overlayColor: context.tertiaryColor.withValues(alpha: 0.15),
                       trackHeight: 4,
                     ),
                     child: Slider(

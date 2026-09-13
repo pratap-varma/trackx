@@ -14,6 +14,7 @@ import 'package:trackx/core/services/app_lock_service.dart';
 import 'package:trackx/core/presentation/widgets/pin_setup_sheet.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
 import 'package:trackx/features/ai_assistant/providers/ai_providers.dart';
+import 'package:trackx/core/services/widget_data_service.dart';
 import 'package:trackx/theme/app_theme.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -28,7 +29,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   @override
   bool get wantKeepAlive => true;
 
-  double _globalTarget = 85.0;
+  double _globalTarget = 75.0;
+  bool _isTargetDragging = false;
+  bool _hasCustomTargetChanged = false;
   bool _smartNotifications = true;
   String _selectedPersonality = 'direct'; // 'direct' or 'butler'
   bool _incognitoMode = false;
@@ -40,12 +43,54 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final prefs = ref.read(sharedPreferencesProvider);
-      setState(() {
-        _incognitoMode = prefs.getBool('sec_incognito') ?? false;
-        _smartNotifications = prefs.getBool('sec_smart_notif') ?? true;
-        _selectedPersonality = prefs.getString('ai_personality') ?? 'direct';
-      });
+      final profile = ref.read(authRepositoryProvider).userProfile;
+      final savedTarget = profile?.globalTarget ??
+          prefs.getDouble('global_attendance_target') ??
+          75.0;
+      if (mounted) {
+        setState(() {
+          _incognitoMode = prefs.getBool('sec_incognito') ?? false;
+          _smartNotifications = prefs.getBool('sec_smart_notif') ?? true;
+          _selectedPersonality = prefs.getString('ai_personality') ?? 'direct';
+          if (savedTarget > 0) {
+            _globalTarget = savedTarget;
+          }
+        });
+      }
     });
+  }
+
+  Future<void> _updateGlobalTarget(double newTarget) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setDouble('global_attendance_target', newTarget);
+
+    final currentProfile = ref.read(authRepositoryProvider).userProfile;
+    if (currentProfile != null) {
+      await ref.read(authRepositoryProvider.notifier).updateProfile(
+        currentProfile.name,
+        currentProfile.branch,
+        currentProfile.semester,
+        newTarget,
+        collegeName: currentProfile.collegeName,
+        registrationNumber: currentProfile.registrationNumber,
+        programmeName: currentProfile.programmeName,
+        joiningYear: currentProfile.joiningYear,
+        expectedGraduationYear: currentProfile.expectedGraduationYear,
+        currentSemesterId: currentProfile.currentSemesterId,
+        defaultAttendanceTarget: newTarget,
+      );
+    }
+
+    final activeSem = ref.read(activeSemesterProvider);
+    if (activeSem != null) {
+      await ref.read(semesterRepositoryProvider.notifier).updateSemester(
+        activeSem.copyWith(attendanceTarget: newTarget),
+      );
+    }
+
+    try {
+      await ref.read(widgetDataServiceProvider).syncWithAppData(ref);
+    } catch (_) {}
   }
 
   void _saveSecurityPref(String key, dynamic value) {
@@ -59,6 +104,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   void _showSecurityAndPrivacySheet() {
     HapticFeedback.lightImpact();
+    final isDark = context.isDark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+    final itemBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC);
+    final iconBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
+    final itemBorder = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.06);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -68,9 +123,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           builder: (ctx, ref, _) {
             final lockState = ref.watch(appLockProvider);
             return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF0E1628),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            decoration: BoxDecoration(
+              color: context.cardColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: SingleChildScrollView(
@@ -83,7 +138,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.15)
+                            : Colors.black.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -97,17 +154,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1B243B),
+                              color: iconBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.fingerprint_rounded,
-                              color: Color(0xFFC0C1FF),
+                              color: context.accentColor,
                               size: 22,
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -115,13 +172,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: textColor,
                                 ),
                               ),
                               Text(
                                 'Biometrics, Data Export & Encryption',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: subtextColor,
                                   fontSize: 11,
                                 ),
                               ),
@@ -130,9 +187,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         ],
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
-                          color: Colors.white54,
+                          color: subtextColor,
                         ),
                         onPressed: () => Navigator.pop(ctx),
                       ),
@@ -144,37 +201,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
+                      color: itemBg,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: itemBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         const Icon(
                           Icons.fingerprint_rounded,
-                          color: Color(0xFF7BD0FF),
+                          color: Color(0xFF3B82F6),
                           size: 24,
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Biometric App Lock',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'Unlock TrackX with Fingerprint or Face ID',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: subtextColor,
                                   fontSize: 11,
                                 ),
                               ),
@@ -183,7 +240,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         ),
                         Switch(
                           value: lockState.isBiometricsEnabled,
-                          activeThumbColor: const Color(0xFF5B5FEF),
+                          activeThumbColor: context.accentColor,
                           onChanged: (val) async {
                             HapticFeedback.lightImpact();
                             final success = await ref
@@ -221,19 +278,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
+                      color: itemBg,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: itemBorder,
                       ),
                     ),
                     child: Column(
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.pin_rounded,
-                              color: Color(0xFFC0C1FF),
+                              color: context.accentColor,
                               size: 24,
                             ),
                             const SizedBox(width: 14),
@@ -241,10 +298,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Require PIN Code',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: textColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -254,8 +311,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                     lockState.hasPin
                                         ? 'PIN protection active'
                                         : 'Set a 4-digit PIN to secure app',
-                                    style: const TextStyle(
-                                      color: Colors.white54,
+                                    style: TextStyle(
+                                      color: subtextColor,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -264,7 +321,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             ),
                             Switch(
                               value: lockState.isPinEnabled && lockState.hasPin,
-                              activeThumbColor: const Color(0xFF5B5FEF),
+                              activeThumbColor: context.accentColor,
                               onChanged: (val) async {
                                 HapticFeedback.lightImpact();
                                 if (val) {
@@ -285,7 +342,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           ],
                         ),
                         const SizedBox(height: 10),
-                        const Divider(color: Colors.white10, height: 1),
+                        Divider(
+                          color: isDark
+                              ? Colors.white10
+                              : Colors.black.withValues(alpha: 0.06),
+                          height: 1,
+                        ),
                         const SizedBox(height: 10),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -297,7 +359,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               style: TextStyle(
                                 color: lockState.hasPin
                                     ? const Color(0xFF10B981)
-                                    : Colors.white38,
+                                    : mutedTextColor,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -312,22 +374,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF5B5FEF,
-                                  ).withValues(alpha: 0.18),
+                                  color: context.accentColor.withValues(alpha: isDark ? 0.18 : 0.12),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: const Color(
-                                      0xFF5B5FEF,
-                                    ).withValues(alpha: 0.4),
+                                    color: context.accentColor.withValues(alpha: 0.4),
                                   ),
                                 ),
                                 child: Text(
-                                  lockState.hasPin
-                                      ? 'Change PIN'
-                                      : 'Set 4-Digit PIN',
-                                  style: const TextStyle(
-                                    color: Color(0xFFC0C1FF),
+                                  'Change PIN',
+                                  style: TextStyle(
+                                    color: context.accentColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -345,10 +401,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
+                      color: itemBg,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: itemBorder,
                       ),
                     ),
                     child: Row(
@@ -359,23 +415,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           size: 24,
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Private Notifications',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'Hide attendance scores on lock screen previews',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: subtextColor,
                                   fontSize: 11,
                                 ),
                               ),
@@ -384,7 +440,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         ),
                         Switch(
                           value: _incognitoMode,
-                          activeThumbColor: const Color(0xFF5B5FEF),
+                          activeThumbColor: context.accentColor,
                           onChanged: (val) {
                             HapticFeedback.lightImpact();
                             setModalState(() => _incognitoMode = val);
@@ -406,10 +462,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   ),
                   const SizedBox(height: 20),
 
-                  const Text(
+                  Text(
                     'DATA MANAGEMENT',
                     style: TextStyle(
-                      color: Color(0xFF908FA0),
+                      color: mutedTextColor,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
@@ -439,25 +495,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF131A2B),
+                        color: itemBg,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: itemBorder,
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.download_rounded,
                             color: Color(0xFF10B981),
                             size: 20,
                           ),
-                          SizedBox(width: 12),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Export Data (JSON / CSV)',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -465,7 +521,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           ),
                           Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: mutedTextColor,
                           ),
                         ],
                       ),
@@ -493,25 +549,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF131A2B),
+                        color: itemBg,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.06),
+                          color: itemBorder,
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.cleaning_services_rounded,
                             color: Color(0xFFFF8B94),
                             size: 20,
                           ),
-                          SizedBox(width: 12),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Clear Local Cache',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -519,7 +575,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           ),
                           Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: mutedTextColor,
                           ),
                         ],
                       ),
@@ -540,15 +596,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     HapticFeedback.lightImpact();
     final nameCtrl = TextEditingController(text: currentName);
     final branchCtrl = TextEditingController(text: currentBranch);
+    final isDark = context.isDark;
+    final textColor = context.textColor;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: EdgeInsets.only(
           left: 24,
@@ -566,18 +624,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Edit Profile',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 18),
@@ -608,6 +668,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           newBranch,
                           currentProfile?.semester ?? 1,
                           _globalTarget,
+                          collegeName: currentProfile?.collegeName,
+                          registrationNumber: currentProfile?.registrationNumber,
+                          programmeName: currentProfile?.programmeName,
+                          joiningYear: currentProfile?.joiningYear,
+                          expectedGraduationYear:
+                              currentProfile?.expectedGraduationYear,
+                          currentSemesterId: currentProfile?.currentSemesterId,
+                          defaultAttendanceTarget: _globalTarget,
                         );
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -621,7 +689,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF5B5FEF),
+                    color: context.accentColor,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Center(
@@ -653,6 +721,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     if (profile?.branch.isNotEmpty == true) {
       _cachedBranch = profile!.branch;
     }
+    if (!_isTargetDragging &&
+        !_hasCustomTargetChanged &&
+        profile?.globalTarget != null &&
+        profile!.globalTarget > 0) {
+      _globalTarget = profile.globalTarget;
+    }
 
     final name = _cachedName;
     final branch = _cachedBranch;
@@ -664,46 +738,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         .length;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
+    final cardBg = context.cardColor;
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.06);
+    final iconContainerBg =
+        isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
+    final dividerColor = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.06);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.settings_outlined,
-            color: Colors.white,
-            size: 22,
-          ),
-          onPressed: _showSecurityAndPrivacySheet,
-        ),
-        title: const Text(
+        automaticallyImplyLeading: false,
+        title: Text(
           'Profile',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
             fontSize: 20,
           ),
         ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: GestureDetector(
-              onTap: () => _showEditProfileSheet(name, branch),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFF1B243B),
-                child: const Icon(
-                  Icons.edit_outlined,
-                  color: Color(0xFFC0C1FF),
-                  size: 16,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: ListView(
         key: const PageStorageKey('profile_scroll'),
@@ -715,9 +777,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             child: Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                color: const Color(0xFF131A2B),
+                color: cardBg,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                border: Border.all(color: cardBorder),
+                boxShadow: isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [
@@ -727,14 +798,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF5B5FEF), Color(0xFF7BD0FF)],
+                      gradient: LinearGradient(
+                        colors: [context.accentColor, context.secondaryColor],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                          color: context.accentColor.withValues(alpha: 0.4),
                           blurRadius: 18,
                           spreadRadius: 2,
                         ),
@@ -754,16 +825,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     children: [
                       Text(
                         name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(
+                      Icon(
                         Icons.edit_rounded,
-                        color: Colors.white38,
+                        color: mutedTextColor,
                         size: 14,
                       ),
                     ],
@@ -771,7 +842,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   const SizedBox(height: 4),
                   Text(
                     branch,
-                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                    style: TextStyle(color: subtextColor, fontSize: 13),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -780,7 +851,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5B5FEF),
+                      color: context.accentColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Row(
@@ -806,7 +877,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   const SizedBox(height: 20),
                   Container(
                     height: 1,
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: dividerColor,
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -814,21 +885,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
                             'CURRENT STANDING',
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: mutedTextColor,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             '3.8 / 4.0 Target',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: textColor,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -840,7 +911,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         height: 42,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF1B243B),
+                          color: iconContainerBg,
                           border: Border.all(
                             color: const Color(0xFF10B981),
                             width: 2.5,
@@ -866,10 +937,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           const SizedBox(height: 20),
 
           // 2. ACADEMIC SETTINGS
-          const Text(
+          Text(
             'ACADEMIC SETTINGS',
             style: TextStyle(
-              color: Color(0xFF908FA0),
+              color: mutedTextColor,
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -879,9 +950,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF131A2B),
+              color: cardBg,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              border: Border.all(color: cardBorder),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: Column(
               children: [
@@ -899,12 +979,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1B243B),
+                            color: iconContainerBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.school_outlined,
-                            color: Color(0xFFC0C1FF),
+                            color: context.accentColor,
                             size: 20,
                           ),
                         ),
@@ -913,10 +993,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Semester Management',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -926,23 +1006,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                 activeSem != null
                                     ? '${activeSem.name} • $activeSubjectsCount Active Courses'
                                     : 'Fall 2026 • 5 Active Courses',
-                                style: const TextStyle(
-                                  color: Colors.white54,
+                                style: TextStyle(
+                                  color: subtextColor,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right_rounded,
-                          color: Colors.white38,
+                          color: mutedTextColor,
                         ),
                       ],
                     ),
                   ),
                 ),
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                Divider(color: dividerColor, height: 1),
 
                 // Timetable OCR & Photo Upload
                 GestureDetector(
@@ -958,48 +1038,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1B243B),
+                            color: iconContainerBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
                             Icons.document_scanner_rounded,
-                            color: Color(0xFF7BD0FF),
+                            color: Color(0xFF3B82F6),
                             size: 20,
                           ),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Scan & Import Timetable',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'Upload photo to auto-assign all subjects',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: subtextColor,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right_rounded,
-                          color: Colors.white38,
+                          color: mutedTextColor,
                         ),
                       ],
                     ),
                   ),
                 ),
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                Divider(color: dividerColor, height: 1),
 
                 // Global Attendance Target
                 Padding(
@@ -1015,20 +1095,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1B243B),
+                                  color: iconContainerBg,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.track_changes_rounded,
-                                  color: Color(0xFFC0C1FF),
+                                  color: context.accentColor,
                                   size: 20,
                                 ),
                               ),
                               const SizedBox(width: 14),
-                              const Text(
+                              Text(
                                 'Global Attendance\nTarget',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -1037,8 +1117,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           ),
                           Text(
                             '${_globalTarget.toInt()}%',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -1046,32 +1126,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         'Warn if projected falls below threshold',
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                        style: TextStyle(color: subtextColor, fontSize: 12),
                       ),
                       const SizedBox(height: 12),
                       SliderTheme(
                         data: SliderThemeData(
-                          activeTrackColor: const Color(0xFF5B5FEF),
-                          inactiveTrackColor: Colors.white.withValues(
-                            alpha: 0.08,
-                          ),
-                          thumbColor: Colors.white,
+                          activeTrackColor: context.accentColor,
+                          inactiveTrackColor: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.08),
+                          thumbColor: isDark ? Colors.white : context.accentColor,
                           trackHeight: 4,
                         ),
                         child: Slider(
-                          value: _globalTarget,
+                          value: _globalTarget.clamp(50.0, 100.0),
                           min: 50,
                           max: 100,
                           divisions: 50,
-                          onChanged: (v) => setState(() => _globalTarget = v),
+                          onChanged: (v) {
+                            setState(() {
+                              _globalTarget = v;
+                              _isTargetDragging = true;
+                              _hasCustomTargetChanged = true;
+                            });
+                          },
+                          onChangeEnd: (v) async {
+                            setState(() {
+                              _globalTarget = v;
+                              _isTargetDragging = false;
+                              _hasCustomTargetChanged = true;
+                            });
+                            await _updateGlobalTarget(v);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).clearSnackBars();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Global attendance target saved to ${v.toInt()}%',
+                                  ),
+                                  duration: const Duration(milliseconds: 1200),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.only(
+                                    bottom: 90,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ),
                     ],
                   ),
                 ),
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                Divider(color: dividerColor, height: 1),
 
                 // Smart Exam Notifications
                 Padding(
@@ -1084,12 +1198,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B243B),
+                          color: iconContainerBg,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.notifications_none_rounded,
-                          color: Color(0xFFC0C1FF),
+                          color: context.accentColor,
                           size: 20,
                         ),
                       ),
@@ -1097,20 +1211,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Smart Exam Notifications',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'AI-timed study reminders',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: subtextColor,
                                 fontSize: 12,
                               ),
                             ),
@@ -1119,14 +1233,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       ),
                       Switch(
                         value: _smartNotifications,
-                        activeThumbColor: const Color(0xFF5B5FEF),
+                        activeThumbColor: context.accentColor,
                         onChanged: (v) =>
                             setState(() => _smartNotifications = v),
                       ),
                     ],
                   ),
                 ),
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                Divider(color: dividerColor, height: 1),
 
                 // Daily Morning Digest
                 Consumer(
@@ -1150,7 +1264,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1B243B),
+                                  color: iconContainerBg,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
@@ -1163,20 +1277,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: const [
+                                  children: [
                                     Text(
                                       'Daily Morning Digest',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: textColor,
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
                                       ),
                                     ),
-                                    SizedBox(height: 2),
+                                    const SizedBox(height: 2),
                                     Text(
                                       'Attendance risks & schedule summary',
                                       style: TextStyle(
-                                        color: Colors.white54,
+                                        color: subtextColor,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -1185,7 +1299,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               ),
                               Switch(
                                 value: digestSettings.enabled,
-                                activeThumbColor: const Color(0xFF5B5FEF),
+                                activeThumbColor: context.accentColor,
                                 onChanged: (v) {
                                   ref
                                       .read(
@@ -1214,13 +1328,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                       ),
                                       builder: (context, child) {
                                         return Theme(
-                                          data: ThemeData.dark().copyWith(
-                                            colorScheme:
-                                                const ColorScheme.dark(
-                                              primary: Color(0xFF5B5FEF),
-                                              surface: Color(0xFF0E1628),
-                                            ),
-                                          ),
+                                          data: isDark
+                                              ? ThemeData.dark().copyWith(
+                                                  colorScheme:
+                                                      ColorScheme.dark(
+                                                    primary: context.accentColor,
+                                                    surface: const Color(0xFF0E1628),
+                                                  ),
+                                                )
+                                              : ThemeData.light().copyWith(
+                                                  colorScheme:
+                                                      ColorScheme.light(
+                                                    primary: context.accentColor,
+                                                    surface: Colors.white,
+                                                  ),
+                                                ),
                                           child: child!,
                                         );
                                       },
@@ -1240,26 +1362,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.05),
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.05)
+                                          : Colors.black.withValues(alpha: 0.04),
                                       borderRadius:
                                           BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.1),
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.1)
+                                            : Colors.black.withValues(alpha: 0.08),
                                       ),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                             Icons.access_time_rounded,
                                             size: 14,
-                                            color: Colors.white70),
+                                            color: subtextColor),
                                         const SizedBox(width: 6),
                                         Text(
                                           'Time: $timeStr',
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: textColor,
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -1299,7 +1423,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                   label: const Text('Test Notification'),
                                   style: TextButton.styleFrom(
                                     foregroundColor:
-                                        const Color(0xFF7BD0FF),
+                                        context.accentColor,
                                     textStyle: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -1320,10 +1444,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           const SizedBox(height: 22),
 
           // APPEARANCE & THEME SETTINGS
-          const Text(
+          Text(
             'APPEARANCE & THEME',
             style: TextStyle(
-              color: Color(0xFF908FA0),
+              color: mutedTextColor,
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -1334,7 +1458,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF131A2B) : Colors.white,
+              color: context.cardColor,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDark
@@ -1364,7 +1488,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9),
+                            color: iconContainerBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -1384,7 +1508,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             Text(
                               'Display Mode',
                               style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                color: context.textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -1392,7 +1516,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             Text(
                               'Choose your preferred visual appearance',
                               style: TextStyle(
-                                color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                                color: context.subtextColor,
                                 fontSize: 11,
                               ),
                             ),
@@ -1481,10 +1605,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           const SizedBox(height: 22),
 
           // 4. PERSONALIZATION & SECURITY
-          const Text(
+          Text(
             'PERSONALIZATION & SECURITY',
             style: TextStyle(
-              color: Color(0xFF908FA0),
+              color: mutedTextColor,
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -1495,9 +1619,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xFF131A2B),
+              color: cardBg,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              border: Border.all(color: cardBorder),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1507,30 +1640,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B243B),
+                        color: iconContainerBg,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.psychology_outlined,
-                        color: Color(0xFFC0C1FF),
+                        color: context.accentColor,
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 14),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'AI Personality Mode',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: textColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
                         ),
                         Text(
                           'Select how TrackX AI interacts with you',
-                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                          style: TextStyle(color: subtextColor, fontSize: 11),
                         ),
                       ],
                     ),
@@ -1549,12 +1682,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: _selectedPersonality == 'direct'
-                                ? const Color(0xFF1D2642)
-                                : const Color(0xFF1B243B),
+                                ? context.accentColor.withValues(alpha: isDark ? 0.22 : 0.12)
+                                : iconContainerBg,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: _selectedPersonality == 'direct'
-                                  ? const Color(0xFF5B5FEF)
+                                  ? context.accentColor
                                   : Colors.transparent,
                               width: 1.5,
                             ),
@@ -1565,24 +1698,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               Icon(
                                 Icons.speed_rounded,
                                 color: _selectedPersonality == 'direct'
-                                    ? const Color(0xFFC0C1FF)
-                                    : Colors.white54,
+                                    ? context.accentColor
+                                    : subtextColor,
                                 size: 22,
                               ),
                               const SizedBox(height: 10),
-                              const Text(
+                              Text(
                                 'Direct & Efficient',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
+                              Text(
                                 'Focus on data & stats',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: subtextColor,
                                   fontSize: 10,
                                 ),
                               ),
@@ -1602,12 +1735,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: _selectedPersonality == 'butler'
-                                ? const Color(0xFF1D2642)
-                                : const Color(0xFF1B243B),
+                                ? context.accentColor.withValues(alpha: isDark ? 0.22 : 0.12)
+                                : iconContainerBg,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: _selectedPersonality == 'butler'
-                                  ? const Color(0xFF5B5FEF)
+                                  ? context.accentColor
                                   : Colors.transparent,
                               width: 1.5,
                             ),
@@ -1618,24 +1751,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               Icon(
                                 Icons.support_agent_rounded,
                                 color: _selectedPersonality == 'butler'
-                                    ? const Color(0xFFC0C1FF)
-                                    : Colors.white54,
+                                    ? context.accentColor
+                                    : subtextColor,
                                 size: 22,
                               ),
                               const SizedBox(height: 10),
-                              const Text(
+                              Text(
                                 'Study Butler',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
+                              Text(
                                 'Supportive & contextual',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: subtextColor,
                                   fontSize: 10,
                                 ),
                               ),
@@ -1647,7 +1780,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   ],
                 ),
                 const SizedBox(height: 16),
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                Divider(color: dividerColor, height: 1),
                 const SizedBox(height: 12),
 
                 // AI Assistant & Gemini API Key Settings Row
@@ -1663,12 +1796,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1B243B),
+                              color: iconContainerBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.auto_awesome_rounded,
-                              color: Color(0xFFC0C1FF),
+                              color: context.accentColor,
                               size: 20,
                             ),
                           ),
@@ -1679,10 +1812,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               children: [
                                 Row(
                                   children: [
-                                    const Text(
+                                    Text(
                                       'AI Assistant & Gemini Key',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: textColor,
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
                                       ),
@@ -1726,16 +1859,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                   style: TextStyle(
                                     color: hasKey
                                         ? const Color(0xFF10B981)
-                                        : Colors.white54,
+                                        : subtextColor,
                                     fontSize: 12,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: mutedTextColor,
                           ),
                         ],
                       ),
@@ -1743,7 +1876,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   },
                 ),
                 const SizedBox(height: 12),
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                Divider(color: dividerColor, height: 1),
                 const SizedBox(height: 12),
 
                 // Google Calendar Holidays Integration Row
@@ -1760,7 +1893,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1B243B),
+                              color: iconContainerBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -1774,10 +1907,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Google Calendar Holidays',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: textColor,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                   ),
@@ -1790,16 +1923,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                                   style: TextStyle(
                                     color: isCalConnected
                                         ? const Color(0xFF10B981)
-                                        : Colors.white54,
+                                        : subtextColor,
                                     fontSize: 12,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: mutedTextColor,
                           ),
                         ],
                       ),
@@ -1807,7 +1940,57 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   },
                 ),
                 const SizedBox(height: 12),
-                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                // Home Screen Widgets Row
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.push('/widgets'),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: iconContainerBg,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.widgets_rounded,
+                          color: context.accentColor,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Home Screen Widgets',
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Attendance, Daily Schedule & Exams',
+                              style: TextStyle(
+                                color: subtextColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: mutedTextColor,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Divider(color: dividerColor, height: 1),
                 const SizedBox(height: 12),
 
                 // Security & Privacy Row (Fully Interactive)
@@ -1819,12 +2002,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B243B),
+                          color: iconContainerBg,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.fingerprint_rounded,
-                          color: Color(0xFFC0C1FF),
+                          color: context.accentColor,
                           size: 20,
                         ),
                       ),
@@ -1832,29 +2015,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Security & Privacy',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Biometrics, Passwords, Data export',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: subtextColor,
                                 fontSize: 12,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white38,
+                        color: mutedTextColor,
                       ),
                     ],
                   ),
@@ -1878,7 +2061,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 color: Color(0xFFFF8B94),
                 size: 18,
               ),
-              label: const Text(
+              label: Text(
                 'Sign Out',
                 style: TextStyle(
                   color: Color(0xFFFF8B94),
@@ -1901,8 +2084,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     required bool isDark,
     required VoidCallback onTap,
   }) {
-    final activeBorder = const Color(0xFF5B5FEF);
-    final activeBg = const Color(0xFF5B5FEF).withValues(alpha: isDark ? 0.22 : 0.12);
+    final activeBorder = context.accentColor;
+    final activeBg = context.accentColor.withValues(alpha: isDark ? 0.22 : 0.12);
     final inactiveBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9);
 
     return Expanded(
@@ -1924,7 +2107,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               Icon(
                 icon,
                 color: isSelected
-                    ? (isDark ? const Color(0xFFC0C1FF) : const Color(0xFF5B5FEF))
+                    ? context.accentColor
                     : (isDark ? Colors.white54 : const Color(0xFF64748B)),
                 size: 22,
               ),
@@ -1933,7 +2116,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 label,
                 style: TextStyle(
                   color: isSelected
-                      ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                      ? context.textColor
                       : (isDark ? Colors.white60 : const Color(0xFF64748B)),
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -1953,27 +2136,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         HapticFeedback.lightImpact();
         ref.read(accentColorProvider.notifier).setAccent(color);
       },
-      child: Container(
-        width: 38,
-        height: 38,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
             color: isSelected ? Colors.white : Colors.transparent,
-            width: 2.5,
+            width: isSelected ? 3 : 0,
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: isSelected ? 0.5 : 0.2),
-              blurRadius: isSelected ? 8 : 4,
+              color: color.withValues(alpha: isSelected ? 0.6 : 0.25),
+              blurRadius: isSelected ? 10 : 4,
+              spreadRadius: isSelected ? 2 : 0,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: isSelected
             ? const Center(
-                child: Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                child: Icon(Icons.check_rounded, color: Colors.white, size: 22),
               )
             : null,
       ),

@@ -6,6 +6,7 @@ import 'package:trackx/features/notes/domain/models/flashcard_model.dart';
 import 'package:trackx/features/notes/providers/flashcard_provider.dart';
 import 'package:trackx/shared/widgets/app_background.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class FlashcardStudyScreen extends ConsumerStatefulWidget {
   final String deckId;
@@ -128,9 +129,9 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
     );
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
 
     if (deck.id.isEmpty) {
       return AppBackground(
@@ -281,8 +282,8 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                         backgroundColor: isDark
                             ? Colors.white.withValues(alpha: 0.1)
                             : Colors.black.withValues(alpha: 0.08),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF5B5FEF),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.accentColor,
                         ),
                       ),
                     ),
@@ -443,7 +444,7 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
     return GlassContainer(
       borderRadius: 24,
       padding: const EdgeInsets.all(28),
-      borderColor: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+      borderColor: context.accentColor.withValues(alpha: 0.4),
       child: Container(
         constraints: const BoxConstraints(minHeight: 280),
         child: Column(
@@ -452,13 +453,13 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                color: context.accentColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
+              child: Text(
                 'QUESTION',
                 style: TextStyle(
-                  color: Color(0xFFC0C1FF),
+                  color: context.accentColor,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -627,7 +628,7 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                 child: ElevatedButton(
                   onPressed: () => _restartSession(resetMastery: false),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5B5FEF),
+                    backgroundColor: context.accentColor,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),

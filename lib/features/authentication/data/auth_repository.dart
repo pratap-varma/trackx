@@ -79,6 +79,8 @@ class AuthRepository extends StateNotifier<AuthState> {
   }
 
   Future<void> _loadUserProfileFromFirestoreOrCache(fb.User fbUser) async {
+    final stopwatch = Stopwatch()..start();
+    print('[DEBUG LOG] Profile Loading starting for user: ${fbUser.uid}...');
     // Read Firebase Custom Claim role (non-blocking best-effort)
     final role = await _readRoleFromClaims(fbUser);
 
@@ -91,11 +93,13 @@ class AuthRepository extends StateNotifier<AuthState> {
         state = AuthState.error(
           'Your account has been suspended by an administrator. Please contact support.',
         );
+        print('[DEBUG LOG] Profile Loading cached profile suspended in: ${stopwatch.elapsedMilliseconds}ms');
         return;
       }
       await _persistence.saveAuthToken(fbUser.uid);
       state = AuthState.authenticated(cachedProfile, role: role);
       ActivityLogger().logEvent('user_login', userId: fbUser.uid);
+      print('[DEBUG LOG] Profile Loading completed (Cache-First) in: ${stopwatch.elapsedMilliseconds}ms');
       
       // Fast background sync with Firestore (non-blocking)
       _syncProfileFromFirestoreBackground(fbUser);
@@ -112,12 +116,14 @@ class AuthRepository extends StateNotifier<AuthState> {
           state = AuthState.error(
             'Your account has been suspended by an administrator. Please contact support.',
           );
+          print('[DEBUG LOG] Profile Loading fetched profile suspended in: ${stopwatch.elapsedMilliseconds}ms');
           return;
         }
         await _persistence.saveAuthToken(fbUser.uid);
         await _persistence.saveUserProfile(fetchedProfile);
         state = AuthState.authenticated(fetchedProfile, role: role);
         ActivityLogger().logEvent('user_login', userId: fbUser.uid);
+        print('[DEBUG LOG] Profile Loading completed (Firestore) in: ${stopwatch.elapsedMilliseconds}ms');
 
         // Immediately pull all user data (semesters, subjects, tasks, notes, etc.)
         try {
@@ -143,11 +149,13 @@ class AuthRepository extends StateNotifier<AuthState> {
       await _persistence.saveAuthToken(fbUser.uid);
       await _persistence.saveUserProfile(initialProfile);
       state = AuthState.authenticated(initialProfile, role: role);
+      print('[DEBUG LOG] Profile Loading completed (Initial Profile Fallback) in: ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {
       // Network error or timeout - do not create a blank profile!
       state = AuthState.error(
         'Network error while loading profile. Please check your connection and try again.',
       );
+      print('[DEBUG LOG] Profile Loading failed in: ${stopwatch.elapsedMilliseconds}ms. Error: $e');
     }
   }
 

@@ -58,8 +58,8 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF0E1628),
+            decoration: BoxDecoration(
+              color: context.cardColor,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             padding: EdgeInsets.only(
@@ -78,42 +78,42 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: context.isDark ? Colors.white24 : Colors.black12,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Edit Exam Details',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.textColor,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                        icon: Icon(Icons.close_rounded, color: context.subtextColor),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // 1. Interactive Date Picker
-                  const Text(
+                  Text(
                     'EXAMINATION DATE',
                     style: TextStyle(
-                      color: Colors.white38,
+                      color: context.subtextColor,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.8,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   GestureDetector(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -129,21 +129,21 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF131A2B),
+                        color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF5B5FEF).withValues(alpha: 0.4)),
+                        border: Border.all(color: context.accentColor.withValues(alpha: 0.4)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.calendar_month_rounded, color: Color(0xFF7BD0FF), size: 18),
+                              Icon(Icons.calendar_month_rounded, color: context.accentColor, size: 18),
                               const SizedBox(width: 10),
                               Text(
                                 DateFormat('EEEE, MMM d, yyyy').format(selectedDate),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: context.textColor,
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -153,13 +153,13 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                              color: context.accentColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Change Date',
                               style: TextStyle(
-                                color: Color(0xFF7BD0FF),
+                                color: context.accentColor,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -172,10 +172,10 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                   const SizedBox(height: 14),
 
                   // 2. Exam Type Selector
-                  const Text(
+                  Text(
                     'EXAM TYPE',
                     style: TextStyle(
-                      color: Colors.white38,
+                      color: context.subtextColor,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.8,
@@ -193,16 +193,16 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                             margin: const EdgeInsets.only(right: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFF5B5FEF) : const Color(0xFF131A2B),
+                              color: isSelected ? context.accentColor : (context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9)),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: isSelected ? Colors.transparent : Colors.white12,
+                                color: isSelected ? Colors.transparent : (context.isDark ? Colors.white12 : Colors.black12),
                               ),
                             ),
                             child: Text(
                               t,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.white60,
+                                color: isSelected ? Colors.white : context.subtextColor,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -212,7 +212,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                       }).toList(),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // 3. Exam Title & Subject Name
                   GlassTextField(
@@ -220,13 +220,13 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                     labelText: 'Exam Title',
                     hintText: 'e.g. Midterm Examination',
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   GlassTextField(
                     controller: subjectCtrl,
                     labelText: 'Subject Name',
                     hintText: 'e.g. Data Structures & Algorithms',
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // 4. Timings
                   Row(
@@ -238,7 +238,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                           hintText: 'e.g. 10:00 AM',
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: GlassTextField(
                           controller: endCtrl,
@@ -248,7 +248,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // 5. Room & Syllabus
                   Row(
@@ -260,7 +260,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                           hintText: 'e.g. DE-12',
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: GlassTextField(
                           controller: syllabusCtrl,
@@ -270,7 +270,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
 
                   // Save Changes Button
                   GestureDetector(
@@ -299,12 +299,12 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                        gradient: LinearGradient(
+                          colors: [context.accentColor, context.tertiaryColor],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'Save Changes',
                           style: TextStyle(
@@ -378,22 +378,35 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
       _scanningStatus = 'Scanning $sourceName with Exam Vision AI...';
     });
 
-    final settings = ref.read(aiSettingsProvider);
-    final exams = await _ocrService.scanExamTimetableImage(
-      imageBytes: bytes,
-      apiKey: settings.customApiKey,
-    );
+    try {
+      final settings = ref.read(aiSettingsProvider);
+      final exams = await _ocrService.scanExamTimetableImage(
+        imageBytes: bytes,
+        apiKey: settings.customApiKey,
+      );
 
-    if (mounted) {
-      setState(() {
-        _detectedExams = exams;
-        _selectedIndices.clear();
-        for (int i = 0; i < exams.length; i++) {
-          _selectedIndices.add(i);
-        }
-        _isScanning = false;
-      });
-      HapticFeedback.mediumImpact();
+      if (mounted) {
+        setState(() {
+          _detectedExams = exams;
+          _selectedIndices.clear();
+          for (int i = 0; i < exams.length; i++) {
+            _selectedIndices.add(i);
+          }
+        });
+        HapticFeedback.mediumImpact();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Exam Scan Failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
     }
   }
 
@@ -494,8 +507,8 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.88,
-      decoration: const BoxDecoration(
-        color: Color(0xFF0E1628),
+      decoration: BoxDecoration(
+        color: context.cardColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(24),
@@ -512,11 +525,11 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -535,12 +548,12 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                icon: Icon(Icons.close_rounded, color: Colors.white54),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
 
           // Upload Option Buttons
           if (_detectedExams.isEmpty && !_isScanning) ...[
@@ -562,7 +575,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                         color: const Color(0xFF1B243B),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(
                             Icons.camera_alt_rounded,
@@ -601,7 +614,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
 
                   // Gallery Button
                   GestureDetector(
@@ -612,7 +625,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                         color: const Color(0xFF1B243B),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(
                             Icons.photo_library_rounded,
@@ -651,7 +664,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
 
                   // PDF Document Button
                   GestureDetector(
@@ -662,7 +675,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                         color: const Color(0xFF1B243B),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(
                             Icons.picture_as_pdf_rounded,
@@ -713,23 +726,23 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(
+                    CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFF5B5FEF),
+                        context.accentColor,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Text(
                       _scanningStatus,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
+                    SizedBox(height: 6),
+                    Text(
                       'Analyzing examination dates, subject codes, and timings...',
                       style: TextStyle(color: Colors.white54, fontSize: 12),
                     ),
@@ -746,7 +759,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
               children: [
                 Text(
                   'DETECTED EXAMINATIONS (${_selectedIndices.length}/${_detectedExams.length})',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFFC0C1FF),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -770,7 +783,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                     _selectedIndices.length == _detectedExams.length
                         ? 'Deselect All'
                         : 'Select All',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Color(0xFF7BD0FF),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -779,7 +792,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             Expanded(
               child: ListView.builder(
@@ -810,9 +823,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(
-                                    0xFF5B5FEF,
-                                  ).withValues(alpha: 0.6)
+                                ? context.accentColor.withValues(alpha: 0.6)
                                 : Colors.white.withValues(alpha: 0.06),
                           ),
                         ),
@@ -821,7 +832,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                           children: [
                             Checkbox(
                               value: isSelected,
-                              activeColor: const Color(0xFF5B5FEF),
+                              activeColor: context.accentColor,
                               onChanged: (val) {
                                 setState(() {
                                   if (val == true) {
@@ -845,26 +856,25 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color(
-                                            0xFF5B5FEF,
-                                          ).withValues(alpha: 0.2),
+                                          color: context.accentColor
+                                              .withValues(alpha: 0.2),
                                           borderRadius: BorderRadius.circular(
                                             6,
                                           ),
                                         ),
                                         child: Text(
                                           ex.examType.toUpperCase(),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Color(0xFFC0C1FF),
                                             fontSize: 9,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: 8),
                                       Text(
                                         dateFormatted,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Color(0xFF10B981),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 11,
@@ -872,28 +882,28 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
+                                  SizedBox(height: 6),
                                   Text(
                                     ex.title,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
                                   ),
-                                  const SizedBox(height: 3),
+                                  SizedBox(height: 3),
                                   Text(
                                     '${ex.startTime}${ex.endTime.isNotEmpty ? ' - ${ex.endTime}' : ''}${ex.room.isNotEmpty ? ' • Room ${ex.room}' : ''}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white54,
                                       fontSize: 11.5,
                                     ),
                                   ),
                                   if (ex.syllabus.isNotEmpty) ...[
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4),
                                     Text(
                                       'Syllabus: ${ex.syllabus}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Colors.white38,
                                         fontSize: 10.5,
                                       ),
@@ -904,7 +914,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             GestureDetector(
                               onTap: () => _showEditExamDialog(index),
                               child: Container(
@@ -919,7 +929,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                                     color: const Color(0xFF7BD0FF).withValues(alpha: 0.3),
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
@@ -948,7 +958,7 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             // Import Action Button
             GestureDetector(
@@ -958,8 +968,8 @@ class _ExamImportSheetState extends ConsumerState<ExamImportSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   gradient: _selectedIndices.isNotEmpty
-                      ? const LinearGradient(
-                          colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                      ? LinearGradient(
+                          colors: [context.accentColor, context.tertiaryColor],
                         )
                       : null,
                   color: _selectedIndices.isEmpty

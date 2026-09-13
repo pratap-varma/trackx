@@ -45,7 +45,7 @@ class FlashcardsHubScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.isDark ? const Color(0xFF0E1628) : Colors.white,
+        backgroundColor: context.cardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: ctx.subtleBorderColor),
@@ -114,7 +114,7 @@ class FlashcardsHubScreen extends ConsumerWidget {
               borderRadius: 22,
               padding: const EdgeInsets.all(20),
               borderColor: dueCount > 0
-                  ? const Color(0xFF5B5FEF).withValues(alpha: 0.5)
+                  ? context.accentColor.withValues(alpha: 0.5)
                   : context.subtleBorderColor,
               child: Row(
                 children: [
@@ -124,7 +124,7 @@ class FlashcardsHubScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: (dueCount > 0
-                              ? const Color(0xFF5B5FEF)
+                              ? context.accentColor
                               : const Color(0xFF10B981))
                           .withValues(alpha: 0.2),
                     ),
@@ -133,7 +133,7 @@ class FlashcardsHubScreen extends ConsumerWidget {
                           ? Icons.alarm_rounded
                           : Icons.check_circle_rounded,
                       color: dueCount > 0
-                          ? const Color(0xFFC0C1FF)
+                          ? context.accentColor
                           : const Color(0xFF10B981),
                       size: 28,
                     ),
@@ -175,7 +175,7 @@ class FlashcardsHubScreen extends ConsumerWidget {
                         context.push('/flashcards/${targetDeck.id}');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5B5FEF),
+                        backgroundColor: context.accentColor,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 10),
                         shape: RoundedRectangleBorder(

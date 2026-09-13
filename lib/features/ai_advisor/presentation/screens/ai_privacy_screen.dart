@@ -101,7 +101,7 @@ class AiPrivacyScreen extends ConsumerWidget {
                       ),
                     ),
                     value: consent[key]!,
-                    activeThumbColor: AppTheme.accentPurple,
+                    activeThumbColor: context.accentColor,
                     onChanged: (val) => notifier.toggle(key),
                   );
                 }).toList(),

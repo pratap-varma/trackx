@@ -22,14 +22,16 @@ class TrackXWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val thisAppWidget = ComponentName(context.packageName, TrackXWidgetProvider::class.java.name)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
-        if (appWidgetIds != null && appWidgetIds.isNotEmpty()) {
-            for (appWidgetId in appWidgetIds) {
-                updateAppWidget(context, appWidgetManager, appWidgetId)
+        try {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val thisAppWidget = ComponentName(context.packageName, TrackXWidgetProvider::class.java.name)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
+            if (appWidgetIds != null && appWidgetIds.isNotEmpty()) {
+                for (appWidgetId in appWidgetIds) {
+                    updateAppWidget(context, appWidgetManager, appWidgetId)
+                }
             }
-        }
+        } catch (_: Exception) {}
     }
 
     companion object {
@@ -38,66 +40,87 @@ class TrackXWidgetProvider : AppWidgetProvider() {
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int
         ) {
-            val views = RemoteViews(context.packageName, R.layout.trackx_widget_layout)
-            val prefs = context.getSharedPreferences("TrackXWidgetPrefs", Context.MODE_PRIVATE)
+            try {
+                val views = RemoteViews(context.packageName, R.layout.trackx_widget_layout)
+                val prefs = context.getSharedPreferences("TrackXWidgetPrefs", Context.MODE_PRIVATE)
 
-            val attendance = prefs.getString("overallAttendance", "") ?: ""
-            val classesToday = prefs.getInt("classesToday", 0)
-            val nextClassName = prefs.getString("nextClassName", "") ?: ""
-            val nextClassTime = prefs.getString("nextClassTime", "") ?: ""
-            val nextClassRoom = prefs.getString("nextClassRoom", "") ?: ""
-            val tasksPending = prefs.getInt("tasksPending", 0)
+                val attendance = prefs.getString("overallAttendance", "--%") ?: "--%"
+                val badge = prefs.getString("attendanceBadge", "ACTIVE") ?: "ACTIVE"
+                val bunkInfo = prefs.getString("attendanceBunkInfo", "") ?: ""
+                val nextClassMeta = prefs.getString("nextClassMeta", "TODAY'S SCHEDULE") ?: "TODAY'S SCHEDULE"
+                val nextClassName = prefs.getString("nextClassName", "No classes scheduled today") ?: "No classes scheduled today"
+                val nextClassRoom = prefs.getString("nextClassRoom", "") ?: ""
 
-            views.setTextViewText(R.id.widget_title, "TrackX")
+                val isDark = prefs.getBoolean("isDark", true)
+                val bgDrawable = if (isDark) R.drawable.widget_bg_dark else R.drawable.widget_bg_light
+                views.setInt(R.id.widget_root, "setBackgroundResource", bgDrawable)
 
-            // Badge text
-            if (attendance.isNotEmpty()) {
-                views.setTextViewText(R.id.widget_badge, "$attendance ATT")
-            } else {
-                views.setTextViewText(R.id.widget_badge, "ACTIVE")
-            }
+                val isLow = badge.contains("LOW", ignoreCase = true) || badge.contains("CRITICAL", ignoreCase = true)
+                val isSafe = badge.equals("SAFE", ignoreCase = true) || badge.equals("ON TRACK", ignoreCase = true)
+                val badgeDrawable = when {
+                    isLow -> R.drawable.widget_badge_red
+                    isSafe -> R.drawable.widget_badge_green
+                    else -> R.drawable.widget_badge_blue
+                }
+                val badgeColor = when {
+                    isLow -> android.graphics.Color.parseColor("#EF4444")
+                    isSafe -> android.graphics.Color.parseColor("#10B981")
+                    else -> android.graphics.Color.parseColor("#3B82F6")
+                }
 
-            // Schedule title & subtitle
-            if (nextClassTime.isNotEmpty()) {
-                views.setTextViewText(R.id.widget_status_title, "NEXT CLASS • $nextClassTime")
-            } else if (classesToday > 0) {
-                views.setTextViewText(R.id.widget_status_title, "TODAY'S SCHEDULE")
-            } else {
-                views.setTextViewText(R.id.widget_status_title, "TODAY'S SCHEDULE")
-            }
+                views.setInt(R.id.widget_badge, "setBackgroundResource", badgeDrawable)
+                views.setTextColor(R.id.widget_badge, badgeColor)
 
-            if (nextClassName.isNotEmpty() && nextClassName != "None") {
-                val subtitle = if (nextClassRoom.isNotEmpty()) "$nextClassName ($nextClassRoom)" else nextClassName
-                views.setTextViewText(R.id.widget_status_subtitle, subtitle)
-            } else if (classesToday == 0) {
-                views.setTextViewText(R.id.widget_status_subtitle, "No classes scheduled today")
-            } else {
-                views.setTextViewText(R.id.widget_status_subtitle, "All classes completed for today")
-            }
+                val titleColor = if (isDark) android.graphics.Color.parseColor("#FFFFFF") else android.graphics.Color.parseColor("#0F172A")
+                val subColor = if (isDark) android.graphics.Color.parseColor("#94A3B8") else android.graphics.Color.parseColor("#64748B")
+                val scheduleMetaColor = if (isDark) android.graphics.Color.parseColor("#A5B4FC") else android.graphics.Color.parseColor("#4F46E5")
 
-            // Footer summary
-            val footerText = when {
-                classesToday > 0 && tasksPending > 0 -> "$classesToday classes • $tasksPending tasks pending"
-                classesToday > 0 -> "$classesToday classes scheduled today"
-                tasksPending > 0 -> "$tasksPending tasks pending"
-                else -> "Track Attendance & Plan Tasks"
-            }
-            views.setTextViewText(R.id.widget_action_text, footerText)
+                views.setTextColor(R.id.widget_title, titleColor)
+                views.setTextColor(R.id.widget_status_title, scheduleMetaColor)
+                views.setTextColor(R.id.widget_status_subtitle, titleColor)
+                views.setTextColor(R.id.widget_action_text, subColor)
 
-            // Intent to open MainActivity when widget is clicked
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
+                views.setTextViewText(R.id.widget_title, "TrackX")
+                views.setTextViewText(R.id.widget_badge, if (attendance != "--%") attendance else badge)
+                views.setTextViewText(R.id.widget_status_title, nextClassMeta)
+                views.setTextViewText(
+                    R.id.widget_status_subtitle,
+                    if (nextClassRoom.isNotEmpty()) "$nextClassName • $nextClassRoom" else nextClassName
+                )
+                views.setTextViewText(
+                    R.id.widget_action_text,
+                    if (bunkInfo.isNotEmpty()) "$attendance • $bunkInfo" else "Tap to open app"
+                )
 
-            views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+                // 1. Launch App when widget is tapped
+                val launchIntent = (context.packageManager.getLaunchIntentForPackage(context.packageName)
+                    ?: Intent(context, MainActivity::class.java)).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pendingLaunchIntent = PendingIntent.getActivity(
+                    context,
+                    100,
+                    launchIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_root, pendingLaunchIntent)
+                views.setOnClickPendingIntent(R.id.widget_main_logo, pendingLaunchIntent)
 
-            appWidgetManager.updateAppWidget(appWidgetId, views)
+                // 2. Refresh widget when refresh button is tapped
+                val refreshIntent = Intent(context, WidgetRefreshReceiver::class.java).apply {
+                    action = WidgetRefreshReceiver.ACTION_REFRESH_WIDGETS
+                    putExtra("manual_refresh", true)
+                }
+                val pendingRefreshIntent = PendingIntent.getBroadcast(
+                    context,
+                    200,
+                    refreshIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_main_action_btn, pendingRefreshIntent)
+
+                appWidgetManager.updateAppWidget(appWidgetId, views)
+            } catch (_: Exception) {}
         }
     }
 }

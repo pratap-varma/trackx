@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:trackx/core/config/ai_config.dart';
 import 'package:trackx/core/services/activity_logger.dart';
 import 'package:trackx/features/notes/domain/models/flashcard_model.dart';
 import 'package:trackx/features/planner/domain/models/productivity_models.dart';
@@ -63,7 +64,7 @@ class FlashcardAiService {
     required String deckId,
     String? subjectName,
   }) async {
-    final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
+    final model = GenerativeModel(model: AiConfig.geminiModel, apiKey: apiKey);
 
     final prompt = '''
 You are an expert university academic coach and tutor.

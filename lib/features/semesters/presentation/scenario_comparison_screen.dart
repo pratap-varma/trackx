@@ -238,9 +238,9 @@ class _ScenarioComparisonScreenState
           padding: const EdgeInsets.all(12.0),
           child: Text(
             valA,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: AppTheme.accentPurple,
+              color: context.accentColor,
               fontSize: 12,
             ),
           ),
@@ -411,7 +411,7 @@ class _ScenarioComparisonScreenState
             isWarning
                 ? Icons.warning_amber_rounded
                 : Icons.info_outline_rounded,
-            color: isWarning ? Colors.amber : (context.isDark ? Colors.purpleAccent : AppTheme.accentPurple),
+            color: isWarning ? Colors.amber : context.accentColor,
             size: 16,
           ),
           const SizedBox(width: 8),

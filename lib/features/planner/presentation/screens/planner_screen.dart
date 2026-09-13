@@ -17,6 +17,7 @@ import 'package:trackx/features/planner/presentation/widgets/calendar_conflict_d
 import 'package:trackx/features/planner/presentation/widgets/exam_import_sheet.dart';
 import 'package:trackx/shared/widgets/glass_container.dart';
 import 'package:trackx/shared/widgets/glass_text_field.dart';
+import 'package:trackx/theme/app_theme.dart';
 
 class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
@@ -63,9 +64,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
   void _showAddDialog() {
     HapticFeedback.lightImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final sheetBg = context.cardColor;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
     final tabBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9);
 
     showModalBottomSheet(
@@ -100,7 +101,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -121,7 +122,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
                 // Tabs: Task vs Exam
                 Container(
@@ -132,14 +133,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   ),
                   child: TabBar(
                     indicator: BoxDecoration(
-                      color: const Color(0xFF5B5FEF),
+                      color: context.accentColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     indicatorSize: TabBarIndicatorSize.tab,
                     dividerColor: Colors.transparent,
                     labelColor: Colors.white,
                     unselectedLabelColor: subtextColor,
-                    labelStyle: const TextStyle(
+                    labelStyle: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -149,7 +150,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 SizedBox(
                   height: 480,
@@ -181,31 +182,24 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
               labelText: 'Task / Assignment Title',
               hintText: 'e.g. Cognitive Psychology Paper',
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // Subject selector
-            const Text(
-              'Subject',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
+            Text('Subject', style: TextStyle(color: context.subtextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+            SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF131A2B),
+                color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                border: Border.all(color: context.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  dropdownColor: const Color(0xFF0E1628),
+                  dropdownColor: context.cardColor,
                   value: _modalSubjectId,
                   isExpanded: true,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: context.textColor, fontSize: 14),
                   items: subjects.map((s) {
                     return DropdownMenuItem<String>(
                       value: s.id,
@@ -218,18 +212,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // Due Date
-            const Text(
-              'Due Date',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
+            Text('Due Date', style: TextStyle(color: context.subtextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+            SizedBox(height: 6),
             GestureDetector(
               onTap: () async {
                 final picked = await showDatePicker(
@@ -248,10 +235,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF131A2B),
+                  color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: context.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
                   ),
                 ),
                 child: Row(
@@ -259,29 +246,22 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   children: [
                     Text(
                       DateFormat('MM/dd/yyyy').format(_modalDueDate),
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: context.textColor, fontSize: 14),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_rounded,
-                      color: Colors.white54,
+                      color: context.subtextColor,
                       size: 18,
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // Priority
-            const Text(
-              'Priority Level',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
+            Text('Priority Level', style: TextStyle(color: context.subtextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+            SizedBox(height: 6),
             Row(
               children: ['Low', 'Medium', 'High'].map((p) {
                 final isSelected = _modalPriority == p;
@@ -293,20 +273,20 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF5B5FEF)
-                            : const Color(0xFF131A2B),
+                            ? context.accentColor
+                            : (context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
                               ? Colors.transparent
-                              : Colors.white.withValues(alpha: 0.06),
+                              : (context.isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
                         ),
                       ),
                       child: Center(
                         child: Text(
                           p,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white60,
+                            color: isSelected ? Colors.white : context.subtextColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -317,7 +297,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Add button
             GestureDetector(
@@ -352,10 +332,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5B5FEF),
+                  color: context.accentColor,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'Save Assignment',
                     style: TextStyle(
@@ -389,31 +369,24 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
               labelText: 'Exam / Quiz Title',
               hintText: 'e.g. Chemistry Midterm Exam',
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // Subject selector
-            const Text(
-              'Subject',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
+            Text('Subject', style: TextStyle(color: context.subtextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+            SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF131A2B),
+                color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                border: Border.all(color: context.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  dropdownColor: const Color(0xFF0E1628),
+                  dropdownColor: context.cardColor,
                   value: _modalSubjectId,
                   isExpanded: true,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: context.textColor, fontSize: 14),
                   items: subjects.map((s) {
                     return DropdownMenuItem<String>(
                       value: s.id,
@@ -426,7 +399,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // Exam Date & Time
             Row(
@@ -435,15 +408,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Exam Date',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
+                      Text('Exam Date', style: TextStyle(color: context.subtextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 6),
                       GestureDetector(
                         onTap: () async {
                           final picked = await showDatePicker(
@@ -462,16 +428,16 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                             vertical: 14,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF131A2B),
+                            color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: context.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
                             ),
                           ),
                           child: Text(
                             DateFormat('MMM dd, yyyy').format(_examDate),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.textColor,
                               fontSize: 13,
                             ),
                           ),
@@ -480,20 +446,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Time',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
+                      Text('Time', style: TextStyle(color: context.subtextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 6),
                       GestureDetector(
                         onTap: () async {
                           final picked = await showTimePicker(
@@ -510,16 +469,16 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                             vertical: 14,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF131A2B),
+                            color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: context.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
                             ),
                           ),
                           child: Text(
                             _examTime.format(context),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: context.textColor,
                               fontSize: 13,
                             ),
                           ),
@@ -530,7 +489,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // Syllabus input
             GlassTextField(
@@ -538,18 +497,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
               labelText: 'Syllabus / Key Topics',
               hintText: 'e.g. Chapters 1-5, Formulas & Definitions',
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // Exam Type (Midterm, Final, Quiz)
-            const Text(
-              'Exam Type',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
+            Text('Exam Type', style: TextStyle(color: context.subtextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+            SizedBox(height: 6),
             Row(
               children: ['Quiz', 'Midterm', 'Final'].map((t) {
                 final isSelected = _examType == t;
@@ -561,20 +513,20 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF5B5FEF)
-                            : const Color(0xFF131A2B),
+                            ? context.accentColor
+                            : (context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
                               ? Colors.transparent
-                              : Colors.white.withValues(alpha: 0.06),
+                              : (context.isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
                         ),
                       ),
                       child: Center(
                         child: Text(
                           t,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white60,
+                            color: isSelected ? Colors.white : context.subtextColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -585,7 +537,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Add Exam button
             GestureDetector(
@@ -624,10 +576,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5B5FEF),
+                  color: context.accentColor,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'Save Upcoming Exam',
                     style: TextStyle(
@@ -652,8 +604,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF0E1628),
+        decoration: BoxDecoration(
+          color: context.cardColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.all(24),
@@ -666,25 +618,25 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: context.isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Upcoming Exams & Quizzes',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: context.textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.add_rounded, color: Color(0xFFC0C1FF)),
+                  icon: Icon(Icons.add_rounded, color: context.accentColor),
                   onPressed: () {
                     Navigator.pop(ctx);
                     _showAddDialog();
@@ -692,20 +644,23 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             if (exams.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: 24.0),
                 child: Center(
                   child: Text(
                     'No upcoming exams scheduled.',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: context.subtextColor),
                   ),
                 ),
               )
             else
               ...exams.map((ex) {
-                final daysLeft = ex.examDate.difference(DateTime.now()).inDays;
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+                final examDay = DateTime(ex.examDate.year, ex.examDate.month, ex.examDate.day);
+                final daysLeft = examDay.difference(today).inDays;
                 final badge = daysLeft <= 0
                     ? 'TODAY'
                     : daysLeft == 1
@@ -716,10 +671,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
+                      color: context.isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
                     ),
                   ),
                   child: Column(
@@ -730,7 +685,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                         children: [
                           Text(
                             badge,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Color(0xFFFF8B94),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -741,13 +696,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                             children: [
                               Text(
                                 '${(ex.preparationProgress).toInt()}% Prep',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Color(0xFFC0C1FF),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               GestureDetector(
                                 onTap: () {
                                   Navigator.pop(ctx);
@@ -756,17 +711,17 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                                    color: context.accentColor.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.edit_outlined,
-                                    color: Color(0xFF7BD0FF),
+                                    color: context.accentColor,
                                     size: 16,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                               GestureDetector(
                                 onTap: () {
                                   ref.read(examsProvider.notifier).deleteExam(ex.id);
@@ -786,7 +741,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                     color: Colors.redAccent.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.delete_outline_rounded,
                                     color: Colors.redAccent,
                                     size: 16,
@@ -797,20 +752,20 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         ex.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '${DateFormat('EEEE, MMM dd, yyyy').format(ex.examDate)} • ${ex.startTime}',
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: context.subtextColor,
                           fontSize: 12,
                         ),
                       ),
@@ -840,8 +795,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setEditState) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF0E1628),
+            decoration: BoxDecoration(
+              color: context.cardColor,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             padding: EdgeInsets.only(
@@ -860,42 +815,42 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: context.isDark ? Colors.white24 : Colors.black12,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Edit Exam Details',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.textColor,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                        icon: Icon(Icons.close_rounded, color: context.subtextColor),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // 1. Interactive Date Picker
-                  const Text(
+                  Text(
                     'EXAM DATE',
                     style: TextStyle(
-                      color: Colors.white38,
+                      color: context.subtextColor,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.8,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   GestureDetector(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -911,21 +866,21 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF131A2B),
+                        color: context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF5B5FEF).withValues(alpha: 0.4)),
+                        border: Border.all(color: context.accentColor.withValues(alpha: 0.4)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.calendar_month_rounded, color: Color(0xFF7BD0FF), size: 18),
+                              Icon(Icons.calendar_month_rounded, color: context.accentColor, size: 18),
                               const SizedBox(width: 10),
                               Text(
                                 DateFormat('EEEE, MMM d, yyyy').format(editDate),
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: context.textColor,
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -935,13 +890,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF5B5FEF).withValues(alpha: 0.2),
+                              color: context.accentColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Change Date',
                               style: TextStyle(
-                                color: Color(0xFF7BD0FF),
+                                color: context.accentColor,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -954,10 +909,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   const SizedBox(height: 14),
 
                   // 2. Exam Type Selector
-                  const Text(
+                  Text(
                     'EXAM TYPE',
                     style: TextStyle(
-                      color: Colors.white38,
+                      color: context.subtextColor,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.8,
@@ -975,16 +930,16 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                             margin: const EdgeInsets.only(right: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFF5B5FEF) : const Color(0xFF131A2B),
+                              color: isSelected ? context.accentColor : (context.isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9)),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: isSelected ? Colors.transparent : Colors.white12,
+                                color: isSelected ? Colors.transparent : (context.isDark ? Colors.white12 : Colors.black12),
                               ),
                             ),
                             child: Text(
                               t,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.white60,
+                                color: isSelected ? Colors.white : context.subtextColor,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -994,14 +949,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                       }).toList(),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // 3. Exam Title
                   GlassTextField(
                     controller: titleCtrl,
                     labelText: 'Exam Title',
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // 4. Time & Syllabus
                   Row(
@@ -1012,7 +967,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                           labelText: 'Time (e.g. 10:30 AM)',
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: GlassTextField(
                           controller: syllabusCtrl,
@@ -1021,23 +976,23 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
 
                   // 5. Preparation Progress Slider
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'PREPARATION PROGRESS',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: context.subtextColor,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         '${progress.toInt()}%',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xFF7BD0FF),
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -1049,8 +1004,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     value: progress,
                     min: 0.0,
                     max: 100.0,
-                    activeColor: const Color(0xFF5B5FEF),
-                    inactiveColor: Colors.white12,
+                    activeColor: context.accentColor,
+                    inactiveColor: context.isDark ? Colors.white12 : Colors.black12,
                     onChanged: (val) => setEditState(() => progress = val),
                   ),
                   const SizedBox(height: 16),
@@ -1085,12 +1040,12 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF5B5FEF), Color(0xFF8151EB)],
+                        gradient: LinearGradient(
+                          colors: [context.accentColor, context.tertiaryColor],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'Save Changes',
                           style: TextStyle(
@@ -1114,9 +1069,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
   void _showNotificationsSheet() {
     HapticFeedback.lightImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF0E1628) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
+    final sheetBg = context.cardColor;
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
     final iconBg = isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0);
     final emptyCardBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9);
 
@@ -1141,13 +1096,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     color: iconBg,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.notifications_active_rounded,
                     color: Color(0xFFC0C1FF),
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1167,7 +1122,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Builder(
               builder: (context) {
                 final currentExams = ref.read(examsProvider);
@@ -1230,13 +1185,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                 );
               },
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B5FEF),
+                  backgroundColor: context.accentColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -1266,7 +1221,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
       child: Row(
         children: [
           Icon(icon, color: const Color(0xFF7BD0FF), size: 20),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1279,7 +1234,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     fontSize: 13,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   subtitle,
                   style: TextStyle(color: subtextColor, fontSize: 11),
@@ -1345,9 +1300,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
     }).toList();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? const Color(0xFFDEE2F4) : const Color(0xFF0F172A);
-    final subtextColor = isDark ? Colors.white54 : const Color(0xFF64748B);
-    final mutedTextColor = isDark ? Colors.white38 : const Color(0xFF94A3B8);
+    final textColor = context.textColor;
+    final subtextColor = context.subtextColor;
+    final mutedTextColor = context.mutedTextColor;
     final searchBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9);
     final dayPillBg = isDark ? const Color(0xFF131A2B) : const Color(0xFFF1F5F9);
 
@@ -1373,7 +1328,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   color: searchBg,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF5B5FEF).withValues(alpha: 0.5),
+                    color: context.accentColor.withValues(alpha: 0.5),
                   ),
                 ),
                 child: TextField(
@@ -1496,7 +1451,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                 );
                               },
                             ),
-                            const SizedBox(width: 16),
+                            SizedBox(width: 16),
                             IconButton(
                               icon: Icon(
                                 Icons.chevron_right_rounded,
@@ -1517,7 +1472,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Date Selector Strip
                     Row(
@@ -1537,7 +1492,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(0xFFC0C1FF)
+                                  ? context.accentColor
                                   : dayPillBg,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
@@ -1556,43 +1511,43 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                   dayName,
                                   style: TextStyle(
                                     color: isSelected
-                                        ? const Color(0xFF0E00AA)
+                                        ? Colors.white
                                         : subtextColor,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                SizedBox(height: 6),
                                 Text(
                                   dayNumber,
                                   style: TextStyle(
                                     color: isSelected
-                                        ? const Color(0xFF0E00AA)
+                                        ? Colors.white
                                         : textColor,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 if (hasConflict) ...[
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Container(
                                     width: 4,
                                     height: 4,
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? const Color(0xFF0E00AA)
+                                          ? Colors.white
                                           : const Color(0xFFEF4444),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
                                 ] else if (isHolidayDay) ...[
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Container(
                                     width: 4,
                                     height: 4,
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? const Color(0xFF0E00AA)
+                                          ? Colors.white
                                           : const Color(0xFFF59E0B),
                                       shape: BoxShape.circle,
                                     ),
@@ -1607,16 +1562,16 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Upcoming Exams Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Upcoming Exams',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1631,29 +1586,29 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF5B5FEF).withValues(
+                            color: context.accentColor.withValues(
                               alpha: 0.18,
                             ),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: const Color(0xFF5B5FEF).withValues(
+                              color: context.accentColor.withValues(
                                 alpha: 0.4,
                               ),
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.document_scanner_rounded,
-                                color: Color(0xFFC0C1FF),
+                                color: context.accentColor,
                                 size: 12,
                               ),
                               SizedBox(width: 4),
                               Text(
                                 'Scan Date-Sheet',
                                 style: TextStyle(
-                                  color: Color(0xFFC0C1FF),
+                                  color: context.accentColor,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1662,13 +1617,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       TextButton(
                         onPressed: () => _showAllExamsSheet(exams),
-                        child: const Text(
+                        child: Text(
                           'View All',
                           style: TextStyle(
-                            color: Color(0xFF7BD0FF),
+                            color: context.accentColor,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1678,7 +1633,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
 
               // Horizontal Exam Cards
               if (exams.isEmpty)
@@ -1686,10 +1641,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
                     ),
                   ),
                   child: Column(
@@ -1699,24 +1654,24 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1B243B),
+                              color: isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.event_note_outlined,
-                              color: Color(0xFF7BD0FF),
+                              color: context.accentColor,
                               size: 20,
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          const Expanded(
+                          SizedBox(width: 14),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'No upcoming exams scheduled',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: textColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13.5,
                                   ),
@@ -1725,7 +1680,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                 Text(
                                   'Upload your exam timetable PDF or photo to automatically generate exam countdowns.',
                                   style: TextStyle(
-                                    color: Colors.white54,
+                                    color: subtextColor,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -1734,7 +1689,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
@@ -1745,15 +1700,15 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                   vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFF5B5FEF),
-                                      Color(0xFF8151EB),
+                                      context.accentColor,
+                                      context.tertiaryColor,
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
@@ -1775,7 +1730,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Expanded(
                             child: GestureDetector(
                               onTap: _showAddDialog,
@@ -1784,15 +1739,15 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                   vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1B243B),
+                                  color: isDark ? const Color(0xFF1B243B) : const Color(0xFFE2E8F0),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.white24),
+                                  border: Border.all(color: isDark ? Colors.white24 : Colors.black12),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
                                     '+ Add Manually',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: textColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -1811,9 +1766,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: exams.map((ex) {
-                      final daysLeft = ex.examDate
-                          .difference(DateTime.now())
-                          .inDays;
+                      final now = DateTime.now();
+                      final today = DateTime(now.year, now.month, now.day);
+                      final examDay = DateTime(ex.examDate.year, ex.examDate.month, ex.examDate.day);
+                      final daysLeft = examDay.difference(today).inDays;
                       final badge = daysLeft <= 0
                           ? 'TODAY'
                           : daysLeft == 1
@@ -1835,16 +1791,16 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     }).toList(),
                   ),
                 ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Assignments Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Assignments & Tasks',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1852,14 +1808,14 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   PopupMenuButton<String>(
                     onSelected: (val) =>
                         setState(() => _selectedPriority = val),
-                    color: const Color(0xFF131A2B),
+                    color: context.cardColor,
                     itemBuilder: (ctx) =>
                         ['All', 'High', 'Medium', 'Low'].map((p) {
                           return PopupMenuItem<String>(
                             value: p,
                             child: Text(
                               p,
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(color: textColor),
                             ),
                           );
                         }).toList(),
@@ -1869,23 +1825,24 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B243B),
+                        color: isDark ? const Color(0xFF1B243B) : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
                       ),
                       child: Row(
                         children: [
                           Text(
                             _selectedPriority,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: subtextColor,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(
+                          SizedBox(width: 4),
+                          Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            color: Colors.white54,
+                            color: subtextColor,
                             size: 16,
                           ),
                         ],
@@ -1894,39 +1851,40 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               if (filteredTasks.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF131A2B),
+                    color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
                   ),
                   child: Center(
                     child: Column(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.task_alt_rounded,
-                          color: Colors.white38,
+                          color: mutedTextColor,
                           size: 36,
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         Text(
                           _searchController.text.trim().isNotEmpty
                               ? 'No tasks matching your search.'
                               : 'No plans yet. Create a task or add your timetable to get started.',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: subtextColor,
                             fontSize: 13,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         ElevatedButton(
                           onPressed: _showAddDialog,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5B5FEF),
+                            backgroundColor: context.accentColor,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1950,19 +1908,19 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   final tagColor = switch (t.priority.toLowerCase()) {
                     'high' => const Color(0xFFEF4444),
                     'low' => const Color(0xFF10B981),
-                    _ => const Color(0xFF5B5FEF),
+                    _ => context.accentColor,
                   };
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131A2B),
+                      color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isDone
                             ? const Color(0xFF10B981).withValues(alpha: 0.3)
-                            : Colors.white.withValues(alpha: 0.06),
+                            : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
                       ),
                     ),
                     child: Row(
@@ -1983,20 +1941,20 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                               border: Border.all(
                                 color: isDone
                                     ? Colors.transparent
-                                    : Colors.white38,
+                                    : (isDark ? Colors.white38 : Colors.black38),
                                 width: 2,
                               ),
                             ),
                             child: isDone
                                 ? const Icon(
                                     Icons.check_rounded,
-                                    color: Colors.black,
+                                    color: Colors.white,
                                     size: 18,
                                   )
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2004,7 +1962,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                               Text(
                                 t.title,
                                 style: TextStyle(
-                                  color: isDone ? Colors.white38 : Colors.white,
+                                  color: isDone ? mutedTextColor : textColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                   decoration: isDone
@@ -2012,11 +1970,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                       : null,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 '$subName • ${DateFormat('MMM dd').format(t.dueDate)}',
-                                style: const TextStyle(
-                                  color: Colors.white54,
+                                style: TextStyle(
+                                  color: subtextColor,
                                   fontSize: 11,
                                 ),
                               ),
@@ -2047,18 +2005,18 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   );
                 }),
 
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Daily Schedule Timeline
-              const Text(
+              Text(
                 'Daily Schedule',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textColor,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
 
               // Schedule Conflicts Alert for Selected Date
               if (conflicts.isNotEmpty)
@@ -2085,29 +2043,29 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.warning_amber_rounded,
                             color: Color(0xFFEF4444),
                             size: 22,
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   '${conflicts.length} Schedule ${conflicts.length == 1 ? 'Conflict' : 'Conflicts'} Detected',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: textColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                SizedBox(height: 2),
                                 Text(
                                   conflicts.first.description,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
+                                  style: TextStyle(
+                                    color: subtextColor,
                                     fontSize: 11,
                                   ),
                                   maxLines: 1,
@@ -2116,9 +2074,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                               ],
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.chevron_right_rounded,
-                            color: Colors.white38,
+                            color: subtextColor,
                             size: 18,
                           ),
                         ],
@@ -2159,13 +2117,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                 ).withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.celebration_rounded,
                                 color: Color(0xFFF59E0B),
                                 size: 22,
                               ),
                             ),
-                            const SizedBox(width: 14),
+                            SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2185,7 +2143,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                             6,
                                           ),
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           'PUBLIC HOLIDAY',
                                           style: TextStyle(
                                             color: Color(0xFFF59E0B),
@@ -2195,21 +2153,21 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: 8),
                                       Text(
                                         holiday.source,
-                                        style: const TextStyle(
-                                          color: Colors.white38,
+                                        style: TextStyle(
+                                          color: subtextColor,
                                           fontSize: 10,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Text(
                                     holiday.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: textColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
@@ -2217,9 +2175,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right_rounded,
-                              color: Colors.white38,
+                              color: subtextColor,
                               size: 20,
                             ),
                           ],
@@ -2265,13 +2223,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                 ).withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.event_note_rounded,
                                 color: Color(0xFF4285F4),
                                 size: 22,
                               ),
                             ),
-                            const SizedBox(width: 14),
+                            SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2293,7 +2251,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                         ),
                                         child: Text(
                                           timeStr,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Color(0xFF7BD0FF),
                                             fontSize: 9,
                                             fontWeight: FontWeight.bold,
@@ -2301,32 +2259,32 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: 8),
                                       Text(
                                         event.calendarName,
-                                        style: const TextStyle(
-                                          color: Colors.white38,
+                                        style: TextStyle(
+                                          color: subtextColor,
                                           fontSize: 10,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Text(
                                     event.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: textColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
                                   ),
                                   if (event.location != null &&
                                       event.location!.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
+                                    SizedBox(height: 2),
                                     Text(
                                       event.location!,
-                                      style: const TextStyle(
-                                        color: Colors.white54,
+                                      style: TextStyle(
+                                        color: subtextColor,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -2334,9 +2292,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right_rounded,
-                              color: Colors.white38,
+                              color: subtextColor,
                               size: 20,
                             ),
                           ],
@@ -2360,28 +2318,28 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                               : Icons.calendar_today_outlined,
                           color: selectedDayHolidays.isNotEmpty
                               ? const Color(0xFFF59E0B)
-                              : Colors.white38,
+                              : mutedTextColor,
                           size: 32,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Text(
                           selectedDayHolidays.isNotEmpty
                               ? 'Public Holiday • ${selectedDayHolidays.first.title}'
                               : 'No classes or events scheduled today',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           selectedDayHolidays.isNotEmpty
                               ? 'Enjoy your holiday! No academic classes or personal events scheduled.'
                               : 'Add your timetable or connect Google Calendar to see your schedule.',
-                          style: const TextStyle(
-                            color: Colors.white54,
+                          style: TextStyle(
+                            color: subtextColor,
                             fontSize: 12,
                           ),
                           textAlign: TextAlign.center,
@@ -2412,24 +2370,6 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     ),
                   );
                 }),
-
-              if (exams.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                _suggestedStudyBlock(
-                  title: 'Prep for ${exams.first.title}',
-                  subtitle:
-                      'Exam on ${DateFormat('MMM dd').format(exams.first.examDate)} (${exams.first.preparationProgress.toInt()}% completed)',
-                  onAdd: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Scheduled revision for "${exams.first.title}" into your calendar!',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
             ],
           ),
 
@@ -2442,10 +2382,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFC0C1FF),
+                color: context.accentColor,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
+                    color: context.accentColor.withValues(alpha: 0.4),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -2454,7 +2394,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
               child: IconButton(
                 icon: const Icon(
                   Icons.add_rounded,
-                  color: Color(0xFF0E00AA),
+                  color: Colors.white,
                   size: 28,
                 ),
                 onPressed: _showAddDialog,
@@ -2489,41 +2429,39 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
               children: [
                 Text(
                   badge,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFFFF8B94),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                   ),
                 ),
-                Icon(icon, color: Colors.white30, size: 18),
+                Icon(icon, color: const Color(0xFF7BD0FF), size: 18),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               title,
               style: const TextStyle(
-                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Row(
               children: [
                 const Icon(
                   Icons.calendar_today_outlined,
-                  color: Colors.white38,
                   size: 12,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Text(
                   date,
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  style: const TextStyle(fontSize: 11),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
@@ -2539,11 +2477,12 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
     );
   }
 
-  static Widget _scheduleTimelineItem({
+  Widget _scheduleTimelineItem({
     required String time,
     required String title,
     required String subtitle,
   }) {
+    final isDark = context.isDark;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2553,39 +2492,39 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
               margin: const EdgeInsets.only(top: 4),
               width: 8,
               height: 8,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFFC0C1FF),
+                color: context.accentColor,
               ),
             ),
             Container(
               width: 1,
               height: 60,
-              color: Colors.white.withValues(alpha: 0.1),
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
             ),
           ],
         ),
-        const SizedBox(width: 14),
+        SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 time,
-                style: const TextStyle(
-                  color: Colors.white54,
+                style: TextStyle(
+                  color: context.subtextColor,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF131A2B),
+                  color: isDark ? const Color(0xFF131A2B) : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
                   ),
                 ),
                 child: Column(
@@ -2593,121 +2532,18 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: context.subtextColor,
                         fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  static Widget _suggestedStudyBlock({
-    required String title,
-    required String subtitle,
-    required VoidCallback onAdd,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 4),
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFF7BD0FF),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'SUGGESTED STUDY BLOCK',
-                style: TextStyle(
-                  color: Color(0xFF7BD0FF),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF131A2B),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: const Color(0xFF5B5FEF).withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Color(0xFFC0C1FF),
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: onAdd,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1B243B),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Add to Schedule',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
                       ),
                     ),
                   ],

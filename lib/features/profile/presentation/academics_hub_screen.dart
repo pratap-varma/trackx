@@ -41,7 +41,7 @@ class AcademicsHubScreen extends StatelessWidget {
             _hubCard(
               context,
               icon: Icons.school_rounded,
-              color: const Color(0xFF5B5FEF),
+              color: context.accentColor,
               title: 'Programmes',
               subtitle: 'Track your degree courses and active options',
               badge: null,
@@ -187,18 +187,15 @@ class AcademicsHubScreen extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF5B5FEF,
-                              ).withValues(alpha: 0.2),
+                              color: context.accentColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(5),
                             ),
                             child: Text(
                               badge,
-                              style: const TextStyle(
-                                color: Color(0xFFC0C1FF),
+                              style: TextStyle(
+                                color: context.accentColor,
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
                               ),
                             ),
                           ),

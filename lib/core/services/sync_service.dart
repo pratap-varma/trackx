@@ -77,6 +77,7 @@ class SyncService {
 
   bool _syncing = false;
   String? _activeUserId;
+  DateTime? _lastSyncTriggerTime;
   static const int _maxRetries = 5;
 
   SyncService(this._db, [this._ref]) {
@@ -155,8 +156,19 @@ class SyncService {
 
   Future<void> triggerSync() async {
     if (_syncing || _activeUserId == null || _activeUserId == 'guest') return;
+    
+    // Prevent duplicate sync triggers inside a 2-second cooldown
+    final now = DateTime.now();
+    if (_lastSyncTriggerTime != null && now.difference(_lastSyncTriggerTime!).inSeconds < 2) {
+      print('[DEBUG LOG] Firestore Sync trigger ignored due to 2-second cooldown.');
+      return;
+    }
+    _lastSyncTriggerTime = now;
+
     _syncing = true;
     _ref?.read(syncStatusProvider.notifier).setSyncing(true);
+    print('[DEBUG LOG] Firestore Sync starting...');
+    final stopwatch = Stopwatch()..start();
 
     try {
       final connectivityResult = await _connectivity.checkConnectivity();
@@ -164,14 +176,17 @@ class SyncService {
           !connectivityResult.any((r) => r != ConnectivityResult.none)) {
         _syncing = false;
         _ref?.read(syncStatusProvider.notifier).setSyncing(false);
+        print('[DEBUG LOG] Firestore Sync aborted: No internet connectivity.');
         return;
       }
 
       await _pushQueue();
       await _pullUpdates();
       _ref?.read(syncStatusProvider.notifier).recordSuccess();
+      print('[DEBUG LOG] Firestore Sync completed successfully in: ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {
       _ref?.read(syncStatusProvider.notifier).recordError(e.toString());
+      print('[DEBUG LOG] Firestore Sync failed in: ${stopwatch.elapsedMilliseconds}ms. Error: $e');
     } finally {
       _syncing = false;
       _updateStatusCounts();
@@ -216,10 +231,10 @@ class SyncService {
         }
 
         if (op.operationType == 'delete') {
-          await docRef.delete();
+          await docRef.delete().timeout(const Duration(seconds: 10));
         } else {
           // Push payload with Last-Write-Wins merge
-          await docRef.set(op.payload, SetOptions(merge: true));
+          await docRef.set(op.payload, SetOptions(merge: true)).timeout(const Duration(seconds: 10));
         }
 
         // Successfully synchronized: remove from local queue
@@ -271,7 +286,8 @@ class SyncService {
             .collection('users')
             .doc(_activeUserId)
             .collection('${type}s')
-            .get();
+            .get()
+            .timeout(const Duration(seconds: 10));
 
         final localBox = _db.getBox(boxName);
 

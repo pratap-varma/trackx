@@ -110,6 +110,7 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
   }
 
   Future<void> _save() async {
+    final stopwatch = Stopwatch()..start();
     final uid = _currentUserId;
     final key = _getKey(uid);
     final jsonStr = jsonEncode(state.map((r) => r.toMap()).toList());
@@ -135,6 +136,7 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
     try {
       _ref?.read(widgetDataServiceProvider).syncWithAppData(_ref);
     } catch (_) {}
+    print('[DEBUG LOG] Attendance Save took: ${stopwatch.elapsedMilliseconds}ms');
   }
 
   void _syncSubjectAttendanceCounts() {
@@ -233,13 +235,14 @@ class AttendanceRepository extends StateNotifier<List<AttendanceRecord>> {
   Future<String?> editAttendance(
     String id,
     String newStatus,
-    DateTime currentTime,
-  ) async {
+    DateTime currentTime, {
+    bool force = false,
+  }) async {
     final index = state.indexWhere((r) => r.id == id);
     if (index == -1) return 'Record not found.';
 
     final record = state[index];
-    if (!canEditAttendance(record, currentTime)) {
+    if (!force && !canEditAttendance(record, currentTime)) {
       return 'Editing period expired. Locked after 24 hours.';
     }
 

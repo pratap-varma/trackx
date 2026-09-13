@@ -210,7 +210,7 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: GlassContainer(
                       borderColor: isActive
-                          ? AppTheme.accentPurple
+                          ? context.accentColor
                           : context.subtleBorderColor,
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -236,19 +236,19 @@ class _ProgrammeManageScreenState extends ConsumerState<ProgrammeManageScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentPurple.withValues(
+                                    color: context.accentColor.withValues(
                                       alpha: 0.2,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: AppTheme.accentPurple,
+                                      color: context.accentColor,
                                       width: 0.5,
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Active',
                                     style: TextStyle(
-                                      color: AppTheme.accentPurple,
+                                      color: context.accentColor,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
